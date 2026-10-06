@@ -133,28 +133,28 @@ const SCALES = {
   major:[0,2,4,5,7,9,11], minor:[0,2,3,5,7,8,10], dorian:[0,2,3,5,7,9,10], phryg:[0,1,4,5,7,8,10],
   mixo:[0,2,4,5,7,9,10], hminor:[0,2,3,5,7,8,11], lydian:[0,2,4,6,7,9,11]
 };
-const DRUMS = {
-  rock:  {k:"x.......x.x.....", s:"....x.......x...", h:"x.x.x.x.x.x.x.x."},
-  four:  {k:"x...x...x...x...", s:"....x.......x...", h:"..x...x...x...x."},
-  brk:   {k:"x.....x...x.....", s:"....x.......x..x", h:"x.xxx.xxx.xxx.xx"},
-  gallop:{k:"x..xx..xx..xx..x", s:"....x.......x...", h:"x.x.x.x.x.x.x.x."},
-  drive: {k:"x...x...x...x..x", s:"....x.......x...", h:"xxxxxxxxxxxxxxxx"},
-  half:  {k:"x.....x.x.......", s:"........x.......", h:"x.x.x.x.x.x.x.x."},
+const DRUMS = {  // 16-step grids at 174ish BPM: k=kick, s=snare, g=ghost snare, h=hats (x=hit, o=open)
+  two:    {k:"x.........x.....", s:"....x.......x...", g:"..x.......x....x", h:"x.x.x.x.x.x.x.xo"},
+  roller: {k:"x.........x.x...", s:"....x.......x...", g:"......x.........", h:"xxxxxxxxxxxxxxxx"},
+  amen:   {k:"x.x.......xx....", s:"....x..x.x..x...", g:"..............x.", h:"x.x.x.x.x.x.x.xo"},
+  jump:   {k:"x.....x...x.....", s:"....x.......x..x", g:"..x.............", h:"x.xxx.xxx.xxx.xo"},
+  neuro:  {k:"x.........x...x.", s:"....x.......x...", g:".......x.....x..", h:"xxxxxxxxxxxxxxxx"},
+  liquid: {k:"x.........x.....", s:"....x.......x...", g:".x.......x......", h:"x.x.x.x.x.xxx.xo"},
 };
-const RHYTHMS = ["x.xxx.x.x.xxx.x.","x..xx.x.x..xx.xx","xx.xx.xxx.x.xxx.","x.x.xx.xx.x.xx.x"];
+const RHYTHMS = ["x..x..x...x..x..","x.x...x.x.x...x.","x...x.x.x...x.x.","x..x.x..x..x.x.."];
 // n: name, bpm, root: MIDI tonic, sc: scale, prog: chord roots (scale idx), dr: drum style,
-// lead/arp: waveforms, bass: 16-step bass mask, arpMask, seed: melody seed
+// bt: bass type (reese|wobble), lead: lead waveform, arpMask / stab: 16-step masks, seed: melody seed
 const TRACKS = [
-  {n:"Bright Blade",  bpm:132, root:55, sc:"major",  prog:[0,4,5,3], dr:"rock",  lead:"square",   arp:"triangle", bass:"x.x.x.x.x.x.x.x.", arpMask:"x.x.x.x.x.x.x.x.", seed:11},
-  {n:"Ember March",   bpm:140, root:57, sc:"minor",  prog:[0,5,3,4], dr:"four",  lead:"sawtooth", arp:"square",   bass:"x.xxx.xxx.xxx.xx", arpMask:"xxxxxxxxxxxxxxxx", seed:23},
-  {n:"Tidal Rush",    bpm:148, root:50, sc:"dorian", prog:[0,3,6,4], dr:"brk",   lead:"triangle", arp:"square",   bass:"x..xx.x.x..xx.x.", arpMask:"x.xxx.xxx.xxx.xx", seed:37},
-  {n:"Stone Gallop",  bpm:128, root:52, sc:"phryg",  prog:[0,1,0,6], dr:"gallop",lead:"sawtooth", arp:"triangle", bass:"x..xx..xx..xx..x", arpMask:"x.x.x.x.x.x.x.x.", seed:41},
-  {n:"Skyward",       bpm:156, root:53, sc:"lydian", prog:[0,1,5,4], dr:"drive", lead:"square",   arp:"sawtooth", bass:"x.x.x.x.x.x.x.x.", arpMask:"xxxxxxxxxxxxxxxx", seed:53},
-  {n:"Crimson Duel",  bpm:160, root:59, sc:"hminor", prog:[0,5,3,4], dr:"four",  lead:"sawtooth", arp:"square",   bass:"xxxxxxxxxxxxxxxx", arpMask:"x.xx.xx.x.xx.xx.", seed:67},
-  {n:"Hollow Run",    bpm:144, root:54, sc:"minor",  prog:[0,2,5,4], dr:"brk",   lead:"square",   arp:"triangle", bass:"x.xxx.x.x.xxx.x.", arpMask:"xxxxxxxxxxxxxxxx", seed:79},
-  {n:"Gilded Siege",  bpm:136, root:56, sc:"mixo",   prog:[0,6,3,0], dr:"rock",  lead:"triangle", arp:"square",   bass:"x..x..x.x..x..x.", arpMask:"x.x.x.x.x.x.x.x.", seed:83},
-  {n:"Storm Crown",   bpm:168, root:51, sc:"minor",  prog:[0,3,5,4], dr:"drive", lead:"sawtooth", arp:"square",   bass:"xxxxxxxxxxxxxxxx", arpMask:"x.xx.xx.x.xx.xx.", seed:97},
-  {n:"Final Ember",   bpm:172, root:57, sc:"phryg",  prog:[0,1,5,0], dr:"gallop",lead:"square",   arp:"sawtooth", bass:"xx.xxx.xxx.xxx.x", arpMask:"xxxxxxxxxxxxxxxx", seed:101},
+  {n:"Neon Rush",        bpm:174, root:45, sc:"minor",  prog:[0,5,3,4], dr:"two",    bt:"reese",  lead:"sawtooth", bass:"x..x..x.x..x..x.", arpMask:"xxxxxxxxxxxxxxxx", stab:"..x.....x.......", seed:11},
+  {n:"Circuit Breaker",  bpm:172, root:47, sc:"dorian", prog:[0,3,0,6], dr:"roller", bt:"wobble", lead:"square",   bass:"x.x.x.x.x.x.x.x.", arpMask:"x.xx.xx.x.xx.xx.", stab:"x.....x...x.....", seed:23},
+  {n:"Tidal Fracture",   bpm:170, root:43, sc:"minor",  prog:[0,5,6,4], dr:"amen",   bt:"reese",  lead:"sawtooth", bass:"x..x..x.x..x..x.", arpMask:"x.x.x.x.x.x.x.x.", stab:"..x...x...x.....", seed:37},
+  {n:"Quartz Pulse",     bpm:176, root:48, sc:"major",  prog:[0,4,5,3], dr:"jump",   bt:"reese",  lead:"square",   bass:"x...x..x..x.....", arpMask:"xxxxxxxxxxxxxxxx", stab:"x.....x.....x...", seed:41},
+  {n:"Skyline Drift",    bpm:174, root:50, sc:"lydian", prog:[0,1,5,4], dr:"liquid", bt:"reese",  lead:"sawtooth", bass:"x.....x...x.....", arpMask:"x.xx.xx.x.xx.xx.", stab:"..x.....x.x.....", seed:53},
+  {n:"Crimson Wire",     bpm:175, root:46, sc:"hminor", prog:[0,5,3,4], dr:"neuro",  bt:"wobble", lead:"sawtooth", bass:"x.x...x.x.x...x.", arpMask:"xxxxxxxxxxxxxxxx", stab:"..x...x.....x...", seed:67},
+  {n:"Hollow Machine",   bpm:172, root:44, sc:"phryg",  prog:[0,1,5,0], dr:"roller", bt:"reese",  lead:"square",   bass:"x..x..x..x..x...", arpMask:"x.x.x.x.x.x.x.x.", stab:"x.....x...x.....", seed:79},
+  {n:"Gilded Static",    bpm:174, root:52, sc:"mixo",   prog:[0,6,3,0], dr:"amen",   bt:"reese",  lead:"sawtooth", bass:"x.x..x..x.x..x..", arpMask:"x.xx.xx.x.xx.xx.", stab:"..x.....x.......", seed:83},
+  {n:"Storm Protocol",   bpm:178, root:47, sc:"minor",  prog:[0,3,5,4], dr:"neuro",  bt:"wobble", lead:"square",   bass:"xxxxxxxxxxxxxxxx", arpMask:"xxxxxxxxxxxxxxxx", stab:"x.....x...x...x.", seed:97},
+  {n:"Final Overdrive",  bpm:180, root:45, sc:"phryg",  prog:[0,1,5,4], dr:"roller", bt:"wobble", lead:"sawtooth", bass:"x.xx.xx.x.xx.xx.", arpMask:"xxxxxxxxxxxxxxxx", stab:"..x.x...x.x.....", seed:101},
 ];
 function rng(seed){ return ()=>{ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 // build a catchy 4-bar motif (A, A, A, B) per track: chord-tone anchors on strong beats, stepwise motion between
@@ -177,10 +177,13 @@ const Snd = {
   init(){
     try{
       if(!this.ctx){ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
-        const c=this.ctx=new AC(); this.master=c.createGain(); this.master.connect(c.destination);
+        const c=this.ctx=new AC(); this.master=c.createGain(); const comp=c.createDynamicsCompressor(); comp.threshold.value=-16; comp.ratio.value=6; comp.attack.value=.003; comp.release.value=.15; this.master.connect(comp); comp.connect(c.destination);
         this.sfxG=c.createGain(); this.sfxG.gain.value=.8; this.sfxG.connect(this.master);
-        this.musG=c.createGain(); this.musG.gain.value=.55; this.musG.connect(this.master);
+        this.musG=c.createGain(); this.musG.gain.value=.45; this.musG.connect(this.master);
         const n=c.sampleRate*2; this.noiseBuf=c.createBuffer(1,n,c.sampleRate); const d=this.noiseBuf.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1;
+        this.pumpG=c.createGain(); this.pumpG.connect(this.musG);
+        this.delay=c.createDelay(1); this.delay.delayTime.value=60/TRACKS[0].bpm*.75; const fb=c.createGain(); fb.gain.value=.38; const dm=c.createGain(); dm.gain.value=.4;
+        this.delay.connect(fb); fb.connect(this.delay); this.delay.connect(dm); dm.connect(this.musG); this.dsend=c.createGain(); this.dsend.gain.value=.5; this.dsend.connect(this.delay);
         this.apply(); this.nextT=c.currentTime+.1; this.step=0; this.bar=0; this.tr0=0;
         this.timer=setInterval(()=>this.sched(),30); }
       if(this.ctx.state==="suspended") this.ctx.resume();
@@ -265,22 +268,62 @@ const Snd = {
       if(!this.muted&&!this.forced) this.playStep(T,this.step,this.bar,this.nextT,sp);
       this.nextT+=sp; this.step++;
       if(this.step===16){ this.step=0; this.bar++;
-        if(this.pending!==null){ this.track=this.pending; this.pending=null; this.bar=0; this.tr0=0; } }
+        if(this.pending!==null){ this.track=this.pending; this.pending=null; this.bar=0; this.tr0=0; this.delay.delayTime.setValueAtTime(60/TRACKS[this.track].bpm*.75,this.nextT); } }
+    }
+  },
+  // ----- electronic voices -----
+  pump(t){ const g=this.pumpG.gain; g.cancelScheduledValues(t); g.setValueAtTime(.3,t); g.linearRampToValueAtTime(1,t+.2); },
+  kick(t){ this.osc(t,170,.18,"sine",.95,this.musG,42); this.osc(t,55,.32,"sine",.6,this.musG,38); this.nz(t,.02,"highpass",3000,3000,.8,.3,.001,this.musG); this.pump(t); },
+  snare(t,v=1){ this.nz(t,.14,"bandpass",2400,1500,.9,.65*v,.002,this.musG); this.nz(t,.1,"highpass",6500,4500,.8,.22*v,.001,this.musG); this.osc(t,230,.1,"triangle",.4*v,this.musG,140); },
+  hat(t,v,open){ this.nz(t,open?.14:.04,"highpass",8500,8500,.7,.2*v,.001,this.musG); },
+  lp(at,f,d,type,v,dest,c0,c1,atk=.008,send=false){
+    const c=this.ctx, o=c.createOscillator(), fl=c.createBiquadFilter(), g=c.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,at); fl.type="lowpass"; fl.Q.value=4;
+    fl.frequency.setValueAtTime(c0,at); fl.frequency.exponentialRampToValueAtTime(c1,at+d);
+    g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(Math.max(v,.0002),at+atk); g.gain.setValueAtTime(Math.max(v,.0002),at+Math.max(atk,d-.03)); g.gain.exponentialRampToValueAtTime(0.0001,at+d);
+    o.connect(fl); fl.connect(g); g.connect(dest); if(send) g.connect(this.dsend); o.start(at); o.stop(at+d+.05);
+  },
+  bassNote(T,t,f,d,sp){
+    const c=this.ctx, dg=this.musG;
+    this.osc(t,f,d,"sine",.5,dg);                                   // sub
+    if(T.bt==="wobble"){
+      const o=c.createOscillator(), o2=c.createOscillator(), fl=c.createBiquadFilter(), g=c.createGain(), lfo=c.createOscillator(), lg=c.createGain();
+      o.type="sawtooth"; o2.type="square"; o.frequency.value=f*2; o2.frequency.value=f*2.005; fl.type="lowpass"; fl.Q.value=7; fl.frequency.value=380;
+      lfo.type="sine"; lfo.frequency.value=T.bpm/60*2; lg.gain.value=650; lfo.connect(lg); lg.connect(fl.frequency);
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(.16,t+.01); g.gain.setValueAtTime(.16,t+Math.max(.01,d-.03)); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+      o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(dg); [o,o2,lfo].forEach(x=>{x.start(t); x.stop(t+d+.05);});
+    } else {                                                        // reese: detuned saws, sweeping lowpass
+      this.lp(t,f*2*1.007,d,"sawtooth",.16,dg,500,1500);
+      this.lp(t,f*2*.993,d,"sawtooth",.16,dg,500,1500);
     }
   },
   playStep(T,i,bar,t,sp){
-    const D=DRUMS[T.dr], dg=this.musG, ch=T.prog[bar%4], on=(m)=>m[i]==="x", fill=(bar%8===7&&i>=12);
-    if(on(D.k)) { this.osc(t,150,.14,"sine",.7,dg,42); }
-    if(on(D.s)||fill){ this.nz(t,.16,"bandpass",1900,1300,.8,.5,.002,dg); this.osc(t,210,.09,"triangle",.25,dg,120); }
-    if(on(D.h)) this.nz(t,i%4===2?.07:.035,"highpass",7500,7500,.8,.16,.001,dg);
+    const D=DRUMS[T.dr], dg=this.musG, pg=this.pumpG, ch=T.prog[bar%4], on=(m)=>m[i]==="x";
+    const sec=bar%16, brk=sec>=14, riser=sec===15, intro=bar<2;
+    // drums
+    if(!brk||riser){
+      if(on(D.k)&&!brk) this.kick(t);
+      if(on(D.s)&&!brk) this.snare(t,1);
+      else if(D.g[i]==="x"&&!brk) this.snare(t,.28);
+      if(riser&&i>=8&&i%(i>=12?1:2)===0) this.snare(t,.3+i/30);
+    }
+    if(D.h[i]!=="."&&!(brk&&!riser)) this.hat(t,(i%4===2?1:.55)*(brk?.5:1),D.h[i]==="o");
+    if(sec===0&&bar>0&&i===0){ this.nz(t,1.2,"highpass",6000,6000,.7,.35,.002,dg); this.kick(t); }
+    if(riser&&i===0) this.nz(t,sp*16,"bandpass",300,9000,2,.45,sp*15,dg);
     // bass
-    if(on(T.bass)){ const oct=(i%4===2)?12:0; this.osc(t,mtof(this.noteIdx(T,ch)-12+oct),sp*1.7,T.lead==="triangle"?"sawtooth":"square",.2,dg); }
-    // arpeggio
-    if(on(T.arpMask)){ const tones=[0,2,4,7]; this.osc(t,mtof(this.noteIdx(T,ch+tones[i%4]+7)),sp*.9,T.arp,.06,dg); }
-    // pad
-    if(i===0){ [0,2,4].forEach(k=>this.osc(t,mtof(this.noteIdx(T,ch+k)),sp*14,"triangle",.045,dg)); }
-    // lead melody (enters after 2 bars of intro)
-    if(this.bar>=2||bar>=2){ const m=T.motif[bar%4][i]; if(m!==null&&m!==undefined) this.osc(t,mtof(this.noteIdx(T,ch+m+7)),sp*1.6,T.lead,.11,dg); }
+    if(!brk&&on(T.bass)){
+      let n=1; while(i+n<16&&T.bass[i+n]!=="x") n++;
+      const idx=ch-7+(i%8===6?4:0)+(i===11?7:0);
+      this.bassNote(T,t,mtof(this.noteIdx(T,idx)),Math.min(n,6)*sp*.95,sp);
+    }
+    // pad (long, ducked by the kick)
+    if(i===0&&bar%2===0){ [0,2,4].forEach(k=>this.lp(t,mtof(this.noteIdx(T,ch+k+7)),sp*32,"sawtooth",.035,pg,700,1800,.5)); }
+    // plucky 16th arp
+    if(on(T.arpMask)&&!(brk&&!riser)){ const tones=[0,2,4,7]; this.lp(t,mtof(this.noteIdx(T,ch+tones[i%4]+14)),sp*.8,"square",.04,pg,3600,900); }
+    // chord stabs
+    if(on(T.stab)&&!intro&&!brk){ [0,2,4].forEach(k=>this.lp(t,mtof(this.noteIdx(T,ch+k+7)),sp*1.4,"sawtooth",.045,pg,3500,1000,.004,true)); }
+    // lead (enters after the 2-bar intro)
+    if(!intro&&!brk){ const m=T.motif[bar%4][i]; if(m!==null&&m!==undefined) this.lp(t,mtof(this.noteIdx(T,ch+m+14)),sp*2.2,T.lead,.085,pg,4200,1800,.006,true); }
   }
 };
 Snd.load();
