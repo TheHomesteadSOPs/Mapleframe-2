@@ -25,3 +25,13 @@ Single-file HTML/canvas game. Music (10 drum & bass tracks, one per player level
 
 ## Testing hook
 Add `?fast` to the URL to skip animation waits (used for automated balance simulation).
+
+## Scripts (`scripts/`)
+- `build.mjs` — minifies to `dist/index.html` and `dist/gemhollow.zip` (`npm i --no-save esbuild && node scripts/build.mjs`). Targets Chrome 80+, Edge 88+, Firefox 78+, Safari 15+.
+- `edge-cases.cjs` — headless checks: no-move reshuffle, single win/defeat on cascades, input while animating, reload mid-battle, blocked/corrupt storage.
+- `balance-sim.cjs <skill 0-1> <runs> <stages>` — bot plays whole runs (uses `?fast`) and prints win rate / lowest HP per stage.
+- `perf-profile.cjs <cpu-throttle>` — frame-time profile on an emulated phone with CPU throttling.
+(Test scripts need `playwright` and Chromium.)
+
+## Performance notes
+Gems are pre-rendered sprites, the board background/vignette are cached layers, the board only redraws while something is animating, portraits animate at ~20fps, and the canvas resolution follows the displayed size. If frame times stay slow the game lowers canvas resolution and then drops full-board match effects automatically.
