@@ -16,7 +16,7 @@ Click/tap or drag to swap. Keyboard: arrows move the cursor, Space/Enter grabs a
 Settings: volume sliders, reduce motion & screen shake (also follows `prefers-reduced-motion`), high-contrast HUD text.
 
 ## Tech
-Single-file HTML/canvas game. Music (10 drum & bass tracks, one per player level, each a ~2-minute 96-bar song with 12 varied sections) and sound effects are synthesized with Web Audio.
+Single-file HTML/canvas game. Music: ten different synthesized tracks, one per enemy (chiptune funk, sneaky swing, techno, funky house, trap, dubstep, industrial, dark synthwave) plus two boss themes (Orc Warlord, Elder Dragon). Each is a 96-bar song with 12 sections and sound effects are synthesized with Web Audio.
 
 ## CrazyGames
 - The SDK v3 script is loaded from `sdk.crazygames.com`; the game runs without it (calls are guarded).
@@ -36,3 +36,6 @@ Add `?fast` to the URL to skip animation waits (used for automated balance simul
 
 ## Performance notes
 Gems are pre-rendered sprites, the board background/vignette are cached layers, the board only redraws while something is animating, portraits animate at ~20fps, and the canvas resolution follows the displayed size. If frame times stay slow the game lowers canvas resolution and then drops full-board match effects automatically.
+
+## Bosses
+Every 5th stage is a boss. On arrival the board darkens, the boss slams in, a full-board flash and shockwave hits the gems (Orc: ground cracks and flying rocks; Dragon: wings and a wall of fire), the gems jump in a wave, and a title card appears while the boss music starts. With reduced motion on, the shake and full-board effects are replaced by a short flash and the title card.

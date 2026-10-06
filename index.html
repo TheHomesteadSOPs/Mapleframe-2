@@ -101,6 +101,9 @@
   @media (min-width:560px) and (min-aspect-ratio:1/1) { #tip { left:auto; right:12px; margin:0; width:min(400px,36vw); } }
   @keyframes hlpulse { 0%,100%{ box-shadow:0 0 0 3px #ffd36b,0 0 14px #ffd36b88 } 50%{ box-shadow:0 0 0 3px #fff,0 0 26px #ffd36b } }
   .hl { animation:hlpulse 1.2s infinite; border-radius:12px; } body.rm .hl { animation:none; box-shadow:0 0 0 3px #ffd36b; }
+  @keyframes bossdrop { 0%{ transform:translateY(-140%) scale(1.35) rotate(-4deg); opacity:0; filter:brightness(2.2) } 45%{ transform:translateY(0) scale(1.1); opacity:1; filter:brightness(1.7) } 58%{ transform:translateY(10px) scale(.98) } 100%{ transform:none; filter:none } }
+  .bossenter { animation:bossdrop 1s cubic-bezier(.2,.8,.3,1); position:relative; z-index:3; }
+  #ecard.boss { border-color:#ff4a3a; box-shadow:inset 0 1px 0 #fff3,0 0 22px #ff4a3a88; } #ecard.boss canvas.fig { border-color:#ff6b5a; }
   .badge { background:#c0381e; color:#fff; border-radius:6px; padding:1px 6px; font:700 10px system-ui,sans-serif; letter-spacing:1px; vertical-align:middle; }
   .warn { color:#ffd36b; font-weight:700; } .small em { font-style:normal; opacity:.85; }
   #ecard.active { border-color:#ff6b6b; box-shadow:inset 0 1px 0 #fff3,0 0 18px #ff6b6b88; }
@@ -170,28 +173,48 @@ const SCALES = {
   major:[0,2,4,5,7,9,11], minor:[0,2,3,5,7,8,10], dorian:[0,2,3,5,7,9,10], phryg:[0,1,4,5,7,8,10],
   mixo:[0,2,4,5,7,9,10], hminor:[0,2,3,5,7,8,11], lydian:[0,2,4,6,7,9,11]
 };
-const DRUMS = {  // 16-step grids at 174ish BPM: k=kick, s=snare, g=ghost snare, h=hats (x=hit, o=open)
+const DRUMS = {  // 16-step grids: k=kick, s=snare/clap, g=ghost snare, h=hats (x=hit, o=open)
   two:    {k:"x.........x.....", s:"....x.......x...", g:"..x.......x....x", h:"x.x.x.x.x.x.x.xo"},
-  roller: {k:"x.........x.x...", s:"....x.......x...", g:"......x.........", h:"xxxxxxxxxxxxxxxx"},
-  amen:   {k:"x.x.......xx....", s:"....x..x.x..x...", g:"..............x.", h:"x.x.x.x.x.x.x.xo"},
   jump:   {k:"x.....x...x.....", s:"....x.......x..x", g:"..x.............", h:"x.xxx.xxx.xxx.xo"},
-  neuro:  {k:"x.........x...x.", s:"....x.......x...", g:".......x.....x..", h:"xxxxxxxxxxxxxxxx"},
-  liquid: {k:"x.........x.....", s:"....x.......x...", g:".x.......x......", h:"x.x.x.x.x.xxx.xo"},
+  bounce: {k:"x...x...x...x...", s:"....x.......x...", g:"..x.......x.....", h:"x.x.x.x.x.x.x.x."},
+  funk:   {k:"x..x..x...x.x...", s:"....x.......x..x", g:"..x...x.........", h:"x.xxx.xxx.xxx.xx"},
+  lite:   {k:"x.......x.......", s:"........x.......", g:"................", h:"x.x.x.x.x.x.x.x."},
+  techno: {k:"x...x...x...x...", s:"....x.......x...", g:".......x.......x", h:"..x...x...x...xo"},
+  technoB:{k:"x...x...x...x...", s:"....x.......x...", g:"..x...x...x...x.", h:"xxxxxxxxxxxxxxxx"},
+  house:  {k:"x...x...x...x...", s:"....x.......x...", g:"................", h:"xxxxxxxxxxxxxxxx"},
+  epic:   {k:"x..x..x.x..x..x.", s:"....x.......x...", g:"..............x.", h:"x.x.x.x.x.x.x.x."},
+  epicB:  {k:"x.xx.xx.x.xx.xx.", s:"....x.......x..x", g:"..x.............", h:"x.x.x.x.x.x.x.xx"},
+  trap:   {k:"x.....x...x.....", s:"........x.......", g:"..............x.", h:"xxxxxxxxxxxxxxxx"},
+  trapB:  {k:"x..x..x...x...x.", s:"........x.......", g:"......x.........", h:"x.xxx.xxxxx.xxxx"},
+  dub:    {k:"x.........x.....", s:"........x.......", g:"................", h:"x...x...x...x..."},
+  dubB:   {k:"x.....x...x.....", s:"........x.......", g:"..............x.", h:"x.x.x.x.x.x.x.x."},
+  stomp:  {k:"x...x...x...x...", s:"....x.......x...", g:"................", h:"x.x.x.x.x.x.x.x."},
+  stompB: {k:"x...x..xx...x...", s:"....x.......x...", g:"..x.......x.....", h:"xxxxxxxxxxxxxxxx"},
+  synth:  {k:"x.....x.x.......", s:"....x.......x...", g:"................", h:"x.x.x.x.x.x.x.x."},
+  synthB: {k:"x...x...x...x...", s:"....x.......x...", g:"..............x.", h:"x.x.x.x.x.x.xxxx"},
+  blast:  {k:"x.xxx.xxx.xxx.xx", s:"....x.......x...", g:".......x......x.", h:"x.x.x.x.x.x.x.x."},
+  blastB: {k:"xxxxxxxxxxxxxxxx", s:"....x.......x...", g:"..x.............", h:"..x...x...x...x."},
 };
 const RHYTHMS = ["x..x..x...x..x..","x.x...x.x.x...x.","x...x.x.x...x.x.","x..x.x..x..x.x.."];
-// n: name, bpm, root: MIDI tonic, sc: scale, prog: chord roots (scale idx), dr: drum style,
-// bt: bass type (reese|wobble), lead: lead waveform, arpMask / stab: 16-step masks, seed: melody seed
+const RHY_BOUNCY = ["x.x.x...x.x.x...","x..xx..xx..xx.x.","x.xx.x.xx.xx.x.x","x.x...x.x.x.x..."];
+const RHY_SPARSE = ["x.......x.....x.","x.....x...x.....","x...x...x.x.....","x.......x...x..."];
+const RHY_FAST   = ["x.xx.xx.x.xx.xx.","xx.xx.xxx.xx.xxx","x.x.xxx.x.x.xxx.","x.xxx.x.x.xxx.x."];
+const ARPS_SLOW  = ["x...x...x...x...","x.x.x.x.x.x.x.x.","x.......x.......","x..x..x..x..x..x"];
+const STABS_SLOW = ["x.......x.......","..x.....x.......","x.....x.........","x.......x...x..."];
+// One track per enemy (index = enemy order); bosses are Orc (5th) and Dragon (10th).
+// kit: kick/snare/hat voicing, bt: bass type, lf: lead voice, ar/pd/st: arp, pad and stab voices (w=wave, c=[filter start,end], len in steps),
+// swing: shuffle on off-16ths, duck: kick sidechain depth (lower = deeper), toms: boss percussion, wob: wobble LFO per beat
 const TRACKS = [
-  {n:"Neon Rush",        bpm:174, root:45, sc:"minor",  prog:[0,5,3,4], dr:"two",    bt:"reese",  lead:"sawtooth", bass:"x..x..x.x..x..x.", arpMask:"xxxxxxxxxxxxxxxx", stab:"..x.....x.......", seed:11},
-  {n:"Circuit Breaker",  bpm:172, root:47, sc:"dorian", prog:[0,3,0,6], dr:"roller", bt:"wobble", lead:"square",   bass:"x.x.x.x.x.x.x.x.", arpMask:"x.xx.xx.x.xx.xx.", stab:"x.....x...x.....", seed:23},
-  {n:"Tidal Fracture",   bpm:170, root:43, sc:"minor",  prog:[0,5,6,4], dr:"amen",   bt:"reese",  lead:"sawtooth", bass:"x..x..x.x..x..x.", arpMask:"x.x.x.x.x.x.x.x.", stab:"..x...x...x.....", seed:37},
-  {n:"Quartz Pulse",     bpm:176, root:48, sc:"major",  prog:[0,4,5,3], dr:"jump",   bt:"reese",  lead:"square",   bass:"x...x..x..x.....", arpMask:"xxxxxxxxxxxxxxxx", stab:"x.....x.....x...", seed:41},
-  {n:"Skyline Drift",    bpm:174, root:50, sc:"lydian", prog:[0,1,5,4], dr:"liquid", bt:"reese",  lead:"sawtooth", bass:"x.....x...x.....", arpMask:"x.xx.xx.x.xx.xx.", stab:"..x.....x.x.....", seed:53},
-  {n:"Crimson Wire",     bpm:175, root:46, sc:"hminor", prog:[0,5,3,4], dr:"neuro",  bt:"wobble", lead:"sawtooth", bass:"x.x...x.x.x...x.", arpMask:"xxxxxxxxxxxxxxxx", stab:"..x...x.....x...", seed:67},
-  {n:"Hollow Machine",   bpm:172, root:44, sc:"phryg",  prog:[0,1,5,0], dr:"roller", bt:"reese",  lead:"square",   bass:"x..x..x..x..x...", arpMask:"x.x.x.x.x.x.x.x.", stab:"x.....x...x.....", seed:79},
-  {n:"Gilded Static",    bpm:174, root:52, sc:"mixo",   prog:[0,6,3,0], dr:"amen",   bt:"reese",  lead:"sawtooth", bass:"x.x..x..x.x..x..", arpMask:"x.xx.xx.x.xx.xx.", stab:"..x.....x.......", seed:83},
-  {n:"Storm Protocol",   bpm:178, root:47, sc:"minor",  prog:[0,3,5,4], dr:"neuro",  bt:"wobble", lead:"square",   bass:"xxxxxxxxxxxxxxxx", arpMask:"xxxxxxxxxxxxxxxx", stab:"x.....x...x...x.", seed:97},
-  {n:"Final Overdrive",  bpm:180, root:45, sc:"phryg",  prog:[0,1,5,4], dr:"roller", bt:"wobble", lead:"sawtooth", bass:"x.xx.xx.x.xx.xx.", arpMask:"xxxxxxxxxxxxxxxx", stab:"..x.x...x.x.....", seed:101},
+  {n:"Jelly Bounce",     bpm:128, root:55, sc:"major",  prog:[0,3,4,3], swing:.10, duck:.55, kit:{k:"house",s:"clap",h:"tight"}, dm:["bounce","funk","lite"], bt:"pluck", bass:"x..x..x..x..x.x.", lf:"chip", lead:"square", rhy:RHY_BOUNCY, ar:{w:"square",c:[5000,1500],len:.7,vol:.035}, pd:{w:"triangle",vol:.025}, st:{w:"square",vol:.04,len:.6,c:[4500,1500]}, seed:11},
+  {n:"Sneaky Business",  bpm:138, root:50, sc:"dorian", prog:[0,6,3,6], swing:.18, duck:.5,  kit:{k:"punch",s:"rim",h:"shaker"}, dm:["jump","funk","lite"], bt:"pluck", bass:"x.x...x.x.x...x.", lf:"harp", lead:"square", rhy:RHY_BOUNCY, ar:{w:"triangle",c:[3000,1000],len:.6,vol:.05}, pd:{w:"triangle",vol:.025}, st:{w:"square",vol:.04,len:.5,c:[3500,1200]}, seed:23},
+  {n:"Moonlit Hunt",     bpm:142, root:45, sc:"minor",  prog:[0,5,3,6], swing:0,   duck:.3,  kit:{k:"house",s:"snare",h:"tight"}, dm:["techno","technoB","lite"], bt:"acid", bass:"xxxxxxxxxxxxxxxx", lf:"saw", lead:"sawtooth", ar:{w:"sawtooth",c:[2800,600],len:.7,vol:.04}, pd:{w:"sawtooth",vol:.04,c:[600,1600],atk:.6}, st:{w:"sawtooth",vol:.05,len:1.2,c:[3500,900]}, seed:37},
+  {n:"Dusty Heist",      bpm:118, root:48, sc:"mixo",   prog:[0,3,0,4], swing:.28, duck:.5,  kit:{k:"punch",s:"clap",h:"shaker"}, dm:["house","funk","lite"], bt:"pluck", bass:"x..x..xx.x..x.x.", lf:"brass", lead:"sawtooth", rhy:RHY_BOUNCY, ar:{w:"square",c:[3000,900],len:.5,vol:.035}, pd:{w:"triangle",vol:.03}, st:{w:"sawtooth",vol:.06,len:.45,c:[3800,1000]}, seed:41},
+  {n:"Warlord's Wrath",  bpm:150, root:46, sc:"hminor", prog:[0,5,6,4], swing:0,   duck:.35, kit:{k:"stomp",s:"big",h:"metal"}, dm:["epic","epicB","epic"], bt:"power", bass:"x.xx.xx.x.xx.xx.", lf:"epic", lead:"sawtooth", boss:true, toms:true, ar:{w:"sawtooth",c:[2600,800],len:.7,vol:.045}, pd:{w:"sawtooth",vol:.05,c:[500,1500],atk:.8}, st:{w:"sawtooth",vol:.07,len:1.8,c:[500,3600],atk:.02}, seed:53},
+  {n:"Rattlebones",      gain:1.7, bpm:140, root:44, sc:"phryg",  prog:[0,1,0,6], swing:0,   duck:.35, kit:{k:"808",s:"clap",h:"tight"}, dm:["trap","trapB","lite"], bt:"sub", bass:"x.....x...x.....", lf:"bell", lead:"sine", rhy:RHY_SPARSE, ar:{w:"triangle",c:[5000,2500],len:.5,vol:.05}, pd:{w:"sawtooth",vol:.03,c:[400,900],atk:.9}, st:{w:"triangle",vol:.05,len:.7,c:[4000,1500]}, arps:ARPS_SLOW, stabs:STABS_SLOW, seed:67},
+  {n:"Mountain Stomp",   bpm:140, root:43, sc:"minor",  prog:[0,0,6,5], swing:0,   duck:.3,  kit:{k:"808",s:"big",h:"tight"}, dm:["dub","dubB","lite"], bt:"wobble", wob:1, bass:"x.........x.....", lf:"saw", lead:"sawtooth", rhy:RHY_SPARSE, ar:{w:"square",c:[2400,700],len:.8,vol:.035}, pd:{w:"sawtooth",vol:.035,c:[500,1200],atk:.7}, st:{w:"sawtooth",vol:.06,len:1.6,c:[3000,800]}, arps:ARPS_SLOW, stabs:STABS_SLOW, seed:79},
+  {n:"Iron Foundry",     bpm:110, root:41, sc:"phryg",  prog:[0,0,1,0], swing:0,   duck:.4,  kit:{k:"stomp",s:"gate",h:"metal"}, dm:["stomp","stompB","lite"], bt:"stomp", bass:"x.xx.xx.x.xx.xx.", lf:"metal", lead:"square", rhy:RHY_SPARSE, ar:{w:"square",c:[3200,1200],len:.5,vol:.035}, pd:{w:"sawtooth",vol:.03,c:[500,1000],atk:.8}, st:{w:"square",vol:.05,len:.7,c:[2500,900]}, arps:ARPS_SLOW, stabs:STABS_SLOW, seed:83},
+  {n:"Hollow Veil",      gain:1.3, bpm:100, root:45, sc:"minor",  prog:[0,5,2,6], swing:0,   duck:.6,  kit:{k:"house",s:"gate",h:"shaker"}, dm:["synth","synthB","lite"], bt:"saw", bass:"x.......x.......", lf:"eerie", lead:"sine", rhy:RHY_SPARSE, ar:{w:"triangle",c:[4000,1500],len:1.2,vol:.045}, pd:{w:"sawtooth",vol:.06,c:[500,1400],atk:1}, st:{w:"triangle",vol:.04,len:1.8,c:[2500,900]}, arps:ARPS_SLOW, stabs:STABS_SLOW, seed:97},
+  {n:"Elder Wyrm",       bpm:172, root:45, sc:"phryg",  prog:[0,1,0,6], swing:0,   duck:.35, kit:{k:"double",s:"big",h:"metal"}, dm:["blast","blastB","epic"], bt:"power", bass:"x.xx.xx.x.xx.xx.", lf:"epic", lead:"sawtooth", rhy:RHY_FAST, boss:true, toms:true, ar:{w:"sawtooth",c:[3200,900],len:.6,vol:.045}, pd:{w:"sawtooth",vol:.055,c:[500,1600],atk:.6}, st:{w:"sawtooth",vol:.07,len:1.4,c:[600,3800],atk:.015}, seed:101},
 ];
 function rng(seed){ return ()=>{ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 // ---- song structure: 12 sections x 8 bars = 96 bars (~2+ minutes at 174 BPM) before the loop repeats ----
@@ -217,10 +240,15 @@ const SECS=[
 TRACKS.forEach((T,ti)=>{
   const R=rng(T.seed), minor=SCALES[T.sc][2]===3, pool=(minor?POOL_MIN:POOL_MAJ).filter(x=>x.join()!==T.prog.join());
   T.progs=[T.prog]; while(T.progs.length<4){ const c=pool.splice(Math.floor(R()*pool.length),1)[0]; T.progs.push(c); }
-  const alts=Object.keys(DRUMS).filter(k=>k!==T.dr), alts0=[]; alts0.push(alts.splice(Math.floor(R()*alts.length),1)[0],alts.splice(Math.floor(R()*alts.length),1)[0]); T.drs=[T.dr,alts0[0],alts0[1],Object.keys(DRUMS).find(k=>k!==T.dr&&k!==alts0[0]&&k!==alts0[1])];
+  T.drs=[T.dm[0],T.dm[1],T.dm[0],T.dm[2]];                        // section drum variants: main, busy, main, light
+  T.kit=Object.assign({k:"punch",s:"snare",h:"tight"},T.kit||{});
+  // bass variants for sparse sections, derived from the track's own bass pattern
+  const hits=[...T.bass].map((c,i)=>c==="x"?i:-1).filter(i=>i>=0), mk=f=>Array.from({length:16},(_,i)=>f(i)?"x":".").join("");
+  T.bv=[mk(i=>hits.includes(i)&&i%4===0)||"x...............", mk(i=>hits.filter((_,k)=>k%2===0).includes(i)), mk(i=>hits.includes((i+14)%16)), "x.......x......."];
   // 8 melody sets; each is 8 bars (A A' A B A A' A C): chord-tone anchors on strong beats, stepwise motion between
+  const rh=T.rhy||RHYTHMS;
   T.sets=Array.from({length:8},(_,mo)=>{
-    const Rm=rng(T.seed*31+mo*97+7), mask=RHYTHMS[(ti+mo)%RHYTHMS.length];
+    const Rm=rng(T.seed*31+mo*97+7), mask=rh[(ti+mo)%rh.length];
     const gen=()=>{ let p=0; return Array.from({length:16},(_,i)=>{ if(mask[i]!=="x") return null;
       if(i%4===0) p=[0,2,4,7,4,2][Math.floor(Rm()*6)]; else p=Math.max(-2,Math.min(9,p+[-2,-1,1,1,2][Math.floor(Rm()*5)])); return p; }); };
     const A=gen(), vary=(from)=>{ const x=A.slice(); for(let i=from;i<16;i++) if(mask[i]==="x") x[i]=[0,2,4,5,7][Math.floor(Rm()*5)]; return x; };
@@ -241,14 +269,14 @@ const Snd = {
         this.musG=c.createGain(); this.musG.gain.value=.45; this.musG.connect(this.master);
         const n=c.sampleRate*2; this.noiseBuf=c.createBuffer(1,n,c.sampleRate); const d=this.noiseBuf.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1;
         this.pumpG=c.createGain(); this.pumpG.connect(this.musG);
-        this.delay=c.createDelay(1); this.delay.delayTime.value=60/TRACKS[0].bpm*.75; const fb=c.createGain(); fb.gain.value=.38; const dm=c.createGain(); dm.gain.value=.4;
+        this.delay=c.createDelay(1); this.delay.delayTime.value=60/TRACKS[this.track].bpm*.75; const fb=c.createGain(); fb.gain.value=.38; const dm=c.createGain(); dm.gain.value=.4;
         this.delay.connect(fb); fb.connect(this.delay); this.delay.connect(dm); dm.connect(this.musG); this.dsend=c.createGain(); this.dsend.gain.value=.5; this.dsend.connect(this.delay);
         this.apply(); this.nextT=c.currentTime+.1; this.step=0; this.bar=0; this.tr0=0;
         this.timer=setInterval(()=>this.sched(),25); }
       if(this.ctx.state==="suspended") this.ctx.resume();
     }catch(e){}
   },
-  apply(){ if(!this.master) return; this.master.gain.value=(this.muted||this.forced)?0:Settings.master; this.sfxG.gain.value=.8*Settings.sfx; this.musG.gain.value=.45*Settings.music; },
+  apply(){ if(!this.master) return; this.master.gain.value=(this.muted||this.forced)?0:Settings.master; this.sfxG.gain.value=.8*Settings.sfx; this.musG.gain.cancelScheduledValues(0); this.musG.gain.value=.45*Settings.music*(TRACKS[this.track].gain||1); },
   setMuted(m){ this.muted=m; try{ localStorage.setItem("gh_muted",m?"1":"0"); }catch(e){} this.apply(); },
   force(f){ this.forced=f; this.apply(); },
   setTrack(i){ i=((i%TRACKS.length)+TRACKS.length)%TRACKS.length; if(i!==this.track) this.pending=i; },
@@ -319,6 +347,15 @@ const Snd = {
       case "ability": this.tone(140,.5,"sawtooth",.3,0,70); this.tone(210,.5,"square",.15,.05,105); this.nz(this.ctx.currentTime,.4,"bandpass",300,1200,2,.4,.2); break;
       case "potion": this.nz(this.ctx.currentTime,.25,"bandpass",800,2400,2,.4,.05); [660,880].forEach((f,i)=>this.tone(f,.15,"sine",.2,i*.08)); break;
       case "buy": [880,1318].forEach((f,i)=>this.tone(f,.12,"triangle",.25,i*.07)); break;
+      case "boss_orc": { const c=this.ctx.currentTime, w=.45;
+        this.nz(c,.5,"bandpass",200,3000,2,.5,.45); this.tone(60,.5,"sawtooth",.2,0,160);
+        this.osc(c+w,85,1.1,"sine",1,this.sfxG,28); this.nz(c+w,.8,"lowpass",1500,80,.7,.9,.002); this.nz(c+w,1.1,"highpass",4000,4000,.7,.3,.002);
+        [110,165,220,330].forEach(f=>this.osc(c+w,f,.9,"sawtooth",.12,this.sfxG)); for(let k=0;k<7;k++) this.nz(c+w+.05+k*.07,.1,"bandpass",300+k*50,200,2,.4,.001); break; }
+      case "boss_dragon": { const c=this.ctx.currentTime, w=.45;
+        this.nz(c,.5,"bandpass",300,2500,2,.5,.4);
+        this.nz(c+.1,1.3,"bandpass",900,220,1.5,.8,.15); this.osc(c+.1,340,1.3,"sawtooth",.2,this.sfxG,55); this.osc(c+.1,520,1.3,"square",.1,this.sfxG,110);
+        this.osc(c+w,80,1.1,"sine",1,this.sfxG,26); this.nz(c+w,.8,"lowpass",1800,80,.7,.9,.002); [98,147,196,294].forEach(f=>this.osc(c+w,f,1,"sawtooth",.12,this.sfxG));
+        for(let k=0;k<16;k++) this.nz(c+w+Math.random()*1.1,.04,"highpass",2500+Math.random()*4000,3000,1,.35,.002); break; }
       case "spell_frost": [2093,2637,3136,2637].forEach((f,i)=>this.tone(f,.25,"sine",.12,i*.05)); this.nz(this.ctx.currentTime,.5,"highpass",5000,9000,.8,.2,.05); break;
       case "spell_meteor": this.nz(this.ctx.currentTime+.5,.9,"lowpass",900,60,.7,.9,.01); this.tone(70,.8,"sine",.9,.5,28); this.tone(900,.5,"sawtooth",.15,0,200); break;
       case "spell_fireball": this.tone(200,.5,"sawtooth",.15,0,700); break;
@@ -338,43 +375,99 @@ const Snd = {
         if(this.pending!==null){ this.track=this.pending; this.pending=null; this.bar=0; this.tr0=0; this.delay.delayTime.setValueAtTime(60/TRACKS[this.track].bpm*.75,this.nextT); } }
     }
   },
-  // ----- electronic voices -----
-  pump(t){ const g=this.pumpG.gain; g.cancelScheduledValues(t); g.setValueAtTime(.3,t); g.linearRampToValueAtTime(1,t+.2); },
-  kick(t){ this.osc(t,170,.18,"sine",.95,this.musG,42); this.osc(t,55,.32,"sine",.6,this.musG,38); this.nz(t,.02,"highpass",3000,3000,.8,.3,.001,this.musG); this.pump(t); },
-  snare(t,v=1){ this.nz(t,.14,"bandpass",2400,1500,.9,.65*v,.002,this.musG); this.nz(t,.1,"highpass",6500,4500,.8,.22*v,.001,this.musG); this.osc(t,230,.1,"triangle",.4*v,this.musG,140); },
-  hat(t,v,open){ this.nz(t,open?.14:.04,"highpass",8500,8500,.7,.2*v,.001,this.musG); },
-  lp(at,f,d,type,v,dest,c0,c1,atk=.008,send=false){
+  // ----- electronic voices (kit-aware) -----
+  pump(t,depth=.3){ const g=this.pumpG.gain; g.cancelScheduledValues(t); g.setValueAtTime(depth,t); g.linearRampToValueAtTime(1,t+.2); },
+  kick(t,type="punch",depth=.3){
+    const dg=this.musG;
+    switch(type){
+      case "808": this.osc(t,115,.6,"sine",.95,dg,38); this.nz(t,.015,"highpass",2500,2500,.8,.2,.001,dg); break;
+      case "house": this.osc(t,140,.2,"sine",.9,dg,45); this.osc(t,60,.3,"sine",.5,dg,38); this.nz(t,.02,"highpass",3000,3000,.8,.25,.001,dg); break;
+      case "stomp": this.osc(t,95,.3,"sine",1,dg,35); this.nz(t,.08,"lowpass",900,200,.7,.5,.001,dg); this.osc(t,170,.06,"square",.2,dg,60); break;
+      case "double": this.osc(t,150,.1,"sine",.85,dg,50); this.nz(t,.012,"highpass",3500,3500,.8,.3,.001,dg); break;
+      default: this.osc(t,170,.18,"sine",.95,dg,42); this.osc(t,55,.32,"sine",.6,dg,38); this.nz(t,.02,"highpass",3000,3000,.8,.3,.001,dg);
+    }
+    this.pump(t,depth);
+  },
+  snare(t,v=1,type="snare"){
+    const dg=this.musG;
+    switch(type){
+      case "clap": [0,.011,.022].forEach(o=>this.nz(t+o,.05,"bandpass",1500,1100,1.2,.4*v,.001,dg)); this.nz(t+.03,.16,"bandpass",1300,900,1,.25*v,.002,dg); break;
+      case "rim": this.osc(t,1700,.04,"square",.16*v,dg); this.nz(t,.03,"highpass",4000,4000,.8,.3*v,.001,dg); this.osc(t,420,.05,"triangle",.2*v,dg); break;
+      case "gate": this.nz(t,.2,"bandpass",1600,1000,.9,.5*v,.002,dg); this.osc(t,200,.1,"triangle",.3*v,dg,130); break;
+      case "big": this.nz(t,.28,"bandpass",2000,1200,.8,.65*v,.002,dg); this.nz(t,.2,"highpass",5500,3500,.8,.25*v,.001,dg); this.osc(t,190,.16,"triangle",.5*v,dg,100); this.osc(t,90,.25,"sine",.4*v,dg,55); break;
+      default: this.nz(t,.14,"bandpass",2400,1500,.9,.65*v,.002,dg); this.nz(t,.1,"highpass",6500,4500,.8,.22*v,.001,dg); this.osc(t,230,.1,"triangle",.4*v,dg,140);
+    }
+  },
+  hat(t,v,open,type="tight"){
+    const dg=this.musG;
+    if(type==="shaker") this.nz(t,open?.1:.045,"bandpass",7000,7000,1.5,.14*v,.002,dg);
+    else if(type==="metal"){ this.nz(t,open?.12:.04,"highpass",9500,9500,.7,.16*v,.001,dg); this.osc(t,6200,.03,"square",.03*v,dg); }
+    else this.nz(t,open?.14:.04,"highpass",8500,8500,.7,.2*v,.001,dg);
+  },
+  tomHit(t,f,v=.6){ this.osc(t,f*1.6,.3,"sine",v,this.musG,f*.7); this.nz(t,.05,"lowpass",900,300,.8,.15,.001,this.musG); },
+  lp(at,f,d,type,v,dest,c0,c1,atk=.008,send=false,q=4){
     const c=this.ctx, o=c.createOscillator(), fl=c.createBiquadFilter(), g=c.createGain();
-    o.type=type; o.frequency.setValueAtTime(f,at); fl.type="lowpass"; fl.Q.value=4;
+    o.type=type; o.frequency.setValueAtTime(f,at); fl.type="lowpass"; fl.Q.value=q;
     fl.frequency.setValueAtTime(c0,at); fl.frequency.exponentialRampToValueAtTime(c1,at+d);
     g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(Math.max(v,.0002),at+atk); g.gain.setValueAtTime(Math.max(v,.0002),at+Math.max(atk,d-.03)); g.gain.exponentialRampToValueAtTime(0.0001,at+d);
     o.connect(fl); fl.connect(g); g.connect(dest); if(send) g.connect(this.dsend); o.start(at); o.stop(at+d+.05);
   },
-  bassNote(T,t,f,d,sp){
-    const c=this.ctx, dg=this.musG;
-    this.osc(t,f,d,"sine",.5,dg);                                   // sub
-    if(T.bt==="wobble"){
-      const o=c.createOscillator(), o2=c.createOscillator(), fl=c.createBiquadFilter(), g=c.createGain(), lfo=c.createOscillator(), lg=c.createGain();
-      o.type="sawtooth"; o2.type="square"; o.frequency.value=f*2; o2.frequency.value=f*2.005; fl.type="lowpass"; fl.Q.value=7; fl.frequency.value=380;
-      lfo.type="sine"; lfo.frequency.value=T.bpm/60*2; lg.gain.value=650; lfo.connect(lg); lg.connect(fl.frequency);
-      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(.16,t+.01); g.gain.setValueAtTime(.16,t+Math.max(.01,d-.03)); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
-      o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(dg); [o,o2,lfo].forEach(x=>{x.start(t); x.stop(t+d+.05);});
-    } else {                                                        // reese: detuned saws, sweeping lowpass
-      this.lp(t,f*2*1.007,d,"sawtooth",.16,dg,500,1500);
-      this.lp(t,f*2*.993,d,"sawtooth",.16,dg,500,1500);
+  fm(t,f,d,v,ratio,index){   // bell / metallic FM voice
+    const c=this.ctx, car=c.createOscillator(), mod=c.createOscillator(), mg=c.createGain(), g=c.createGain();
+    car.frequency.value=f; mod.frequency.value=f*ratio; mg.gain.setValueAtTime(f*index,t); mg.gain.exponentialRampToValueAtTime(f*.05,t+d);
+    mod.connect(mg); mg.connect(car.frequency);
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(v,t+.004); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    car.connect(g); g.connect(this.pumpG); g.connect(this.dsend); car.start(t); mod.start(t); car.stop(t+d+.05); mod.stop(t+d+.05);
+  },
+  vib(t,f,d,v){      // slow-attack sine with vibrato (ghostly lead)
+    const c=this.ctx, o=c.createOscillator(), l=c.createOscillator(), lg=c.createGain(), g=c.createGain();
+    o.type="sine"; o.frequency.value=f; l.frequency.value=5.5; lg.gain.value=f*.012; l.connect(lg); lg.connect(o.frequency);
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(v,t+.18); g.gain.setValueAtTime(v,t+Math.max(.2,d-.15)); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g); g.connect(this.pumpG); g.connect(this.dsend); o.start(t); l.start(t); o.stop(t+d+.05); l.stop(t+d+.05);
+  },
+  leadNote(T,t,f,sp){
+    const pg=this.pumpG;
+    switch(T.lf){
+      case "chip": this.lp(t,f,sp*1.1,"square",.08,pg,6000,2500,.003,true); break;
+      case "harp": this.lp(t,f,sp*.9,"square",.07,pg,4500,1200,.002,true); this.lp(t,f*2,sp*.5,"triangle",.03,pg,5000,2000,.002,true); break;
+      case "bell": this.fm(t,f,sp*3,.07,3.5,2.2); break;
+      case "metal": this.fm(t,f,sp*2.2,.07,1.414,4); break;
+      case "brass": this.lp(t,f,sp*1.6,"sawtooth",.07,pg,500,3800,.03,true); this.lp(t,f*1.006,sp*1.6,"sawtooth",.06,pg,500,3800,.03,true); break;
+      case "epic": this.lp(t,f,sp*2.4,"sawtooth",.07,pg,500,4200,.035,true); this.lp(t,f*1.007,sp*2.4,"sawtooth",.06,pg,500,4200,.035,true); this.lp(t,f/2,sp*2.4,"sawtooth",.05,pg,500,2400,.04,false); break;
+      case "eerie": this.vib(t,f,sp*4,.05); break;
+      default: this.lp(t,f,sp*2.2,T.lead,.085,pg,4200,1800,.006,true);
     }
   },
+  bassNote(T,t,f,d,sp){
+    const c=this.ctx, dg=this.musG, bt=T.bt;
+    if(bt==="sub"){ this.osc(t,f,Math.max(d,.35),"sine",.75,dg); this.osc(t,f*2,.12,"sine",.1,dg); return; }
+    if(bt==="pluck"){ this.osc(t,f,Math.min(d,.25),"sine",.45,dg); this.lp(t,f*2,Math.min(d,.2),"square",.2,dg,2600,350); return; }
+    if(bt==="acid"){ this.osc(t,f,Math.min(d,.18),"sine",.35,dg); this.lp(t,f*2,Math.min(d,.18),"sawtooth",.2,dg,2800,300,.004,false,14); return; }
+    if(bt==="stomp"){ this.osc(t,f,d,"sine",.5,dg); this.lp(t,f*2,d,"square",.18,dg,900,500); return; }
+    if(bt==="saw"){ this.osc(t,f,d,"sine",.5,dg); this.lp(t,f*2,d,"sawtooth",.14,dg,900,600,.02); return; }
+    if(bt==="power"){ this.osc(t,f,d,"sine",.5,dg); this.lp(t,f*2,d,"sawtooth",.13,dg,1400,700); this.lp(t,f*3,d,"sawtooth",.1,dg,1400,700); return; }
+    this.osc(t,f,d,"sine",.5,dg);                                   // sub layer for reese / wobble
+    if(bt==="wobble"){
+      const o=c.createOscillator(), o2=c.createOscillator(), fl=c.createBiquadFilter(), g=c.createGain(), lfo=c.createOscillator(), lg=c.createGain();
+      o.type="sawtooth"; o2.type="square"; o.frequency.value=f*2; o2.frequency.value=f*2.005; fl.type="lowpass"; fl.Q.value=7; fl.frequency.value=380;
+      lfo.type="sine"; lfo.frequency.value=T.bpm/60*(T.wob||2); lg.gain.value=650; lfo.connect(lg); lg.connect(fl.frequency);
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(.16,t+.01); g.gain.setValueAtTime(.16,t+Math.max(.01,d-.03)); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+      o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(dg); [o,o2,lfo].forEach(x=>{x.start(t); x.stop(t+d+.05);});
+    } else { this.lp(t,f*2*1.007,d,"sawtooth",.16,dg,500,1500); this.lp(t,f*2*.993,d,"sawtooth",.16,dg,500,1500); }
+  },
   playStep(T,i,bar,t,sp){
-    const si=Math.floor(bar/8)%SECS.length, bi=bar%8, S=SECS[si], tr=S.tr, last=bi===7;
+    const si=Math.floor(bar/8)%SECS.length, bi=bar%8, S=SECS[si], tr=S.tr, last=bi===7, K=T.kit;
+    t+=(i%2)*(T.swing||0)*sp;                                       // shuffle
     const D=DRUMS[T.drs[S.dr]], dg=this.musG, pg=this.pumpG, ch=T.progs[S.pi][bi%4], on=(m)=>m[i]==="x";
-    const bassMask=S.bass==="t"?T.bass:BASSV[S.bass], F=(idx)=>mtof(this.noteIdx(T,idx)+tr);
+    const bassMask=S.bass==="t"?T.bass:T.bv[S.bass], F=(idx)=>mtof(this.noteIdx(T,idx)+tr);
     // drums: never drop out; fills and risers only add energy
-    if(on(D.k)) this.kick(t);
-    if(on(D.s)) this.snare(t,1); else if(D.g[i]==="x") this.snare(t,.28);
-    if(last&&i>=(S.build?12:14)) this.snare(t,.25+i/40);
-    if(D.h[i]!=="."&&!(S.pad===2&&i%4===1)) this.hat(t,(i%4===2?1:.55),D.h[i]==="o");
+    if(on(D.k)) this.kick(t,K.k,T.duck);
+    if(on(D.s)) this.snare(t,1,K.s); else if(D.g[i]==="x") this.snare(t,.28,K.s);
+    if(last&&i>=(S.build?12:14)) this.snare(t,.25+i/40,K.s);
+    if(D.h[i]!=="."&&!(S.pad===2&&i%4===1)) this.hat(t,(i%4===2?1:.55),D.h[i]==="o",K.h);
     if(bi===0&&bar>0&&i===0){ this.nz(t,1.2,"highpass",6000,6000,.7,.3,.002,dg); }
     if(S.build&&last&&i===0) this.nz(t,sp*16,"bandpass",400,8000,2,.22,sp*15,dg);
+    if(T.toms){ if(i===0&&bi%2===0) this.tomHit(t,62,.7); if(last&&i>=8&&i%2===0) this.tomHit(t,170-(i-8)*12,.5); }   // boss percussion
     // bass
     if(on(bassMask)){
       let n=1; while(i+n<16&&bassMask[i+n]!=="x") n++;
@@ -382,14 +475,27 @@ const Snd = {
       this.bassNote(T,t,F(idx),Math.min(n,6)*sp*.95,sp);
     }
     // pad (long, ducked by the kick)
-    if(i===0&&bar%2===0){ const pv=S.pad===2?.06:.035; [0,2,4].forEach(k=>this.lp(t,F(ch+k+7),sp*32,"sawtooth",pv,pg,700,1800,.5)); }
+    const PD=T.pd||{};
+    if(i===0&&bar%2===0){ const pv=(S.pad===2?1.7:1)*(PD.vol||.035), c=PD.c||[700,1800]; [0,2,4].forEach(k=>this.lp(t,F(ch+k+7),sp*32,PD.w||"sawtooth",pv,pg,c[0],c[1],PD.atk||.5)); }
     // plucky arpeggio
-    const am=ARPS[S.arp]; if(on(am)){ const tones=[0,2,4,7]; this.lp(t,F(ch+tones[i%4]+14),sp*.8,"square",S.pad===2?.05:.04,pg,3600,900); }
+    const AR=T.ar||{}, am=(T.arps||ARPS)[S.arp];
+    if(on(am)){ const tones=[0,2,4,7], c=AR.c||[3600,900]; this.lp(t,F(ch+tones[i%4]+14),sp*(AR.len||.8),AR.w||"square",(S.pad===2?1.25:1)*(AR.vol||.04),pg,c[0],c[1]); }
     // chord stabs
-    if(S.stab>=0&&on(STABS[S.stab])) [0,2,4].forEach(k=>this.lp(t,F(ch+k+7),sp*1.4,"sawtooth",.045,pg,3500,1000,.004,true));
+    const ST=T.st;
+    if(ST&&S.stab>=0&&on((T.stabs||STABS)[S.stab])){ const c=ST.c||[3500,1000]; [0,2,4].forEach(k=>this.lp(t,F(ch+k+7),sp*(ST.len||1.4),ST.w||"sawtooth",ST.vol||.045,pg,c[0],c[1],ST.atk||.004,true)); }
     // lead melody
-    if(S.lead){ const m=T.sets[S.mo][bi][i]; if(m!==null&&m!==undefined) this.lp(t,F(ch+m+(S.lo?7:14)),sp*2.2,T.lead,.085,pg,4200,1800,.006,true); }
-  }
+    if(S.lead){ const m=T.sets[S.mo][bi][i]; if(m!==null&&m!==undefined) this.leadNote(T,t,F(ch+m+(S.lo?7:14)),sp); }
+  },
+  // ----- track switching / ducking -----
+  setTrackNow(i){
+    i=((i%TRACKS.length)+TRACKS.length)%TRACKS.length; this.track=i; this.pending=null; this.bar=0; this.step=0;
+    if(!this.ctx) return;
+    const c=this.ctx, n=c.currentTime, g=this.musG.gain; this.nextT=n+.08;
+    this.delay.delayTime.setValueAtTime(60/TRACKS[i].bpm*.75,n);
+    g.cancelScheduledValues(n); g.setValueAtTime(g.value,n); g.linearRampToValueAtTime(.0001,n+.03); g.setValueAtTime(.0001,n+.08); g.linearRampToValueAtTime(.45*Settings.music*(TRACKS[i].gain||1),n+.14);
+    this.pumpG.gain.cancelScheduledValues(n); this.pumpG.gain.setValueAtTime(1,n);
+  },
+  duck(){ if(!this.ctx) return; const g=this.musG.gain, n=this.ctx.currentTime; g.cancelScheduledValues(n); g.setValueAtTime(g.value,n); g.linearRampToValueAtTime(.0001,n+.3); },
 };
 Snd.load();
 
@@ -725,7 +831,9 @@ class Game {
     p.hp=p.max; for(const t of MANA_TYPES) p.mana[t]=0; p.shield=0; p.poison=0; p.stunned=false;
     if(!Tut.done && this.stage===0) p.mana[RED]=6;
     this.over=false; this.turn="player"; this.busy=false; this.sel=null; this.moveCount=0; this.fx=[]; this.after=null;
-    this.updateUI(); this.log(`${this.e.name} appears!${this.e.boss?" Boss battle!":""}`);
+    this.intro=null; this.updateUI(); this.log(`${this.e.name} appears!${this.e.boss?" Boss battle!":""}`);
+    const ti=this.stage%ENEMIES.length;                               // every enemy has its own music track
+    if(this.e.boss&&this.started) this.bossIntro(); else { Snd.setTrackNow(ti); this.log("Now playing: "+TRACKS[ti].n); }
   }
   // ----- board -----
   mk(r,c,t){ return {t: t===undefined?this.rndType():t, x:c, y:r, tx:c, ty:r, s:1, dying:false, bad:0}; }
@@ -877,8 +985,8 @@ class Game {
   need(){ return 30+(this.p.lv-1)*20; }
   async addXp(x){
     const p=this.p; p.xp+=x;
-    while(p.xp>=this.need()){ p.xp-=this.need(); p.lv++; this.recalc(); p.hp=p.max; Snd.play("level"); Snd.setTrack((p.lv-1)%10);
-      this.log(`LEVEL UP! You are now level ${p.lv}. HP restored. Now playing: ${TRACKS[(p.lv-1)%10].n}`); this.floatText(240,240,"LEVEL UP!","#ffd36b"); }
+    while(p.xp>=this.need()){ p.xp-=this.need(); p.lv++; this.recalc(); p.hp=p.max; Snd.play("level");
+      this.log(`LEVEL UP! You are now level ${p.lv}. HP restored.`); this.floatText(240,240,"LEVEL UP!","#ffd36b"); }
     this.updateUI();
   }
   checkEnd(){
@@ -1057,7 +1165,7 @@ class Game {
   act(a,d){
     const back=()=>{ if(this.ctx==="victory") this.victoryPanel(false); else if(this.ctx==="defeat") this.defeatPanel(); else if(this.ctx==="home") this.homePanel(); else this.openMenuFromPanel(); };
     switch(a){
-      case "play": closePanel(); this.started=true; Snd.init(); Snd.play("click"); CG.start(); Tut.event("start"); this.updateUI(); break;
+      case "play": closePanel(); this.started=true; Snd.init(); Snd.play("click"); CG.start(); Tut.event("start"); this.updateUI(); if(this.e.boss) this.bossIntro(); else Snd.setTrackNow(this.stage%ENEMIES.length); break;
       case "next": case "retry": closePanel(); this.busy=true; CG.ad(()=>{ CG.start(); this.startBattle(); }); break;
       case "shop": this.shopPanel(); break;
       case "shopback": back(); break;
@@ -1091,6 +1199,7 @@ class Game {
     $("ehp").style.width=100*e.hp/e.max+"%"; $("ehptxt").textContent=`HP ${e.hp}/${e.max}`+(e.shield?` · Shield ${e.shield}`:"");
     const warn=e.abil.map(a=>({a,d:ABIL[a.id]})).sort((x,y)=>x.a.cd-y.a.cd)[0];
     $("estat").innerHTML=`Attack ${this.enemyAtk()}`+(e.frozen?" · Frozen":"")+(warn?`<br><span class="${warn.a.cd<=1?"warn":""}">${warn.a.cd<=1?"⚠ Next turn: ":"Special: "}${warn.d.name} <em>(${warn.d.info})</em>${warn.a.cd>1?` in ${warn.a.cd}`:""}</span>`:(e.regen?"<br>Regenerates HP":""));
+    $("ecard").classList.toggle("boss",!!e.boss);
     $("pcard").classList.toggle("active",this.turn==="player"); $("ecard").classList.toggle("active",this.turn==="enemy");
     const cl=(id,c,on)=>$(id).classList.toggle(c,!!on);
     cl("ecv","st-frozen",e.frozen); cl("pcv","st-poison",p.poison>0); cl("pcv","st-shield",p.shield>0); cl("pcv","st-stun",p.stunned); cl("ecv","st-shield",e.shield>0);
@@ -1109,9 +1218,66 @@ class Game {
     if(Settings.reduced) return;
     el.animate([{transform:"translateX(0)"},{transform:"translateX(-6px)"},{transform:"translateX(6px)"},{transform:"translateX(0)"}],{duration:250}); this.shakeT=id==="pcard"?12:8; }
   floatText(x,y,text,color){ this.floats.push({x,y,text,color,life:60}); }
+  // ---------- boss entrance ----------
+  async bossIntro(){
+    const e=this.e, kind=e.key==="dragon"?"dragon":"orc", ti=this.stage%ENEMIES.length, IMP=450, g=GEN;
+    this.busy=true; Tut.hide(); this.updateUI();
+    this.intro={t0:performance.now(),dur:2700,impact:IMP,name:e.name.toUpperCase(),kind};
+    Snd.duck(); Snd.play("boss_"+kind);
+    const el=$("ecard"); el.classList.remove("bossenter"); void el.offsetWidth; el.classList.add("bossenter"); setTimeout(()=>el.classList.remove("bossenter"),1100);
+    this.spawnFx("boss",0,{kind});
+    setTimeout(()=>{ if(g!==GEN) return; Snd.setTrackNow(ti); this.log("Now playing: "+TRACKS[ti].n);
+      if(!Settings.reduced) this.shakeT=Math.max(this.shakeT,20);
+      this.flash={col:kind==="dragon"?"255,150,60":"255,255,255",t0:performance.now(),dur:450,a:.9}; this.lunge=performance.now(); this.dirty=3; },IMP);
+    await sleep(2700); if(g!==GEN) return;
+    this.intro=null; this.busy=false; this.updateUI();
+  }
+  fxBoss(p,t,rr,f){
+    const kind=f.o.kind, ox=470, oy=10, pi=450/2600, post=Math.max(0,(p-pi)/(1-pi));
+    ctx.fillStyle=`rgba(12,0,14,${p<pi?.6*(p/pi):.6*Math.pow(1-post,2)})`; ctx.fillRect(0,0,480,480);   // the board darkens as the boss approaches
+    if(p<pi){ ctx.globalCompositeOperation="lighter"; const g=ctx.createRadialGradient(ox,oy,0,ox,oy,300*(p/pi)); g.addColorStop(0,`rgba(255,60,30,${.5*(p/pi)})`); g.addColorStop(1,"rgba(255,60,30,0)"); ctx.fillStyle=g; ctx.fillRect(0,0,480,480); ctx.globalCompositeOperation="source-over"; return; }
+    ctx.globalCompositeOperation="lighter";
+    const e=(p-pi)/.14; if(e<1){ ctx.fillStyle=kind==="dragon"?`rgba(255,170,70,${.9*(1-e)})`:`rgba(255,255,255,${.95*(1-e)})`; ctx.fillRect(0,0,480,480); }
+    for(let k=0;k<3;k++){ const r=post*(380+k*160)-k*30; if(r<=0) continue; ctx.strokeStyle=`rgba(255,${kind==="dragon"?150:210},${kind==="dragon"?40:150},${Math.max(0,.9*(1-post))})`; ctx.lineWidth=16*(1-post)+2; ctx.beginPath(); ctx.arc(ox,oy,r,0,6.2832); ctx.stroke(); }
+    if(kind==="orc"){          // ground-slam: glowing cracks race across the board and rocks are flung out
+      ctx.lineCap="round"; ctx.lineJoin="round";
+      for(let k=0;k<11;k++){ const a=Math.PI*(.5+rr(k)*.5), L=Math.min(1,post*2.2)*(220+rr(k+20)*380);
+        ctx.strokeStyle=`rgba(255,${130+rr(k)*80},40,${Math.max(0,1-post*.9)})`; ctx.lineWidth=2+rr(k+9)*4*(1-post); ctx.beginPath(); ctx.moveTo(ox,oy);
+        for(let j=1;j<=7;j++){ const d=L*j/7, off=(rr(k*13+j)-.5)*26; ctx.lineTo(ox+Math.cos(a)*d-Math.sin(a)*off, oy+Math.sin(a)*d+Math.cos(a)*off); } ctx.stroke(); }
+      ctx.globalCompositeOperation="source-over";
+      if(post<.95) for(let k=0;k<16;k++){ const a=Math.PI*(.5+rr(k+40)*.55), v=260+rr(k+60)*360, tt=post, s=7+rr(k+80)*12,
+          x=ox+Math.cos(a)*v*tt, y=oy+Math.sin(a)*v*tt-(rr(k)*140)*Math.sin(Math.min(1,tt*2)*Math.PI)+tt*tt*220;
+        ctx.save(); ctx.translate(x,y); ctx.rotate(tt*(rr(k)*10-5)); ctx.fillStyle="#6a5230"; ctx.strokeStyle="#2c1f10"; ctx.lineWidth=2; ctx.beginPath();
+        for(let j=0;j<6;j++){ const aa=j*1.047, r=s*(.7+rr(k*7+j)*.3); ctx[j?"lineTo":"moveTo"](Math.cos(aa)*r,Math.sin(aa)*r); } ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); }
+    } else {                   // dragon: wings sweep across, then a wall of fire
+      ctx.globalCompositeOperation="source-over"; const wq=Math.min(1,post*1.6);
+      if(wq<1){ ctx.fillStyle=`rgba(30,0,8,${.85*(1-wq*.6)})`; ctx.strokeStyle=`rgba(160,30,10,${1-wq})`; ctx.lineWidth=4;
+        for(const s of [0,1]){ const bx=ox-wq*520-s*80, by=oy+s*40+wq*40; ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx-260,by+60+s*40); ctx.lineTo(bx-200,by+130); ctx.lineTo(bx-130,by+120); ctx.lineTo(bx-100,by+200); ctx.lineTo(bx-30,by+170); ctx.lineTo(bx,by+240); ctx.closePath(); ctx.fill(); ctx.stroke(); } }
+      this.fxFire(Math.min(1,.15+post*.85),t,rr);
+    }
+    ctx.globalCompositeOperation="source-over";
+  }
+  hop(cx,cy,t){          // gems jump in a wave away from the boss after the impact
+    const q=(t-this.intro.t0-this.intro.impact)/1000; if(q<0) return 0;
+    const ph=q-Math.hypot(cx-470,cy-10)/560*.7; if(ph<0||ph>.7) return 0;
+    return -Math.sin(ph/.7*Math.PI)*22*(1-ph/.7);
+  }
+  drawIntro(t){          // cinematic bars + boss name card
+    const I=this.intro, q=(t-I.t0)/I.dur; if(q<0||q>=1) return;
+    const ease=x=>1-Math.pow(1-Math.min(1,Math.max(0,x)),3), bar=64*ease(q/.1)*(q>.9?Math.max(0,1-(q-.9)/.1):1);
+    ctx.fillStyle="#000"; ctx.fillRect(-20,-20,520,bar+20); ctx.fillRect(-20,480-bar,520,bar+20);
+    const tq=(q-.26)/.12, fade=q>.88?Math.max(0,1-(q-.88)/.12):1; if(tq<=0) return;
+    ctx.save(); ctx.globalAlpha=Math.min(1,tq*2)*fade; ctx.translate(240,238); ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.font="900 58px 'Palatino Linotype',Georgia,serif"; const w=ctx.measureText(I.name).width, sc=Math.min((1+.8*(1-ease(tq)))*Math.min(1,440/w),470/w); ctx.scale(sc,sc);
+    if(!Settings.reduced&&tq<1) ctx.translate((Math.random()-.5)*6,(Math.random()-.5)*6);
+    ctx.shadowColor="#ff3b1f"; ctx.shadowBlur=26; ctx.lineWidth=8; ctx.strokeStyle="#1a0408"; ctx.lineJoin="round"; ctx.strokeText(I.name,0,0);
+    const g=ctx.createLinearGradient(0,-30,0,30); g.addColorStop(0,"#fff3c4"); g.addColorStop(.55,"#ffb82e"); g.addColorStop(1,"#c0381e"); ctx.fillStyle=g; ctx.fillText(I.name,0,0);
+    ctx.shadowBlur=0; ctx.font="700 20px 'Palatino Linotype',Georgia,serif"; ctx.fillStyle="#ff6b5a"; ctx.fillText("—  BOSS BATTLE  —",0,-50*1.0); ctx.restore();
+  }
+
   // ---------- match animations (full-board, initial match only) ----------
   spawnFx(type,delay=0,o={}){
-    const dur={[SKULL]:700,[RED]:900,[GREEN]:900,[BLUE]:950,[EARTH]:1000,[STAR]:700,fireball:950,frost:1000,bolt:800,ring:900,meteor:1000,burn:900}[type]||800;
+    const dur={[SKULL]:700,[RED]:900,[GREEN]:900,[BLUE]:950,[EARTH]:1000,[STAR]:700,fireball:950,frost:1000,bolt:800,ring:900,meteor:1000,burn:900,boss:2600}[type]||800;
     if(Settings.reduced||(Settings.lowFx&&typeof type==="number")){ if(typeof type==="string") this.flash={col:"255,255,255",t0:performance.now()+delay,dur:300,a:.25}; return; }   // reduced motion: no full-board effects
     this.fx.push({type,born:performance.now()+delay,dur,seed:Math.random()*1000,o});
     if(type===EARTH) setTimeout(()=>{ this.shakeT=Math.max(this.shakeT,7); },delay+dur*.4);
@@ -1124,7 +1290,7 @@ class Game {
       const rr=i=>{ const x=Math.sin(f.seed+i*12.9898)*43758.5453; return x-Math.floor(x); };
       ctx.save();
       ({[RED]:this.fxFire,[BLUE]:this.fxWater,[GREEN]:this.fxWind,[EARTH]:this.fxRocks,[SKULL]:this.fxSlash,[STAR]:this.fxSpark,
-        fireball:this.fxFireball,frost:this.fxFrost,bolt:this.fxBolt,ring:this.fxRing,meteor:this.fxMeteor,burn:this.fxBurn}[f.type]).call(this,p,t,rr,f);
+        fireball:this.fxFireball,frost:this.fxFrost,bolt:this.fxBolt,ring:this.fxRing,meteor:this.fxMeteor,burn:this.fxBurn,boss:this.fxBoss}[f.type]).call(this,p,t,rr,f);
       ctx.restore();
     }
   }
@@ -1355,7 +1521,8 @@ class Game {
     if(type===SKULL) this.drawSkull(cx,cy,r); else this.drawIcon(type,cx,cy,r);
   }
   drawGem(g,S,t){
-    let cx=g.x*S+S/2; const cy=g.y*S+S/2; let k=g.s; if(k<.03) return;
+    let cx=g.x*S+S/2; let cy=g.y*S+S/2; let k=g.s; if(k<.03) return;
+    if(this.intro&&!Settings.reduced) cy+=this.hop(cx,cy,t);
     const bad=t-g.bad<360; if(bad) cx+=Math.sin((t-g.bad)/28)*5*(1-(t-g.bad)/360);
     const sel=this.sel&&this.sel[0]===g.ty&&this.sel[1]===g.tx;
     const hint=this.hint&&this.hint.some(([hr,hc])=>hr===g.ty&&hc===g.tx);
@@ -1367,7 +1534,7 @@ class Game {
     if(bad){ ctx.lineWidth=3; ctx.strokeStyle=`rgba(255,70,70,${1-(t-g.bad)/360})`; this.gemPath(g.t,cx,cy,r*1.12); ctx.stroke(); }
   }
   needsBoard(t){
-    if(this.dirty>0||this.fx.length||this.parts.length||this.floats.length||this.flash||this.shakeT>0||this.sel||this.hint||(this.kb&&this.cursor)||this.turn==="enemy") return true;
+    if(this.dirty>0||this.fx.length||this.parts.length||this.floats.length||this.flash||this.shakeT>0||this.sel||this.hint||(this.kb&&this.cursor)||this.intro||this.turn==="enemy") return true;
     for(const row of this.b) for(const g of row) if(g&&(g.s!==1||g.x!==g.tx||g.y!==g.ty||t-g.bad<400)) return true;
     return false;
   }
@@ -1396,6 +1563,7 @@ class Game {
       this.drawFx(t);
       if(this.flash){ const q=(t-this.flash.t0)/this.flash.dur; if(q>=1) this.flash=null; else if(q>=0){ ctx.fillStyle=`rgba(${this.flash.col},${(this.flash.a||.4)*(1-q)})`; ctx.fillRect(-20,-20,520,520); } }
       ctx.drawImage(this.layer("vig"),-20,-20,520,520);
+      if(this.intro) this.drawIntro(t);
       ctx.font="900 24px 'Palatino Linotype',Georgia,serif"; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
       this.floats=this.floats.filter(f=>--f.life>0);
       for(const f of this.floats){ ctx.globalAlpha=Math.min(1,f.life/20); ctx.fillStyle=f.color; ctx.strokeStyle="#000"; ctx.lineWidth=5; ctx.lineJoin="round";
@@ -1404,7 +1572,7 @@ class Game {
       ctx.globalAlpha=1;
     }
     // portraits: ~20fps while idle, every frame while reacting
-    const kick=Math.max(0,1-(t-this.lunge)/450), rm=Settings.reduced, hp=this.hurtT.p-t>0, he=this.hurtT.e-t>0;
+    const kick=t<this.lunge?0:Math.max(0,1-(t-this.lunge)/450), rm=Settings.reduced, hp=this.hurtT.p-t>0, he=this.hurtT.e-t>0;
     if(hp||he||kick>0||t-this.lastPortrait>50){ this.lastPortrait=t;
       Fig.draw($("pcv"),"hero",t,rm?0:hp?6:0,0,rm); Fig.draw($("ecv"),this.e.key,t,rm?0:he?6:0,rm?0:Math.sin(kick*Math.PI),rm); }
   }
