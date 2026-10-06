@@ -3,62 +3,83 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Puzzle Quest Clone</title>
+<title>Gemhollow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;900&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#14101e; --panel:#241b38; --edge:#4a3a72; --txt:#efe8ff; --dim:#a99cc9; }
+  :root { --bg:#0e0a18; --panel:#2a1f45; --panel2:#1c1430; --edge:#6a52a8; --gold:#ffd36b; --txt:#f3ecff; --dim:#b3a6d4; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--txt); font-family:system-ui,sans-serif;
+  body { margin:0; color:var(--txt); font-family:'Cinzel',Georgia,serif;
+    background:radial-gradient(ellipse at 50% 0%,#3a2670 0%,#1a1030 45%,var(--bg) 100%) fixed;
     display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:8px; user-select:none; touch-action:none; }
-  h1 { font-size:18px; margin:4px 0 8px; letter-spacing:2px; color:#ffd36b; }
+  h1 { font-size:26px; margin:2px 0 8px; letter-spacing:6px; font-weight:900;
+    background:linear-gradient(#fff3c4,#ffb82e 55%,#b86a00); -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 2px 0 #0008) drop-shadow(0 0 10px #ff9a2e66); }
   #game { width:100%; max-width:520px; display:flex; flex-direction:column; gap:8px; }
   .row { display:flex; gap:8px; }
-  .card { flex:1; background:var(--panel); border:2px solid var(--edge); border-radius:10px; padding:8px; position:relative; }
-  .card.active { border-color:#ffd36b; box-shadow:0 0 12px #ffd36b66; }
-  .name { font-weight:700; font-size:14px; display:flex; justify-content:space-between; }
-  .face { font-size:34px; line-height:1; }
-  .bar { height:12px; background:#0006; border-radius:6px; overflow:hidden; margin-top:4px; position:relative; }
-  .bar > i { display:block; height:100%; transition:width .35s; }
-  .hp i { background:linear-gradient(#e44,#a11); }
-  .xp i { background:linear-gradient(#b7f,#74c); }
-  .small { font-size:11px; color:var(--dim); margin-top:3px; }
+  .card { flex:1; background:linear-gradient(#34265a,var(--panel2)); border:2px solid var(--edge); border-radius:12px; padding:8px 10px;
+    position:relative; box-shadow:inset 0 1px 0 #fff2,0 4px 12px #0008; transition:border-color .3s, box-shadow .3s; }
+  .card.active { border-color:var(--gold); box-shadow:inset 0 1px 0 #fff3,0 0 18px #ffd36b88; }
+  .name { font-weight:700; font-size:14px; display:flex; justify-content:space-between; letter-spacing:1px; }
+  .name span:last-child { color:var(--gold); }
+  .portrait { display:flex; align-items:center; gap:8px; margin:4px 0; }
+  .face { width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px;
+    background:radial-gradient(circle at 35% 30%,#6c58b0,#241a40 70%); border:2px solid var(--gold); box-shadow:0 0 10px #ffd36b55, inset 0 -4px 8px #0007; }
+  .bars { flex:1; }
+  .bar { height:14px; background:#0009; border-radius:7px; overflow:hidden; margin-top:4px; position:relative; border:1px solid #000a; box-shadow:inset 0 2px 3px #000a; }
+  .bar > i { display:block; height:100%; transition:width .45s; border-radius:7px; position:relative; }
+  .bar > i::after { content:""; position:absolute; left:3px; right:3px; top:1px; height:35%; background:#fff4; border-radius:4px; }
+  .hp i { background:linear-gradient(#ff6b6b,#b3121f); }
+  .xp i { background:linear-gradient(#c9a3ff,#6a35c9); }
+  .xp { height:9px; }
+  .small { font-family:system-ui,sans-serif; font-size:11px; color:var(--dim); margin-top:3px; }
+  @keyframes hit { 0%,100%{filter:none} 30%{filter:brightness(2.2) saturate(0)} }
+  .hitflash .face { animation:hit .3s; }
   #mana { display:flex; gap:6px; }
-  .m { flex:1; text-align:center; border-radius:8px; padding:3px 0; font-size:13px; font-weight:700; background:#0005; border:2px solid transparent; }
+  .m { flex:1; text-align:center; border-radius:10px; padding:3px 0 0; font-size:12px; font-weight:700; background:#0007; border:1px solid #fff2; overflow:hidden; font-family:system-ui,sans-serif; }
+  .m .mb { height:5px; margin-top:3px; background:currentColor; transition:width .4s; box-shadow:0 0 8px currentColor; }
   #spells { display:flex; gap:6px; flex-wrap:wrap; }
-  .spell { flex:1 1 45%; background:var(--panel); border:2px solid var(--edge); color:var(--txt); border-radius:8px;
-    padding:6px; font-size:12px; cursor:pointer; text-align:left; }
-  .spell b { display:block; font-size:13px; }
-  .spell[disabled] { opacity:.4; cursor:not-allowed; }
-  .spell.ready { border-color:#7f7; box-shadow:0 0 8px #7f78; }
-  canvas { width:100%; aspect-ratio:1; background:#0b0814; border:3px solid var(--edge); border-radius:10px; touch-action:none; display:block; }
-  #log { height:64px; overflow:hidden; font-size:12px; color:var(--dim); background:#0004; border-radius:8px; padding:6px; }
-  #overlay { position:fixed; inset:0; background:#000c; display:none; align-items:center; justify-content:center; flex-direction:column; gap:12px; text-align:center; z-index:5; }
+  .spell { flex:1 1 45%; background:linear-gradient(#34265a,var(--panel2)); border:2px solid var(--edge); color:var(--txt); border-radius:10px;
+    padding:6px 8px; font-size:12px; cursor:pointer; text-align:left; font-family:system-ui,sans-serif; transition:transform .1s; }
+  .spell b { display:block; font-size:13px; font-family:'Cinzel',Georgia,serif; letter-spacing:.5px; }
+  .spell:active:not([disabled]) { transform:scale(.97); }
+  .spell[disabled] { opacity:.45; cursor:not-allowed; }
+  @keyframes glow { 0%,100%{box-shadow:0 0 6px #7f78} 50%{box-shadow:0 0 16px #9f9c} }
+  .spell.ready { border-color:#8f8; animation:glow 1.6s infinite; }
+  .frame { padding:6px; border-radius:14px; background:linear-gradient(135deg,#ffe08a,#a86a14 50%,#ffd36b); box-shadow:0 6px 20px #000a; }
+  canvas { width:100%; aspect-ratio:1; background:#0b0814; border:3px solid #2a1c10; border-radius:9px; touch-action:none; display:block; }
+  #log { height:64px; overflow:hidden; font-family:system-ui,sans-serif; font-size:12px; color:var(--dim); background:#0006; border-radius:10px; padding:6px 8px; border:1px solid #fff1; }
+  #log div:first-child { color:var(--txt); }
+  #overlay { position:fixed; inset:0; background:radial-gradient(#2a1a50ee,#05020bf2); display:none; align-items:center; justify-content:center; flex-direction:column; gap:14px; text-align:center; z-index:5; padding:20px; }
   #overlay.show { display:flex; }
-  #overlay h2 { font-size:32px; margin:0; color:#ffd36b; }
-  button.big { background:#ffd36b; color:#222; border:0; border-radius:8px; padding:10px 24px; font-size:16px; font-weight:700; cursor:pointer; }
+  #overlay h2 { font-size:44px; margin:0; letter-spacing:6px; font-weight:900; background:linear-gradient(#fff3c4,#ffb82e 55%,#b86a00); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 3px 0 #000a) drop-shadow(0 0 16px #ff9a2e88); }
+  #otext { font-family:system-ui,sans-serif; color:var(--dim); max-width:360px; line-height:1.5; }
+  button.big { background:linear-gradient(#ffe08a,#e0952b); color:#2a1604; border:0; border-radius:10px; padding:12px 30px; font:900 17px 'Cinzel',Georgia,serif; letter-spacing:2px; cursor:pointer; box-shadow:0 4px 0 #8a4f0a,0 8px 18px #000a; }
+  button.big:active { transform:translateY(3px); box-shadow:0 1px 0 #8a4f0a; }
 </style>
 </head>
 <body>
-<h1>⚔ PUZZLE QUEST CLONE ⚔</h1>
+<h1>GEMHOLLOW</h1>
 <div id="game">
   <div class="row">
     <div class="card" id="pcard">
-      <div class="name"><span id="pname">Hero</span><span id="plv"></span></div>
-      <div class="face">🛡️</div>
+      <div class="name"><span id="pname">Wanderer</span><span id="plv"></span></div>
+      <div class="portrait"><div class="face">🛡️</div><div class="bars">
       <div class="bar hp"><i id="php"></i></div>
       <div class="small" id="phptxt"></div>
-      <div class="bar xp"><i id="pxp"></i></div>
+      <div class="bar xp"><i id="pxp"></i></div></div></div>
       <div class="small" id="pgold"></div>
     </div>
     <div class="card" id="ecard">
       <div class="name"><span id="ename"></span><span id="elv"></span></div>
-      <div class="face" id="eface"></div>
+      <div class="portrait"><div class="face" id="eface"></div><div class="bars">
       <div class="bar hp"><i id="ehp"></i></div>
-      <div class="small" id="ehptxt"></div>
+      <div class="small" id="ehptxt"></div></div></div>
       <div class="small" id="estat"></div>
     </div>
   </div>
   <div id="mana"></div>
-  <canvas id="cv" width="480" height="480"></canvas>
+  <div class="frame"><canvas id="cv" width="480" height="480"></canvas></div>
   <div id="spells"></div>
   <div id="log"></div>
 </div>
@@ -112,11 +133,11 @@ class Game {
   constructor() {
     this.p = {lv:1, xp:0, hp:40, max:40, gold:0, mana:{[RED]:0,[GREEN]:0,[BLUE]:0,[GOLD]:0}};
     this.stage = 0; this.busy = true; this.turn = "player"; this.over = false;
-    this.floats = []; this.sel = null; this.hint = null;
+    this.floats = []; this.parts = []; this.shakeT = 0; this.lastAct = 0; this.sel = null; this.hint = null;
     this.newEnemy(); this.newBoard(); this.buildUI(); this.updateUI();
     this.log("A wild "+this.e.name+" appears! Match 3+ gems. Skulls hurt!");
     this.busy = false;
-    requestAnimationFrame(()=>this.loop());
+    requestAnimationFrame(t=>this.loop(t));
   }
   newEnemy() {
     const t = ENEMIES[this.stage % ENEMIES.length], loop = Math.floor(this.stage/ENEMIES.length);
@@ -196,7 +217,7 @@ class Game {
       chain++;
       if (m.runs.some(r=>r.length>=4)) extra=true;
       if (m.runs.some(r=>r.length>=5)) extra=true;
-      const cnt={}; for(const [r,c] of m.cells){ const g=this.b[r][c]; cnt[g.t]=(cnt[g.t]||0)+1; g.dying=true; }
+      const cnt={}; for(const [r,c] of m.cells){ const g=this.b[r][c]; cnt[g.t]=(cnt[g.t]||0)+1; g.dying=true; this.burst(c*60+30,r*60+30,GEMS[g.t].col); }
       const bonus = chain>1 ? 1+0.25*(chain-1) : 1;
       if(chain>1) this.floatText(240,30,`Cascade x${chain}!`,"#ffd36b");
       // effects
@@ -313,14 +334,14 @@ class Game {
   }
   // ---------- UI ----------
   buildUI(){
-    $("mana").innerHTML=MANA_TYPES.map(t=>`<div class="m" id="m${t}" style="color:${GEMS[t].col}">${GEMS[t].emoji} <span></span></div>`).join("");
+    $("mana").innerHTML=MANA_TYPES.map(t=>`<div class="m" id="m${t}" style="color:${GEMS[t].col}">${GEMS[t].emoji} <span></span><div class="mb" id="mb${t}"></div></div>`).join("");
     $("spells").innerHTML=SPELLS.map((s,i)=>{
       const cost=Object.entries(s.cost).map(([t,n])=>n+GEMS[t].emoji).join(" ");
       return `<button class="spell" id="sp${i}"><b>${s.name} — ${cost}</b><span id="sd${i}"></span></button>`;}).join("");
     SPELLS.forEach((_,i)=>$("sp"+i).onclick=()=>this.cast(i));
   }
   updateUI(){
-    const p=this.p,e=this.e;
+    const p=this.p,e=this.e; this.lastAct=performance.now(); this.hint=null;
     $("plv").textContent="Lv "+p.lv; $("elv").textContent="Lv "+e.lv;
     $("php").style.width=100*p.hp/p.max+"%"; $("phptxt").textContent=`HP ${p.hp}/${p.max}`;
     $("pxp").style.width=100*p.xp/this.need()+"%"; $("pgold").textContent=`XP ${p.xp}/${this.need()}  ·  🪙 ${p.gold}`;
@@ -328,7 +349,7 @@ class Game {
     $("ehp").style.width=100*e.hp/e.max+"%"; $("ehptxt").textContent=`HP ${e.hp}/${e.max}`;
     $("estat").textContent=`Attack ${e.atk}`+(e.frozen?" · ❄ frozen":"");
     $("pcard").classList.toggle("active",this.turn==="player"); $("ecard").classList.toggle("active",this.turn==="enemy");
-    for(const t of MANA_TYPES) $("m"+t).lastElementChild.textContent=p.mana[t]+"/"+MANA_MAX;
+    for(const t of MANA_TYPES) { $("m"+t).querySelector("span").textContent=p.mana[t]+"/"+MANA_MAX; $("mb"+t).style.width=100*p.mana[t]/MANA_MAX+"%"; }
     SPELLS.forEach((s,i)=>{
       const ok=Object.keys(s.cost).every(t=>p.mana[t]>=s.cost[t]);
       const b=$("sp"+i); b.disabled=!ok||this.busy||this.turn!=="player"; b.classList.toggle("ready",ok);
@@ -336,36 +357,86 @@ class Game {
     });
   }
   log(t){ const d=$("log"); d.innerHTML=`<div>${t}</div>`+d.innerHTML; while(d.children.length>5) d.lastChild.remove(); }
-  shake(id){ const el=$(id); el.animate([{transform:"translateX(0)"},{transform:"translateX(-6px)"},{transform:"translateX(6px)"},{transform:"translateX(0)"}],{duration:250}); }
+  shake(id){ const el=$(id); el.animate([{transform:"translateX(0)"},{transform:"translateX(-6px)"},{transform:"translateX(6px)"},{transform:"translateX(0)"}],{duration:250});
+    el.classList.remove("hitflash"); void el.offsetWidth; el.classList.add("hitflash"); this.shakeT=id==="pcard"?12:8; }
   floatText(x,y,text,color){ this.floats.push({x,y,text,color,life:60}); }
   show(title,text,btn,cb){
     $("otitle").textContent=title; $("otext").style.whiteSpace="pre-line"; $("otext").textContent=text; $("obtn").textContent=btn;
     $("overlay").classList.add("show"); $("obtn").onclick=()=>{ $("overlay").classList.remove("show"); cb(); };
   }
   // ---------- render ----------
-  loop(){
-    ctx.clearRect(0,0,480,480);
+  burst(x,y,col,n=10){ for(let i=0;i<n;i++){ const a=Math.random()*6.283,v=1.5+Math.random()*4;
+    this.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.5,life:30+Math.random()*20,max:50,col,r:2+Math.random()*3}); } }
+  gemPath(t,cx,cy,r){
+    const poly=(n,rot,rr=r)=>{ for(let i=0;i<n;i++){ const a=rot+i*6.2832/n; ctx[i?"lineTo":"moveTo"](cx+Math.cos(a)*rr,cy+Math.sin(a)*rr); } ctx.closePath(); };
+    ctx.beginPath();
+    if(t===SKULL) ctx.roundRect(cx-r*.85,cy-r*.85,r*1.7,r*1.7,r*.4);
+    else if(t===RED) { ctx.moveTo(cx,cy-r*1.05); ctx.lineTo(cx+r*.9,cy); ctx.lineTo(cx,cy+r*1.05); ctx.lineTo(cx-r*.9,cy); ctx.closePath(); }
+    else if(t===GREEN) poly(6,0);
+    else if(t===BLUE) ctx.arc(cx,cy,r,0,6.2832);
+    else if(t===GOLD) poly(8,Math.PI/8);
+    else { for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r*.62:r*1.08; ctx[i?"lineTo":"moveTo"](cx+Math.cos(a)*rr,cy+Math.sin(a)*rr); } ctx.closePath(); }
+  }
+  drawGem(g,S,t){
+    const cx=g.x*S+S/2, cy=g.y*S+S/2; let r=S*0.4*g.s; if(r<1) return;
+    const sel=this.sel&&this.sel[0]===g.ty&&this.sel[1]===g.tx;
+    const hint=this.hint&&this.hint.some(([hr,hc])=>hr===g.ty&&hc===g.tx);
+    if(sel) r*=1+0.05*Math.sin(t/90)+0.08;
+    if(hint) r*=1+0.08*Math.sin(t/140);
+    const col=GEMS[g.t].col;
+    ctx.save();
+    ctx.shadowColor=col; ctx.shadowBlur=(sel||hint)?18:6;
+    this.gemPath(g.t,cx,cy,r);
+    const gr=ctx.createRadialGradient(cx-r*.35,cy-r*.45,r*.1,cx,cy,r*1.15);
+    gr.addColorStop(0,shade(col,70)); gr.addColorStop(.45,col); gr.addColorStop(1,shade(col,-60));
+    ctx.fillStyle=gr; ctx.fill();
+    ctx.shadowBlur=0; ctx.lineWidth=2.5; ctx.strokeStyle=shade(col,-75); ctx.stroke();
+    ctx.lineWidth=1.2; ctx.strokeStyle="#fff6"; this.gemPath(g.t,cx,cy,r*.82); ctx.stroke();
+    ctx.restore();
+    // specular highlight
+    ctx.fillStyle="#ffffff55"; ctx.beginPath(); ctx.ellipse(cx-r*.3,cy-r*.45,r*.32,r*.16,-0.6,0,6.2832); ctx.fill();
+    ctx.font=`${Math.round(S*0.36*g.s)}px serif`; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(GEMS[g.t].emoji,cx,cy+r*.06);
+    if(sel){ ctx.lineWidth=3; ctx.strokeStyle="#ffd36b"; ctx.shadowColor="#ffd36b"; ctx.shadowBlur=12; this.gemPath(g.t,cx,cy,r*1.15); ctx.stroke(); ctx.shadowBlur=0; }
+  }
+  loop(t=0){
     const S=480/N;
-    for(let r=0;r<N;r++)for(let c=0;c<N;c++){ ctx.fillStyle=(r+c)%2?"#17112a":"#1e1635"; ctx.fillRect(c*S,r*S,S,S); }
-    for(const row of this.b) for(const g of row) if(g){
-      const cx=g.x*S+S/2, cy=g.y*S+S/2, rad=S*0.4*g.s;
-      if(rad<1) continue;
-      ctx.beginPath(); ctx.arc(cx,cy,rad,0,7); ctx.fillStyle=GEMS[g.t].col+"cc"; ctx.fill();
-      ctx.lineWidth=2; ctx.strokeStyle="#fff5"; ctx.stroke();
-      ctx.font=`${Math.round(S*0.5*g.s)}px serif`; ctx.textAlign="center"; ctx.textBaseline="middle";
-      ctx.fillText(GEMS[g.t].emoji,cx,cy+2);
-    }
-    if(this.sel){ ctx.lineWidth=4; ctx.strokeStyle="#ffd36b"; ctx.strokeRect(this.sel[1]*S+3,this.sel[0]*S+3,S-6,S-6); }
-    ctx.font="bold 22px sans-serif";
+    ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,480,480);
+    if(this.shakeT>0){ this.shakeT*=0.88; if(this.shakeT<0.3) this.shakeT=0; ctx.translate((Math.random()-.5)*this.shakeT,(Math.random()-.5)*this.shakeT); }
+    const bg=ctx.createLinearGradient(0,0,0,480); bg.addColorStop(0,"#241942"); bg.addColorStop(1,"#120b22");
+    ctx.fillStyle=bg; ctx.fillRect(-20,-20,520,520);
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++){ ctx.fillStyle=(r+c)%2?"#ffffff08":"#00000030"; ctx.fillRect(c*S,r*S,S,S);
+      ctx.strokeStyle="#ffffff0d"; ctx.lineWidth=1; ctx.strokeRect(c*S+.5,r*S+.5,S-1,S-1); }
+    // idle hint
+    if(this.turn==="player"&&!this.busy&&!this.over){
+      if(!this.hint&&t-this.lastAct>6000){ const m=this.moves(); if(m.length) this.hint=[m[0].a,m[0].b]; }
+    } else this.hint=null;
+    for(const row of this.b) for(const g of row) if(g) this.drawGem(g,S,t);
+    // particles
+    this.parts=this.parts.filter(p=>--p.life>0);
+    for(const p of this.parts){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.18; ctx.globalAlpha=Math.min(1,p.life/p.max*1.5);
+      ctx.fillStyle=p.col; ctx.shadowColor=p.col; ctx.shadowBlur=8; ctx.beginPath(); ctx.arc(p.x,p.y,p.r*p.life/p.max+.5,0,6.2832); ctx.fill(); }
+    ctx.shadowBlur=0; ctx.globalAlpha=1;
+    // vignette
+    const v=ctx.createRadialGradient(240,240,200,240,240,360); v.addColorStop(0,"#0000"); v.addColorStop(1,"#000a");
+    ctx.fillStyle=v; ctx.fillRect(-20,-20,520,520);
+    ctx.font="900 24px Cinzel,Georgia,serif"; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
     this.floats=this.floats.filter(f=>--f.life>0);
-    for(const f of this.floats){ ctx.globalAlpha=Math.min(1,f.life/20); ctx.fillStyle=f.color; ctx.strokeStyle="#000"; ctx.lineWidth=4;
-      const y=f.y-(60-f.life)*0.8; ctx.strokeText(f.text,f.x,y); ctx.fillText(f.text,f.x,y); }
+    for(const f of this.floats){ ctx.globalAlpha=Math.min(1,f.life/20); ctx.fillStyle=f.color; ctx.strokeStyle="#000"; ctx.lineWidth=5; ctx.lineJoin="round";
+      const y=f.y-(60-f.life)*0.8, sc=1+Math.max(0,(f.life-52))*0.05; ctx.save(); ctx.translate(f.x,y); ctx.scale(sc,sc);
+      ctx.strokeText(f.text,0,0); ctx.fillText(f.text,0,0); ctx.restore(); }
     ctx.globalAlpha=1;
-    requestAnimationFrame(()=>this.loop());
+    requestAnimationFrame(tt=>this.loop(tt));
   }
 }
 
+function shade(hex,amt){
+  const n=parseInt(hex.slice(1),16); const f=v=>Math.max(0,Math.min(255,v+amt));
+  return `rgb(${f(n>>16)},${f((n>>8)&255)},${f(n&255)})`;
+}
+
 const game = new Game();
+game.show("GEMHOLLOW","Shards of the Ember Crown\n\nMatch gems, smash skulls, and channel mana to slay the denizens of the hollow.","Begin Quest",()=>{});
 
 // ---------- input ----------
 let down=null;
