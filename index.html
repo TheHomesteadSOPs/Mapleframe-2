@@ -1234,7 +1234,9 @@ class Game {
   resizeCanvas(){
     const css=cv.getBoundingClientRect().width||480, dpr=Math.min(window.devicePixelRatio||1,2.5);
     const sc=Math.max(.6,Math.min(this.qcap,css*dpr/480)), px=Math.round(480*sc);
-    if(cv.width!==px){ cv.width=cv.height=px; this.scale=px/480; this.sprites={}; this.layers={}; this.dirty=3; }
+    if(cv.width!==px||cv.height!==px){ cv.width=cv.height=px; }
+    if(this.scale!==px/480){ this.scale=px/480; this.sprites={}; this.layers={}; }
+    this.dirty=3;
   }
   layer(name){
     if(this.layers[name]) return this.layers[name];

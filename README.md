@@ -30,6 +30,7 @@ Add `?fast` to the URL to skip animation waits (used for automated balance simul
 - `build.mjs` — minifies to `dist/index.html` and `dist/gemhollow.zip` (`npm i --no-save esbuild && node scripts/build.mjs`). Targets Chrome 80+, Edge 88+, Firefox 78+, Safari 15+.
 - `edge-cases.cjs` — headless checks: no-move reshuffle, single win/defeat on cascades, input while animating, reload mid-battle, blocked/corrupt storage.
 - `balance-sim.cjs <skill 0-1> <runs> <stages>` — bot plays whole runs (uses `?fast`) and prints win rate / lowest HP per stage.
+- `display-scales.cjs` — checks the board fills the canvas at several window sizes and display pixel ratios.
 - `perf-profile.cjs <cpu-throttle>` — frame-time profile on an emulated phone with CPU throttling.
 (Test scripts need `playwright` and Chromium.)
 
