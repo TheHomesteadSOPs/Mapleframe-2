@@ -13,12 +13,14 @@ a hollow of goblins, wolves, bandits, orcs, skeletons, trolls, wraiths and a dra
 
 Features:
 - Elemental match animations: flames, waves, gales, falling rocks and sword slashes
-- Four spells (Fireball, Heal, Frost, Smite) powered by gem mana
+- Eight spells (Fireball, Heal, Frost, Smite, Wildfire, Cleanse, Stoneskin, Meteor) powered by gem mana, upgradeable in the shop
+- Ten enemies with special moves, plus boss battles every five stages
 - Enemy AI that plays the same board against you
+- Saves your progress automatically
 - 10 drum & bass tracks that change as you level up
 - Plays on desktop and mobile, with fullscreen support
 
-**Controls:** Click/tap a gem then an adjacent gem, or drag a gem toward its neighbor. Click a spell button when it glows.
+**Controls:** Click/tap a gem then an adjacent gem, or drag a gem toward its neighbor. Click a spell button when it glows. Keyboard: arrows + Space to swap, 1-8 for spells, Esc for the menu.
 
 **Tags (suggested):** match 3, puzzle, rpg, strategy, fantasy, casual, battle, gems
 
