@@ -16,7 +16,7 @@ Click/tap or drag to swap. Keyboard: arrows move the cursor, Space/Enter grabs a
 Settings: volume sliders, reduce motion & screen shake (also follows `prefers-reduced-motion`), high-contrast HUD text.
 
 ## Tech
-Single-file HTML/canvas game. Music (10 drum & bass tracks, one per player level) and sound effects are synthesized with Web Audio.
+Single-file HTML/canvas game. Music (10 drum & bass tracks, one per player level, each a ~2-minute 96-bar song with 12 varied sections) and sound effects are synthesized with Web Audio.
 
 ## CrazyGames
 - The SDK v3 script is loaded from `sdk.crazygames.com`; the game runs without it (calls are guarded).
