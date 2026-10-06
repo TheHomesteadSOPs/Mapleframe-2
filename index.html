@@ -90,7 +90,7 @@
 const N = 8, CELL = 60;
 const SKULL=0, RED=1, GREEN=2, BLUE=3, GOLD=4, STAR=5;
 const GEMS = [
-  {name:"Skull", emoji:"💀", col:"#cfcfd8"},
+  {name:"Skull", emoji:"💀", col:"#5a4a6a"},
   {name:"Fire",  emoji:"🔥", col:"#d8402f"},
   {name:"Nature",emoji:"🍃", col:"#3fa34d"},
   {name:"Water", emoji:"💧", col:"#3b82d8"},
@@ -377,6 +377,25 @@ class Game {
     else if(t===GOLD) poly(8,Math.PI/8);
     else { for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r*.62:r*1.08; ctx[i?"lineTo":"moveTo"](cx+Math.cos(a)*rr,cy+Math.sin(a)*rr); } ctx.closePath(); }
   }
+  drawSkull(cx,cy,r){
+    ctx.save(); ctx.lineJoin="round"; ctx.lineWidth=Math.max(1.5,r*.07); ctx.strokeStyle="#1a1020";
+    const bone=ctx.createLinearGradient(cx,cy-r*.7,cx,cy+r*.6); bone.addColorStop(0,"#ffffff"); bone.addColorStop(1,"#cfc6b4");
+    ctx.fillStyle=bone;
+    // jaw
+    ctx.beginPath(); ctx.roundRect(cx-r*.34,cy+r*.18,r*.68,r*.42,r*.12); ctx.fill(); ctx.stroke();
+    // cranium
+    ctx.beginPath(); ctx.ellipse(cx,cy-r*.12,r*.62,r*.54,0,0,6.2832); ctx.fill(); ctx.stroke();
+    // eye sockets
+    ctx.fillStyle="#1a1020";
+    for(const d of [-1,1]){ ctx.beginPath(); ctx.ellipse(cx+d*r*.26,cy-r*.1,r*.17,r*.2,d*.15,0,6.2832); ctx.fill();
+      ctx.fillStyle="#ff4a3a"; ctx.beginPath(); ctx.arc(cx+d*r*.26,cy-r*.07,r*.05,0,6.2832); ctx.fill(); ctx.fillStyle="#1a1020"; }
+    // nose
+    ctx.beginPath(); ctx.moveTo(cx,cy+r*.06); ctx.lineTo(cx-r*.08,cy+r*.22); ctx.lineTo(cx+r*.08,cy+r*.22); ctx.closePath(); ctx.fill();
+    // teeth
+    ctx.lineWidth=Math.max(1,r*.05);
+    ctx.beginPath(); for(const k of [-.17,0,.17]){ ctx.moveTo(cx+r*k,cy+r*.3); ctx.lineTo(cx+r*k,cy+r*.58); } ctx.stroke();
+    ctx.restore();
+  }
   drawGem(g,S,t){
     const cx=g.x*S+S/2, cy=g.y*S+S/2; let r=S*0.4*g.s; if(r<1) return;
     const sel=this.sel&&this.sel[0]===g.ty&&this.sel[1]===g.tx;
@@ -395,8 +414,9 @@ class Game {
     ctx.restore();
     // specular highlight
     ctx.fillStyle="#ffffff55"; ctx.beginPath(); ctx.ellipse(cx-r*.3,cy-r*.45,r*.32,r*.16,-0.6,0,6.2832); ctx.fill();
-    ctx.font=`${Math.round(S*0.36*g.s)}px serif`; ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText(GEMS[g.t].emoji,cx,cy+r*.06);
+    if(g.t===SKULL) this.drawSkull(cx,cy,r);
+    else { ctx.font=`${Math.round(S*0.36*g.s)}px serif`; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(GEMS[g.t].emoji,cx,cy+r*.06); }
     if(sel){ ctx.lineWidth=3; ctx.strokeStyle="#ffd36b"; ctx.shadowColor="#ffd36b"; ctx.shadowBlur=12; this.gemPath(g.t,cx,cy,r*1.15); ctx.stroke(); ctx.shadowBlur=0; }
   }
   loop(t=0){
