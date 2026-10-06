@@ -88,16 +88,16 @@
 <script>
 "use strict";
 const N = 8, CELL = 60;
-const SKULL=0, RED=1, GREEN=2, BLUE=3, GOLD=4, STAR=5;
+const SKULL=0, RED=1, GREEN=2, BLUE=3, EARTH=4, STAR=5;
 const GEMS = [
   {name:"Skull", emoji:"💀", col:"#5a4a6a"},
   {name:"Fire",  emoji:"🔥", col:"#d8402f"},
   {name:"Nature",emoji:"🍃", col:"#3fa34d"},
   {name:"Water", emoji:"💧", col:"#3b82d8"},
-  {name:"Gold",  emoji:"🪙", col:"#d9a621"},
+  {name:"Earth", emoji:"⛰️", col:"#d9a621"},
   {name:"Star",  emoji:"⭐", col:"#a45be0"},
 ];
-const MANA_TYPES = [RED, GREEN, BLUE, GOLD];
+const MANA_TYPES = [RED, GREEN, BLUE, EARTH];
 const MANA_MAX = 12;
 
 const SPELLS = [
@@ -107,7 +107,7 @@ const SPELLS = [
     run:async(g)=>{ g.healPlayer(10+4*g.p.lv); }},
   {name:"Frost", cost:{[BLUE]:6}, desc:l=>`${3+l} dmg, enemy skips its turn`,
     run:async(g)=>{ await g.hurtEnemy(3+g.p.lv,"Frost"); g.e.frozen=true; g.log("Enemy is frozen!"); }},
-  {name:"Smite", cost:{[GOLD]:6,[RED]:2}, desc:()=>`Destroy all skulls, 3 dmg each`,
+  {name:"Smite", cost:{[EARTH]:6,[RED]:2}, desc:()=>`Destroy all skulls, 3 dmg each`,
     run:async(g)=>{ const cells=[]; for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(g.b[r][c]&&g.b[r][c].t===SKULL) cells.push([r,c]);
       g.afterSpellCells=cells; }},
 ];
@@ -131,7 +131,7 @@ const ENEMIES = [
 
 class Game {
   constructor() {
-    this.p = {lv:1, xp:0, hp:40, max:40, gold:0, mana:{[RED]:0,[GREEN]:0,[BLUE]:0,[GOLD]:0}};
+    this.p = {lv:1, xp:0, hp:40, max:40, gold:0, mana:{[RED]:0,[GREEN]:0,[BLUE]:0,[EARTH]:0}};
     this.stage = 0; this.busy = true; this.turn = "player"; this.over = false;
     this.floats = []; this.parts = []; this.shakeT = 0; this.lastAct = 0; this.sel = null; this.hint = null;
     this.newEnemy(); this.newBoard(); this.buildUI(); this.updateUI();
@@ -231,7 +231,7 @@ class Game {
           else if(ti===STAR){ const x=n*3; this.floatText(cx,cy,`+${x} XP`,"#c9f"); await this.addXp(x); }
         }
       }
-      if(who==="player" && cnt[GOLD]) { const g=cnt[GOLD]*5; this.p.gold+=g; }
+      if(who==="player" && cnt[EARTH]) { const g=cnt[EARTH]*5; this.p.gold+=g; }
       this.updateUI();
       await sleep(40);
       for(let i=0;i<8;i++){ for(const [r,c] of m.cells) this.b[r][c].s*=0.7; await frame(); }
@@ -374,8 +374,32 @@ class Game {
     else if(t===RED) { ctx.moveTo(cx,cy-r*1.05); ctx.lineTo(cx+r*.9,cy); ctx.lineTo(cx,cy+r*1.05); ctx.lineTo(cx-r*.9,cy); ctx.closePath(); }
     else if(t===GREEN) poly(6,0);
     else if(t===BLUE) ctx.arc(cx,cy,r,0,6.2832);
-    else if(t===GOLD) poly(8,Math.PI/8);
+    else if(t===EARTH) poly(8,Math.PI/8);
     else { for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r*.62:r*1.08; ctx[i?"lineTo":"moveTo"](cx+Math.cos(a)*rr,cy+Math.sin(a)*rr); } ctx.closePath(); }
+  }
+  drawIcon(t,cx,cy,r){
+    const P=(pts)=>{ ctx.beginPath(); ctx.moveTo(cx+pts[0]*r,cy+pts[1]*r);
+      for(let i=2;i<pts.length;i+=6) ctx.bezierCurveTo(cx+pts[i]*r,cy+pts[i+1]*r,cx+pts[i+2]*r,cy+pts[i+3]*r,cx+pts[i+4]*r,cy+pts[i+5]*r); };
+    const L=(pts)=>{ ctx.beginPath(); pts.forEach((v,i)=>{ if(i%2===0) ctx[i?"lineTo":"moveTo"](cx+v*r,cy+pts[i+1]*r); }); ctx.closePath(); };
+    ctx.save(); ctx.lineJoin="round"; ctx.lineCap="round"; ctx.lineWidth=Math.max(1.5,r*.09);
+    const draw=(fill,stroke)=>{ ctx.fillStyle=fill; ctx.strokeStyle=stroke; ctx.fill(); ctx.stroke(); };
+    if(t===RED){
+      P([0,.52, -.46,.52,-.52,.05,-.26,-.2, -.22,-.05,-.1,0,-.04,-.1, -.1,-.35,.06,-.45,.1,-.62, .46,-.3,.5,.52,0,.52]); draw("#fff0b0","#5a0d0d");
+      P([0,.4, -.2,.4,-.22,.15,-.08,.02, 0,.1,.06,.1,.1,.02, .24,.15,.2,.4,0,.4]); draw("#ff9a2e","#a83010");
+    } else if(t===GREEN){
+      P([-.48,.46, -.55,-.3,.1,-.58,.52,-.52, .52,-.1,.3,.52,-.48,.46]); draw("#eaffd0","#0d3d14");
+      ctx.beginPath(); ctx.moveTo(cx-.5*r,cy+.5*r); ctx.lineTo(cx+.22*r,cy-.22*r); ctx.strokeStyle="#2f8a3a"; ctx.stroke();
+    } else if(t===BLUE){
+      P([0,-.58, .12,-.3,.42,-.05,.42,.2, .42,.5,-.42,.5,-.42,.2, -.42,-.05,-.12,-.3,0,-.58]); draw("#e4f5ff","#0c2f66");
+      ctx.beginPath(); ctx.moveTo(cx-.22*r,cy+.12*r); ctx.quadraticCurveTo(cx-.22*r,cy+.32*r,cx-.05*r,cy+.36*r); ctx.strokeStyle="#4a9be8"; ctx.stroke();
+    } else if(t===EARTH){
+      L([-.58,.42, -.16,-.34, .04,-.04, .2,-.22, .58,.42]); draw("#fff0c8","#3d2600");
+      ctx.beginPath(); ctx.moveTo(cx-.16*r,cy-.34*r); ctx.lineTo(cx-.02*r,cy+.42*r); ctx.moveTo(cx+.2*r,cy-.22*r); ctx.lineTo(cx+.12*r,cy+.42*r);
+      ctx.strokeStyle="#b07a1a"; ctx.lineWidth=Math.max(1,r*.05); ctx.stroke();
+    } else {
+      L([0,-.5, .12,-.12, .5,0, .12,.12, 0,.5, -.12,.12, -.5,0, -.12,-.12]); draw("#fff","#3a1166");
+    }
+    ctx.restore();
   }
   drawSkull(cx,cy,r){
     ctx.save(); ctx.lineJoin="round"; ctx.lineWidth=Math.max(1.5,r*.07); ctx.strokeStyle="#1a1020";
@@ -415,8 +439,7 @@ class Game {
     // specular highlight
     ctx.fillStyle="#ffffff55"; ctx.beginPath(); ctx.ellipse(cx-r*.3,cy-r*.45,r*.32,r*.16,-0.6,0,6.2832); ctx.fill();
     if(g.t===SKULL) this.drawSkull(cx,cy,r);
-    else { ctx.font=`${Math.round(S*0.36*g.s)}px serif`; ctx.textAlign="center"; ctx.textBaseline="middle";
-      ctx.fillText(GEMS[g.t].emoji,cx,cy+r*.06); }
+    else this.drawIcon(g.t,cx,cy,r);
     if(sel){ ctx.lineWidth=3; ctx.strokeStyle="#ffd36b"; ctx.shadowColor="#ffd36b"; ctx.shadowBlur=12; this.gemPath(g.t,cx,cy,r*1.15); ctx.stroke(); ctx.shadowBlur=0; }
   }
   loop(t=0){
