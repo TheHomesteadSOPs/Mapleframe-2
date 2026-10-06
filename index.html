@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Puzzle Quest Clone</title>
+<style>
+  :root { --bg:#14101e; --panel:#241b38; --edge:#4a3a72; --txt:#efe8ff; --dim:#a99cc9; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); font-family:system-ui,sans-serif;
+    display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:8px; user-select:none; touch-action:none; }
+  h1 { font-size:18px; margin:4px 0 8px; letter-spacing:2px; color:#ffd36b; }
+  #game { width:100%; max-width:520px; display:flex; flex-direction:column; gap:8px; }
+  .row { display:flex; gap:8px; }
+  .card { flex:1; background:var(--panel); border:2px solid var(--edge); border-radius:10px; padding:8px; position:relative; }
+  .card.active { border-color:#ffd36b; box-shadow:0 0 12px #ffd36b66; }
+  .name { font-weight:700; font-size:14px; display:flex; justify-content:space-between; }
+  .face { font-size:34px; line-height:1; }
+  .bar { height:12px; background:#0006; border-radius:6px; overflow:hidden; margin-top:4px; position:relative; }
+  .bar > i { display:block; height:100%; transition:width .35s; }
+  .hp i { background:linear-gradient(#e44,#a11); }
+  .xp i { background:linear-gradient(#b7f,#74c); }
+  .small { font-size:11px; color:var(--dim); margin-top:3px; }
+  #mana { display:flex; gap:6px; }
+  .m { flex:1; text-align:center; border-radius:8px; padding:3px 0; font-size:13px; font-weight:700; background:#0005; border:2px solid transparent; }
+  #spells { display:flex; gap:6px; flex-wrap:wrap; }
+  .spell { flex:1 1 45%; background:var(--panel); border:2px solid var(--edge); color:var(--txt); border-radius:8px;
+    padding:6px; font-size:12px; cursor:pointer; text-align:left; }
+  .spell b { display:block; font-size:13px; }
+  .spell[disabled] { opacity:.4; cursor:not-allowed; }
+  .spell.ready { border-color:#7f7; box-shadow:0 0 8px #7f78; }
+  canvas { width:100%; aspect-ratio:1; background:#0b0814; border:3px solid var(--edge); border-radius:10px; touch-action:none; display:block; }
+  #log { height:64px; overflow:hidden; font-size:12px; color:var(--dim); background:#0004; border-radius:8px; padding:6px; }
+  #overlay { position:fixed; inset:0; background:#000c; display:none; align-items:center; justify-content:center; flex-direction:column; gap:12px; text-align:center; z-index:5; }
+  #overlay.show { display:flex; }
+  #overlay h2 { font-size:32px; margin:0; color:#ffd36b; }
+  button.big { background:#ffd36b; color:#222; border:0; border-radius:8px; padding:10px 24px; font-size:16px; font-weight:700; cursor:pointer; }
+</style>
+</head>
+<body>
+<h1>⚔ PUZZLE QUEST CLONE ⚔</h1>
+<div id="game">
+  <div class="row">
+    <div class="card" id="pcard">
+      <div class="name"><span id="pname">Hero</span><span id="plv"></span></div>
+      <div class="face">🛡️</div>
+      <div class="bar hp"><i id="php"></i></div>
+      <div class="small" id="phptxt"></div>
+      <div class="bar xp"><i id="pxp"></i></div>
+      <div class="small" id="pgold"></div>
+    </div>
+    <div class="card" id="ecard">
+      <div class="name"><span id="ename"></span><span id="elv"></span></div>
+      <div class="face" id="eface"></div>
+      <div class="bar hp"><i id="ehp"></i></div>
+      <div class="small" id="ehptxt"></div>
+      <div class="small" id="estat"></div>
+    </div>
+  </div>
+  <div id="mana"></div>
+  <canvas id="cv" width="480" height="480"></canvas>
+  <div id="spells"></div>
+  <div id="log"></div>
+</div>
+<div id="overlay"><h2 id="otitle"></h2><div id="otext"></div><button class="big" id="obtn">Continue</button></div>
+
+<script>
+"use strict";
+const N = 8, CELL = 60;
+const SKULL=0, RED=1, GREEN=2, BLUE=3, GOLD=4, STAR=5;
+const GEMS = [
+  {name:"Skull", emoji:"💀", col:"#cfcfd8"},
+  {name:"Fire",  emoji:"🔥", col:"#d8402f"},
+  {name:"Nature",emoji:"🍃", col:"#3fa34d"},
+  {name:"Water", emoji:"💧", col:"#3b82d8"},
+  {name:"Gold",  emoji:"🪙", col:"#d9a621"},
+  {name:"Star",  emoji:"⭐", col:"#a45be0"},
+];
+const MANA_TYPES = [RED, GREEN, BLUE, GOLD];
+const MANA_MAX = 12;
+
+const SPELLS = [
+  {name:"Fireball", cost:{[RED]:6},  desc:l=>`Deal ${8+3*l} damage`,
+    run:async(g)=>{ await g.hurtEnemy(8+3*g.p.lv,"Fireball"); }},
+  {name:"Heal", cost:{[GREEN]:5}, desc:l=>`Restore ${10+4*l} HP`,
+    run:async(g)=>{ g.healPlayer(10+4*g.p.lv); }},
+  {name:"Frost", cost:{[BLUE]:6}, desc:l=>`${3+l} dmg, enemy skips its turn`,
+    run:async(g)=>{ await g.hurtEnemy(3+g.p.lv,"Frost"); g.e.frozen=true; g.log("Enemy is frozen!"); }},
+  {name:"Smite", cost:{[GOLD]:6,[RED]:2}, desc:()=>`Destroy all skulls, 3 dmg each`,
+    run:async(g)=>{ const cells=[]; for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(g.b[r][c]&&g.b[r][c].t===SKULL) cells.push([r,c]);
+      g.afterSpellCells=cells; }},
+];
+
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const frame = () => new Promise(r=>requestAnimationFrame(r));
+const rnd = n => Math.floor(Math.random()*n);
+
+const ENEMIES = [
+  {name:"Goblin",   face:"👺", hp:30, atk:1},
+  {name:"Wolf",     face:"🐺", hp:40, atk:1},
+  {name:"Bandit",   face:"🥷", hp:50, atk:3},
+  {name:"Orc",      face:"👹", hp:65, atk:3},
+  {name:"Skeleton", face:"💀", hp:75, atk:4},
+  {name:"Troll",    face:"🧌", hp:95, atk:4},
+  {name:"Wraith",   face:"👻", hp:110,atk:5},
+  {name:"Dragon",   face:"🐉", hp:150,atk:6},
+];
+
+class Game {
+  constructor() {
+    this.p = {lv:1, xp:0, hp:40, max:40, gold:0, mana:{[RED]:0,[GREEN]:0,[BLUE]:0,[GOLD]:0}};
+    this.stage = 0; this.busy = true; this.turn = "player"; this.over = false;
+    this.floats = []; this.sel = null; this.hint = null;
+    this.newEnemy(); this.newBoard(); this.buildUI(); this.updateUI();
+    this.log("A wild "+this.e.name+" appears! Match 3+ gems. Skulls hurt!");
+    this.busy = false;
+    requestAnimationFrame(()=>this.loop());
+  }
+  newEnemy() {
+    const t = ENEMIES[this.stage % ENEMIES.length], loop = Math.floor(this.stage/ENEMIES.length);
+    const s = 1 + loop*0.8;
+    this.e = {name:t.name, face:t.face, lv:this.stage+1, max:Math.round(t.hp*s), hp:Math.round(t.hp*s), atk:t.atk+loop*2, frozen:false};
+  }
+  // ---------- board ----------
+  mk(r,c,t){ return {t: t===undefined?this.rndType():t, x:c, y:r, tx:c, ty:r, s:1, dying:false}; }
+  rndType(){ const w=[3,2,2,2,2,1.4], sum=w.reduce((a,b)=>a+b); let x=Math.random()*sum;
+    for(let i=0;i<w.length;i++){ if((x-=w[i])<0) return i; } return 0; }
+  newBoard() {
+    do {
+      this.b = Array.from({length:N},(_,r)=>Array.from({length:N},(_,c)=>this.mk(r,c)));
+    } while (this.findMatches().cells.length || !this.bestMove());
+  }
+  findMatches() {
+    const set = new Map(), runs = [];
+    const add = (cells)=>{ runs.push(cells); cells.forEach(([r,c])=>set.set(r*N+c,[r,c])); };
+    for (let r=0;r<N;r++) for (let c=0;c<N;) {
+      const g=this.b[r][c]; let k=c+1;
+      while (g && k<N && this.b[r][k] && this.b[r][k].t===g.t) k++;
+      if (g && k-c>=3) add(Array.from({length:k-c},(_,i)=>[r,c+i]));
+      c=k;
+    }
+    for (let c=0;c<N;c++) for (let r=0;r<N;) {
+      const g=this.b[r][c]; let k=r+1;
+      while (g && k<N && this.b[k][c] && this.b[k][c].t===g.t) k++;
+      if (g && k-r>=3) add(Array.from({length:k-r},(_,i)=>[r+i,c]));
+      r=k;
+    }
+    return {cells:[...set.values()], runs};
+  }
+  swapData(a,b){ const t=this.b[a[0]][a[1]]; this.b[a[0]][a[1]]=this.b[b[0]][b[1]]; this.b[b[0]][b[1]]=t; }
+  fixTargets(){ for(let r=0;r<N;r++)for(let c=0;c<N;c++){ const g=this.b[r][c]; if(g){g.tx=c;g.ty=r;} } }
+  moves() {
+    const out=[];
+    for (let r=0;r<N;r++) for (let c=0;c<N;c++) for (const [dr,dc] of [[0,1],[1,0]]) {
+      const r2=r+dr,c2=c+dc; if(r2>=N||c2>=N) continue;
+      this.swapData([r,c],[r2,c2]);
+      const m=this.findMatches(); this.swapData([r,c],[r2,c2]);
+      if (m.cells.length) out.push({a:[r,c],b:[r2,c2],m});
+    }
+    return out;
+  }
+  bestMove(){
+    const ms=this.moves(); if(!ms.length) return null;
+    return ms;
+  }
+  async settle(){
+    for(let i=0;i<300;i++){
+      let moving=false;
+      for(const row of this.b) for(const g of row) if(g){
+        const dx=g.tx-g.x, dy=g.ty-g.y;
+        if (Math.abs(dx)>0.01||Math.abs(dy)>0.01){ moving=true;
+          g.x += Math.sign(dx)*Math.min(Math.abs(dx), Math.max(0.12,Math.abs(dx)*0.3));
+          g.y += Math.sign(dy)*Math.min(Math.abs(dy), Math.max(0.15,Math.abs(dy)*0.3));
+        } else { g.x=g.tx; g.y=g.ty; }
+      }
+      if(!moving) return;
+      await frame();
+    }
+  }
+  async trySwap(a,b,who){
+    this.swapData(a,b); this.fixTargets(); await this.settle();
+    const m=this.findMatches();
+    if(!m.cells.length){ this.swapData(a,b); this.fixTargets(); await this.settle(); return false; }
+    return true;
+  }
+  // resolve cascades; returns true if extra turn earned
+  async resolve(who, forced) {
+    let extra=false, chain=0;
+    while(true){
+      let m;
+      if (forced) { m={cells:forced, runs:[]}; forced=null; }
+      else m=this.findMatches();
+      if(!m.cells.length) break;
+      chain++;
+      if (m.runs.some(r=>r.length>=4)) extra=true;
+      if (m.runs.some(r=>r.length>=5)) extra=true;
+      const cnt={}; for(const [r,c] of m.cells){ const g=this.b[r][c]; cnt[g.t]=(cnt[g.t]||0)+1; g.dying=true; }
+      const bonus = chain>1 ? 1+0.25*(chain-1) : 1;
+      if(chain>1) this.floatText(240,30,`Cascade x${chain}!`,"#ffd36b");
+      // effects
+      const cx=m.cells.reduce((s,[r,c])=>s+c,0)/m.cells.length*CELL+30, cy=m.cells.reduce((s,[r,c])=>s+r,0)/m.cells.length*CELL+30;
+      for(const t in cnt){ const n=cnt[t], ti=+t;
+        if(ti===SKULL){
+          const dmg=Math.round(n*(who==="player"?(1+Math.ceil(this.p.lv/2)):this.e.atk)*bonus);
+          if(who==="player") await this.hurtEnemy(dmg,null,cx,cy); else await this.hurtPlayer(dmg,cx,cy);
+        } else if(who==="player"){
+          if(MANA_TYPES.includes(ti)){ this.p.mana[ti]=Math.min(MANA_MAX,this.p.mana[ti]+Math.round(n*bonus)); this.floatText(cx,cy,`+${n} ${GEMS[ti].name}`,GEMS[ti].col); }
+          else if(ti===STAR){ const x=n*3; this.floatText(cx,cy,`+${x} XP`,"#c9f"); await this.addXp(x); }
+        }
+      }
+      if(who==="player" && cnt[GOLD]) { const g=cnt[GOLD]*5; this.p.gold+=g; }
+      this.updateUI();
+      await sleep(40);
+      for(let i=0;i<8;i++){ for(const [r,c] of m.cells) this.b[r][c].s*=0.7; await frame(); }
+      for(const [r,c] of m.cells) this.b[r][c]=null;
+      if(this.over||this.e.hp<=0||this.p.hp<=0) { return extra; }
+      this.gravity();
+      await this.settle();
+    }
+    return extra;
+  }
+  gravity(){
+    for(let c=0;c<N;c++){
+      let w=N-1;
+      for(let r=N-1;r>=0;r--) if(this.b[r][c]){ this.b[w][c]=this.b[r][c]; if(w!==r) this.b[r][c]=null; w--; }
+      let k=0;
+      for(let r=w;r>=0;r--){ k++; this.b[r][c]=this.mk(r,c); this.b[r][c].y=-k; }
+    }
+    this.fixTargets();
+  }
+  async ensureMoves(){
+    if(this.moves().length) return;
+    this.log("No moves left — reshuffling!");
+    do { for(let r=0;r<N;r++)for(let c=0;c<N;c++){ this.b[r][c]=this.mk(r,c); this.b[r][c].y=r-N; } }
+    while(this.findMatches().cells.length || !this.moves().length);
+    await this.settle();
+  }
+  // ---------- combat ----------
+  async hurtEnemy(d,label,x=240,y=60){ this.e.hp=Math.max(0,this.e.hp-d); this.floatText(x,y,"-"+d,"#ff7b6b"); this.shake("ecard"); this.updateUI(); await sleep(150); }
+  async hurtPlayer(d,x=240,y=420){ this.p.hp=Math.max(0,this.p.hp-d); this.floatText(x,y,"-"+d,"#ff4d4d"); this.shake("pcard"); this.updateUI(); await sleep(150); }
+  healPlayer(h){ const a=Math.min(h,this.p.max-this.p.hp); this.p.hp+=a; this.floatText(240,240,"+"+a+" HP","#6f6"); this.updateUI(); }
+  async addXp(x){
+    this.p.xp+=x;
+    while(this.p.xp>=this.need()){ this.p.xp-=this.need(); this.p.lv++; this.p.max+=10; this.p.hp=this.p.max;
+      this.log(`LEVEL UP! You are now level ${this.p.lv}. HP restored.`); this.floatText(240,240,"LEVEL UP!","#ffd36b"); }
+    this.updateUI();
+  }
+  need(){ return 30+(this.p.lv-1)*20; }
+  checkEnd(){
+    if(this.e.hp<=0){ this.winBattle(); return true; }
+    if(this.p.hp<=0){ this.lose(); return true; }
+    return false;
+  }
+  async winBattle(){
+    this.over=true;
+    const xp=15+this.e.lv*8, gold=10+this.e.lv*10;
+    this.p.gold+=gold; await this.addXp(xp);
+    this.stage++;
+    this.show("Victory!",`${this.e.name} defeated.\n+${xp} XP, +${gold} gold`,"Next Battle",()=>{
+      this.newEnemy(); this.newBoard(); this.over=false; this.turn="player"; this.updateUI(); this.log("A wild "+this.e.name+" appears!"); this.busy=false; });
+  }
+  lose(){ this.over=true; this.show("Defeated",`You fell to the ${this.e.name} after ${this.stage} victories.\nGold: ${this.p.gold}`,"Try Again",()=>{ location.reload(); }); }
+  async playerMove(a,b){
+    if(this.busy||this.over||this.turn!=="player") return;
+    this.busy=true; this.sel=null; this.hint=null;
+    if(!(await this.trySwap(a,b,"player"))){ this.busy=false; return; }
+    const extra=await this.resolve("player");
+    await this.afterAction(extra);
+  }
+  async afterAction(extra){
+    if(this.checkEnd()) return;
+    await this.ensureMoves();
+    if(extra && this.turn==="player"){ this.log("Extra turn!"); this.busy=false; this.updateUI(); return; }
+    if(this.turn==="player") await this.enemyTurn(); else { this.turn="player"; this.busy=false; this.updateUI(); }
+  }
+  async enemyTurn(){
+    this.turn="enemy"; this.updateUI();
+    if(this.e.frozen){ this.e.frozen=false; this.log(this.e.name+" is frozen and skips its turn."); await sleep(600); this.turn="player"; this.busy=false; this.updateUI(); return; }
+    await sleep(500);
+    while(true){
+      const ms=this.moves(); if(!ms.length) break;
+      const score=m=>m.m.cells.filter(([r,c])=>this.b[r][c].t===SKULL).length*3 + Math.max(...m.m.runs.map(x=>x.length))*2 + Math.random()*2;
+      ms.sort((x,y)=>score(y)-score(x));
+      const pick = Math.random()<0.4 ? ms[rnd(ms.length)] : ms[0];
+      this.sel=pick.a; await sleep(350); this.sel=pick.b; await sleep(250); this.sel=null;
+      this.swapData(pick.a,pick.b); this.fixTargets(); await this.settle();
+      const extra=await this.resolve("enemy");
+      if(this.checkEnd()) return;
+      await this.ensureMoves();
+      if(!(extra && Math.random()<0.7)) break;
+      this.log(this.e.name+" gets an extra turn!");
+    }
+    this.turn="player"; this.busy=false; this.updateUI();
+  }
+  async cast(i){
+    const s=SPELLS[i];
+    if(this.busy||this.over||this.turn!=="player") return;
+    for(const t in s.cost) if(this.p.mana[t]<s.cost[t]) return;
+    this.busy=true;
+    for(const t in s.cost) this.p.mana[t]-=s.cost[t];
+    this.log("You cast "+s.name+"!");
+    this.afterSpellCells=null;
+    await s.run(this); this.updateUI();
+    if(this.afterSpellCells){
+      const cells=this.afterSpellCells; this.afterSpellCells=null;
+      if(cells.length){ await this.hurtEnemy(cells.length*3,"Smite"); if(!this.checkEnd()){ await this.resolve("player",cells); } }
+    }
+    if(this.checkEnd()) return;
+    await this.ensureMoves();
+    this.busy=false; this.updateUI();  // spells don't end turn
+  }
+  // ---------- UI ----------
+  buildUI(){
+    $("mana").innerHTML=MANA_TYPES.map(t=>`<div class="m" id="m${t}" style="color:${GEMS[t].col}">${GEMS[t].emoji} <span></span></div>`).join("");
+    $("spells").innerHTML=SPELLS.map((s,i)=>{
+      const cost=Object.entries(s.cost).map(([t,n])=>n+GEMS[t].emoji).join(" ");
+      return `<button class="spell" id="sp${i}"><b>${s.name} — ${cost}</b><span id="sd${i}"></span></button>`;}).join("");
+    SPELLS.forEach((_,i)=>$("sp"+i).onclick=()=>this.cast(i));
+  }
+  updateUI(){
+    const p=this.p,e=this.e;
+    $("plv").textContent="Lv "+p.lv; $("elv").textContent="Lv "+e.lv;
+    $("php").style.width=100*p.hp/p.max+"%"; $("phptxt").textContent=`HP ${p.hp}/${p.max}`;
+    $("pxp").style.width=100*p.xp/this.need()+"%"; $("pgold").textContent=`XP ${p.xp}/${this.need()}  ·  🪙 ${p.gold}`;
+    $("ename").textContent=e.name; $("eface").textContent=e.face;
+    $("ehp").style.width=100*e.hp/e.max+"%"; $("ehptxt").textContent=`HP ${e.hp}/${e.max}`;
+    $("estat").textContent=`Attack ${e.atk}`+(e.frozen?" · ❄ frozen":"");
+    $("pcard").classList.toggle("active",this.turn==="player"); $("ecard").classList.toggle("active",this.turn==="enemy");
+    for(const t of MANA_TYPES) $("m"+t).lastElementChild.textContent=p.mana[t]+"/"+MANA_MAX;
+    SPELLS.forEach((s,i)=>{
+      const ok=Object.keys(s.cost).every(t=>p.mana[t]>=s.cost[t]);
+      const b=$("sp"+i); b.disabled=!ok||this.busy||this.turn!=="player"; b.classList.toggle("ready",ok);
+      $("sd"+i).textContent=s.desc(p.lv);
+    });
+  }
+  log(t){ const d=$("log"); d.innerHTML=`<div>${t}</div>`+d.innerHTML; while(d.children.length>5) d.lastChild.remove(); }
+  shake(id){ const el=$(id); el.animate([{transform:"translateX(0)"},{transform:"translateX(-6px)"},{transform:"translateX(6px)"},{transform:"translateX(0)"}],{duration:250}); }
+  floatText(x,y,text,color){ this.floats.push({x,y,text,color,life:60}); }
+  show(title,text,btn,cb){
+    $("otitle").textContent=title; $("otext").style.whiteSpace="pre-line"; $("otext").textContent=text; $("obtn").textContent=btn;
+    $("overlay").classList.add("show"); $("obtn").onclick=()=>{ $("overlay").classList.remove("show"); cb(); };
+  }
+  // ---------- render ----------
+  loop(){
+    ctx.clearRect(0,0,480,480);
+    const S=480/N;
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++){ ctx.fillStyle=(r+c)%2?"#17112a":"#1e1635"; ctx.fillRect(c*S,r*S,S,S); }
+    for(const row of this.b) for(const g of row) if(g){
+      const cx=g.x*S+S/2, cy=g.y*S+S/2, rad=S*0.4*g.s;
+      if(rad<1) continue;
+      ctx.beginPath(); ctx.arc(cx,cy,rad,0,7); ctx.fillStyle=GEMS[g.t].col+"cc"; ctx.fill();
+      ctx.lineWidth=2; ctx.strokeStyle="#fff5"; ctx.stroke();
+      ctx.font=`${Math.round(S*0.5*g.s)}px serif`; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(GEMS[g.t].emoji,cx,cy+2);
+    }
+    if(this.sel){ ctx.lineWidth=4; ctx.strokeStyle="#ffd36b"; ctx.strokeRect(this.sel[1]*S+3,this.sel[0]*S+3,S-6,S-6); }
+    ctx.font="bold 22px sans-serif";
+    this.floats=this.floats.filter(f=>--f.life>0);
+    for(const f of this.floats){ ctx.globalAlpha=Math.min(1,f.life/20); ctx.fillStyle=f.color; ctx.strokeStyle="#000"; ctx.lineWidth=4;
+      const y=f.y-(60-f.life)*0.8; ctx.strokeText(f.text,f.x,y); ctx.fillText(f.text,f.x,y); }
+    ctx.globalAlpha=1;
+    requestAnimationFrame(()=>this.loop());
+  }
+}
+
+const game = new Game();
+
+// ---------- input ----------
+let down=null;
+const cellAt=e=>{ const R=cv.getBoundingClientRect(); const c=Math.floor((e.clientX-R.left)/R.width*N), r=Math.floor((e.clientY-R.top)/R.height*N);
+  return (r>=0&&r<N&&c>=0&&c<N)?[r,c]:null; };
+const adj=(a,b)=>Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])===1;
+cv.addEventListener("pointerdown",e=>{
+  if(game.busy||game.over||game.turn!=="player") return;
+  const cell=cellAt(e); if(!cell) return;
+  if(game.sel && adj(game.sel,cell)){ const a=game.sel; game.playerMove(a,cell); down=null; return; }
+  game.sel=cell; down={cell,x:e.clientX,y:e.clientY};
+});
+cv.addEventListener("pointermove",e=>{
+  if(!down||game.busy) return;
+  const dx=e.clientX-down.x, dy=e.clientY-down.y;
+  if(Math.hypot(dx,dy)<20) return;
+  const [r,c]=down.cell; const t=Math.abs(dx)>Math.abs(dy)?[r,c+Math.sign(dx)]:[r+Math.sign(dy),c];
+  down=null;
+  if(t[0]>=0&&t[0]<N&&t[1]>=0&&t[1]<N) game.playerMove([r,c],t);
+});
+window.addEventListener("pointerup",()=>{ down=null; });
+</script>
+</body>
+</html>
