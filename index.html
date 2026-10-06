@@ -4,12 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>Gemhollow</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;900&display=swap" rel="stylesheet">
+<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 <style>
   :root { --bg:#0e0a18; --panel:#2a1f45; --panel2:#1c1430; --edge:#6a52a8; --gold:#ffd36b; --txt:#f3ecff; --dim:#b3a6d4; }
   * { box-sizing:border-box; }
-  body { margin:0; color:var(--txt); font-family:'Cinzel',Georgia,serif;
+  body { margin:0; color:var(--txt); font-family:'Palatino Linotype','Book Antiqua',Georgia,serif;
     background:radial-gradient(ellipse at 50% 0%,#3a2670 0%,#1a1030 45%,var(--bg) 100%) fixed;
     display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:8px; user-select:none; touch-action:none; }
   h1 { font-size:26px; margin:2px 0 8px; letter-spacing:6px; font-weight:900;
@@ -41,7 +40,7 @@
   #spells { display:flex; gap:6px; flex-wrap:wrap; }
   .spell { flex:1 1 45%; background:linear-gradient(#34265a,var(--panel2)); border:2px solid var(--edge); color:var(--txt); border-radius:10px;
     padding:6px 8px; font-size:12px; cursor:pointer; text-align:left; font-family:system-ui,sans-serif; transition:transform .1s; }
-  .spell b { display:block; font-size:13px; font-family:'Cinzel',Georgia,serif; letter-spacing:.5px; }
+  .spell b { display:block; font-size:13px; font-family:'Palatino Linotype','Book Antiqua',Georgia,serif; letter-spacing:.5px; }
   .spell:active:not([disabled]) { transform:scale(.97); }
   .spell[disabled] { opacity:.45; cursor:not-allowed; }
   @keyframes glow { 0%,100%{box-shadow:0 0 6px #7f78} 50%{box-shadow:0 0 16px #9f9c} }
@@ -54,14 +53,26 @@
   #overlay.show { display:flex; }
   #overlay h2 { font-size:44px; margin:0; letter-spacing:6px; font-weight:900; background:linear-gradient(#fff3c4,#ffb82e 55%,#b86a00); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 3px 0 #000a) drop-shadow(0 0 16px #ff9a2e88); }
   #otext { font-family:system-ui,sans-serif; color:var(--dim); max-width:360px; line-height:1.5; }
-  button.big { background:linear-gradient(#ffe08a,#e0952b); color:#2a1604; border:0; border-radius:10px; padding:12px 30px; font:900 17px 'Cinzel',Georgia,serif; letter-spacing:2px; cursor:pointer; box-shadow:0 4px 0 #8a4f0a,0 8px 18px #000a; }
+  button.big { background:linear-gradient(#ffe08a,#e0952b); color:#2a1604; border:0; border-radius:10px; padding:12px 30px; font:900 17px 'Palatino Linotype','Book Antiqua',Georgia,serif; letter-spacing:2px; cursor:pointer; box-shadow:0 4px 0 #8a4f0a,0 8px 18px #000a; }
   button.big:active { transform:translateY(3px); box-shadow:0 1px 0 #8a4f0a; }
+  #topbar { position:relative; width:100%; max-width:1100px; text-align:center; }
+  #tools { position:absolute; right:0; top:2px; display:flex; gap:6px; }
+  #tools button { background:#2a1f45; color:var(--gold); border:2px solid var(--edge); border-radius:8px; width:36px; height:32px; font-size:16px; cursor:pointer; }
+  #tools button.off { opacity:.5; }
+  @media (min-width:800px) and (min-aspect-ratio:1/1) {
+    #game { max-width:1100px; display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto auto 1fr; column-gap:16px;
+      grid-template-areas:"board cards" "board mana" "board spells" "board log"; align-items:start; }
+    .frame { grid-area:board; width:min(calc(100vh - 80px),58vw); }
+    #cards { grid-area:cards; } #mana { grid-area:mana; } #spells { grid-area:spells; } #log { grid-area:log; height:100%; min-height:64px; }
+    #spells .spell { flex:1 1 100%; }
+  }
+  @media (max-height:480px) { #log { display:none; } h1 { font-size:18px; margin:0 0 4px; } }
 </style>
 </head>
 <body>
-<h1>GEMHOLLOW</h1>
+<div id="topbar"><h1>GEMHOLLOW</h1><div id="tools"><button id="mute" title="Sound on/off">♪</button><button id="fs" title="Fullscreen">⛶</button></div></div>
 <div id="game">
-  <div class="row">
+  <div class="row" id="cards">
     <div class="card" id="pcard">
       <div class="name"><span id="pname">Wanderer</span><span id="plv"></span></div>
       <div class="portrait"><div class="face">🛡️</div><div class="bars">
@@ -79,7 +90,7 @@
     </div>
   </div>
   <div id="mana"></div>
-  <div class="frame"><canvas id="cv" width="480" height="480"></canvas></div>
+  <div class="frame"><canvas id="cv" width="960" height="960"></canvas></div>
   <div id="spells"></div>
   <div id="log"></div>
 </div>
@@ -111,6 +122,81 @@ const SPELLS = [
     run:async(g)=>{ const cells=[]; for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(g.b[r][c]&&g.b[r][c].t===SKULL) cells.push([r,c]);
       g.afterSpellCells=cells; }},
 ];
+
+
+// ---------- audio (synthesized, no asset files) ----------
+const Snd = {
+  ctx:null, master:null, sfxG:null, musG:null, muted:false, forced:false, step:0, timer:null,
+  load(){ try{ this.muted=localStorage.getItem("gh_muted")==="1"; }catch(e){} },
+  init(){
+    try{
+      if(!this.ctx){ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+        this.ctx=new AC(); this.master=this.ctx.createGain(); this.master.connect(this.ctx.destination);
+        this.sfxG=this.ctx.createGain(); this.sfxG.gain.value=.5; this.sfxG.connect(this.master);
+        this.musG=this.ctx.createGain(); this.musG.gain.value=.16; this.musG.connect(this.master);
+        this.apply(); this.timer=setInterval(()=>this.tick(),240); }
+      if(this.ctx.state==="suspended") this.ctx.resume();
+    }catch(e){}
+  },
+  apply(){ if(this.master) this.master.gain.value=(this.muted||this.forced)?0:1; },
+  setMuted(m){ this.muted=m; try{ localStorage.setItem("gh_muted",m?"1":"0"); }catch(e){} this.apply(); },
+  force(f){ this.forced=f; this.apply(); },
+  tone(f,d,type="sine",v=.3,when=0,to=null,dest=null){
+    if(!this.ctx) return; const t=this.ctx.currentTime+when, o=this.ctx.createOscillator(), g=this.ctx.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,t); if(to) o.frequency.exponentialRampToValueAtTime(to,t+d);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+    o.connect(g); g.connect(dest||this.sfxG); o.start(t); o.stop(t+d+.05);
+  },
+  noise(d,v=.3,f=1200){
+    if(!this.ctx) return; const t=this.ctx.currentTime, n=Math.floor(this.ctx.sampleRate*d), buf=this.ctx.createBuffer(1,n,this.ctx.sampleRate), a=buf.getChannelData(0);
+    for(let i=0;i<n;i++) a[i]=(Math.random()*2-1)*(1-i/n);
+    const s=this.ctx.createBufferSource(), fl=this.ctx.createBiquadFilter(), g=this.ctx.createGain();
+    s.buffer=buf; fl.type="lowpass"; fl.frequency.value=f; g.gain.value=v; s.connect(fl); fl.connect(g); g.connect(this.sfxG); s.start(t);
+  },
+  play(name,n=1){
+    if(!this.ctx||this.muted||this.forced) return;
+    switch(name){
+      case "swap": this.tone(380,.08,"triangle",.25,0,520); break;
+      case "bad": this.tone(200,.15,"square",.15,0,120); break;
+      case "match": { const base=[392,440,494,523,587,659,698][Math.min(n-1,6)]; this.tone(base,.18,"triangle",.3); this.tone(base*1.5,.18,"sine",.15,.06); break; }
+      case "hit": this.noise(.18,.5,900); this.tone(160,.15,"sawtooth",.3,0,60); break;
+      case "hurt": this.noise(.25,.6,500); this.tone(110,.25,"square",.25,0,50); break;
+      case "heal": [523,659,784].forEach((f,i)=>this.tone(f,.25,"sine",.25,i*.07)); break;
+      case "spell": this.tone(300,.4,"sawtooth",.18,0,900); this.tone(600,.4,"sine",.2,.05,1400); break;
+      case "level": [523,659,784,1046].forEach((f,i)=>this.tone(f,.3,"triangle",.3,i*.1)); break;
+      case "win": [523,659,784,659,784,1046].forEach((f,i)=>this.tone(f,.3,"triangle",.3,i*.12)); break;
+      case "lose": [330,294,262,196].forEach((f,i)=>this.tone(f,.45,"sawtooth",.2,i*.25)); break;
+      case "click": this.tone(600,.05,"square",.12); break;
+    }
+  },
+  tick(){ // gentle looping arpeggio, Am F C G
+    if(!this.ctx||this.muted||this.forced) return;
+    const chords=[[220,261.6,329.6],[174.6,220,261.6],[261.6,329.6,392],[196,246.9,293.7]];
+    const ch=chords[Math.floor(this.step/8)%4], i=this.step%8;
+    this.tone(ch[[0,1,2,1,0,2,1,2][i]]*(i%4===0?1:2),.4,"triangle",.5,0,null,this.musG);
+    if(i===0) this.tone(ch[0]/2,1.6,"sine",.6,0,null,this.musG);
+    this.step++;
+  }
+};
+Snd.load();
+document.addEventListener("pointerdown",()=>Snd.init());
+document.addEventListener("keydown",()=>Snd.init());
+document.addEventListener("visibilitychange",()=>{ if(Snd.ctx) document.hidden?Snd.ctx.suspend():Snd.ctx.resume(); });
+
+// ---------- CrazyGames SDK wrapper (safe when SDK is absent) ----------
+const CG = {
+  ready:false, playing:false,
+  sdk(){ return window.CrazyGames&&window.CrazyGames.SDK; },
+  async init(){ try{ const k=this.sdk(); if(!k) return; await k.init(); this.ready=true; try{ k.game.loadingStart(); }catch(e){} }catch(e){} },
+  loaded(){ try{ if(this.ready) this.sdk().game.loadingStop(); }catch(e){} },
+  start(){ if(this.playing) return; this.playing=true; try{ if(this.ready) this.sdk().game.gameplayStart(); }catch(e){} },
+  stop(){ if(!this.playing) return; this.playing=false; try{ if(this.ready) this.sdk().game.gameplayStop(); }catch(e){} },
+  ad(done){
+    let called=false; const fin=()=>{ if(called) return; called=true; Snd.force(false); done(); };
+    if(!this.ready) return fin();
+    try{ this.sdk().ad.requestAd("midgame",{ adStarted:()=>Snd.force(true), adFinished:fin, adError:fin }); setTimeout(fin,60000); }catch(e){ fin(); }
+  }
+};
 
 const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
 const $ = id => document.getElementById(id);
@@ -201,9 +287,9 @@ class Game {
     }
   }
   async trySwap(a,b,who){
-    this.swapData(a,b); this.fixTargets(); await this.settle();
+    Snd.play("swap"); this.swapData(a,b); this.fixTargets(); await this.settle();
     const m=this.findMatches();
-    if(!m.cells.length){ this.swapData(a,b); this.fixTargets(); await this.settle(); return false; }
+    if(!m.cells.length){ Snd.play("bad"); this.swapData(a,b); this.fixTargets(); await this.settle(); return false; }
     return true;
   }
   // resolve cascades; returns true if extra turn earned
@@ -214,7 +300,7 @@ class Game {
       if (forced) { m={cells:forced, runs:[]}; forced=null; }
       else m=this.findMatches();
       if(!m.cells.length) break;
-      chain++;
+      chain++; Snd.play("match",chain);
       if (m.runs.some(r=>r.length>=4)) extra=true;
       if (m.runs.some(r=>r.length>=5)) extra=true;
       const cnt={}; for(const [r,c] of m.cells){ const g=this.b[r][c]; cnt[g.t]=(cnt[g.t]||0)+1; g.dying=true; this.burst(c*60+30,r*60+30,GEMS[g.t].col); }
@@ -259,12 +345,12 @@ class Game {
     await this.settle();
   }
   // ---------- combat ----------
-  async hurtEnemy(d,label,x=240,y=60){ this.e.hp=Math.max(0,this.e.hp-d); this.floatText(x,y,"-"+d,"#ff7b6b"); this.shake("ecard"); this.updateUI(); await sleep(150); }
-  async hurtPlayer(d,x=240,y=420){ this.p.hp=Math.max(0,this.p.hp-d); this.floatText(x,y,"-"+d,"#ff4d4d"); this.shake("pcard"); this.updateUI(); await sleep(150); }
-  healPlayer(h){ const a=Math.min(h,this.p.max-this.p.hp); this.p.hp+=a; this.floatText(240,240,"+"+a+" HP","#6f6"); this.updateUI(); }
+  async hurtEnemy(d,label,x=240,y=60){ Snd.play("hit"); this.e.hp=Math.max(0,this.e.hp-d); this.floatText(x,y,"-"+d,"#ff7b6b"); this.shake("ecard"); this.updateUI(); await sleep(150); }
+  async hurtPlayer(d,x=240,y=420){ Snd.play("hurt"); this.p.hp=Math.max(0,this.p.hp-d); this.floatText(x,y,"-"+d,"#ff4d4d"); this.shake("pcard"); this.updateUI(); await sleep(150); }
+  healPlayer(h){ Snd.play("heal"); const a=Math.min(h,this.p.max-this.p.hp); this.p.hp+=a; this.floatText(240,240,"+"+a+" HP","#6f6"); this.updateUI(); }
   async addXp(x){
     this.p.xp+=x;
-    while(this.p.xp>=this.need()){ this.p.xp-=this.need(); this.p.lv++; this.p.max+=10; this.p.hp=this.p.max;
+    while(this.p.xp>=this.need()){ this.p.xp-=this.need(); this.p.lv++; this.p.max+=10; this.p.hp=this.p.max; Snd.play("level");
       this.log(`LEVEL UP! You are now level ${this.p.lv}. HP restored.`); this.floatText(240,240,"LEVEL UP!","#ffd36b"); }
     this.updateUI();
   }
@@ -275,14 +361,14 @@ class Game {
     return false;
   }
   async winBattle(){
-    this.over=true;
+    this.over=true; CG.stop(); Snd.play("win");
     const xp=15+this.e.lv*8, gold=10+this.e.lv*10;
     this.p.gold+=gold; await this.addXp(xp);
     this.stage++;
-    this.show("Victory!",`${this.e.name} defeated.\n+${xp} XP, +${gold} gold`,"Next Battle",()=>{
-      this.newEnemy(); this.newBoard(); this.over=false; this.turn="player"; this.updateUI(); this.log("A wild "+this.e.name+" appears!"); this.busy=false; });
+    this.show("Victory!",`${this.e.name} defeated.\n+${xp} XP, +${gold} gold`,"Next Battle",()=>CG.ad(()=>{
+      CG.start(); this.newEnemy(); this.newBoard(); this.over=false; this.turn="player"; this.updateUI(); this.log("A wild "+this.e.name+" appears!"); this.busy=false; }));
   }
-  lose(){ this.over=true; this.show("Defeated",`You fell to the ${this.e.name} after ${this.stage} victories.\nGold: ${this.p.gold}`,"Try Again",()=>{ location.reload(); }); }
+  lose(){ this.over=true; CG.stop(); Snd.play("lose"); this.show("Defeated",`You fell to the ${this.e.name} after ${this.stage} victories.\nGold: ${this.p.gold}`,"Try Again",()=>CG.ad(()=>location.reload())); }
   async playerMove(a,b){
     if(this.busy||this.over||this.turn!=="player") return;
     this.busy=true; this.sel=null; this.hint=null;
@@ -321,7 +407,7 @@ class Game {
     for(const t in s.cost) if(this.p.mana[t]<s.cost[t]) return;
     this.busy=true;
     for(const t in s.cost) this.p.mana[t]-=s.cost[t];
-    this.log("You cast "+s.name+"!");
+    this.log("You cast "+s.name+"!"); Snd.play("spell");
     this.afterSpellCells=null;
     await s.run(this); this.updateUI();
     if(this.afterSpellCells){
@@ -444,7 +530,7 @@ class Game {
   }
   loop(t=0){
     const S=480/N;
-    ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,480,480);
+    ctx.setTransform(2,0,0,2,0,0); ctx.clearRect(0,0,480,480);
     if(this.shakeT>0){ this.shakeT*=0.88; if(this.shakeT<0.3) this.shakeT=0; ctx.translate((Math.random()-.5)*this.shakeT,(Math.random()-.5)*this.shakeT); }
     const bg=ctx.createLinearGradient(0,0,0,480); bg.addColorStop(0,"#241942"); bg.addColorStop(1,"#120b22");
     ctx.fillStyle=bg; ctx.fillRect(-20,-20,520,520);
@@ -463,7 +549,7 @@ class Game {
     // vignette
     const v=ctx.createRadialGradient(240,240,200,240,240,360); v.addColorStop(0,"#0000"); v.addColorStop(1,"#000a");
     ctx.fillStyle=v; ctx.fillRect(-20,-20,520,520);
-    ctx.font="900 24px Cinzel,Georgia,serif"; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
+    ctx.font="900 24px 'Palatino Linotype',Georgia,serif"; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
     this.floats=this.floats.filter(f=>--f.life>0);
     for(const f of this.floats){ ctx.globalAlpha=Math.min(1,f.life/20); ctx.fillStyle=f.color; ctx.strokeStyle="#000"; ctx.lineWidth=5; ctx.lineJoin="round";
       const y=f.y-(60-f.life)*0.8, sc=1+Math.max(0,(f.life-52))*0.05; ctx.save(); ctx.translate(f.x,y); ctx.scale(sc,sc);
@@ -479,7 +565,14 @@ function shade(hex,amt){
 }
 
 const game = new Game();
-game.show("GEMHOLLOW","Shards of the Ember Crown\n\nMatch gems, smash skulls, and channel mana to slay the denizens of the hollow.","Begin Quest",()=>{});
+game.show("GEMHOLLOW","Shards of the Ember Crown\n\nMatch gems, smash skulls, and channel mana to slay the denizens of the hollow.","Begin Quest",()=>{ Snd.init(); Snd.play("click"); CG.start(); });
+CG.init().then(()=>CG.loaded());
+
+// ---------- toolbar ----------
+const muteBtn=document.getElementById("mute"), syncMute=()=>muteBtn.classList.toggle("off",Snd.muted);
+muteBtn.onclick=()=>{ Snd.init(); Snd.setMuted(!Snd.muted); syncMute(); }; syncMute();
+document.getElementById("fs").onclick=()=>{ const d=document.documentElement;
+  try{ document.fullscreenElement?document.exitFullscreen():(d.requestFullscreen||d.webkitRequestFullscreen).call(d); }catch(e){} };
 
 // ---------- input ----------
 let down=null;
