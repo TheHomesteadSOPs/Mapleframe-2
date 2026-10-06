@@ -662,7 +662,7 @@ const Tut = {
       skull:{hl:"ecard",text:"Skulls hurt your enemy. Bigger matches and cascades hit harder."},
       mana:{hl:"mana",text:"Fire, Air, Water and Earth gems fill your mana bars. Mana pays for spells."},
       spell:{hl:"spells",text:"A spell is ready! Tap a glowing spell button (or press its number). Casting doesn't end your turn."},
-      extra:{hl:"cv",text:"Nice! Matching 4 or more gems in a line earns an extra turn."},
+      extra:{hl:"cv",text:"Nice! Matching 4 or more gems in a line, or 5 in an L, T or + shape, earns an extra turn."},
       enemy:{hl:"pcard",text:"Now the enemy plays on the same board. Its skull matches hurt you, so keep an eye on your HP."} },
   reset(){ this.done=false; this.shown={}; this.queue=[]; this.hide(); },
   event(id){ if(this.done||this.shown[id]||!this.T[id]) return; this.shown[id]=true; this.queue.push(id); if(!this.cur) this.next(); },
@@ -753,6 +753,14 @@ class Game {
     }
     return {cells:[...set.values()], runs};
   }
+  // sizes of connected same-type groups made of overlapping runs (L, T and + shapes join a row and a column)
+  groupSizes(runs){
+    const groups=[];
+    for(const run of runs){ const keys=new Set(run.map(([r,c])=>r*N+c)); const hit=[];
+      groups.forEach(g=>{ if([...keys].some(k=>g.has(k))) hit.push(g); });
+      const merged=new Set(keys); hit.forEach(g=>{ g.forEach(k=>merged.add(k)); groups.splice(groups.indexOf(g),1); }); groups.push(merged); }
+    return groups.map(g=>g.size);
+  }
   swapData(a,b){ const t=this.b[a[0]][a[1]]; this.b[a[0]][a[1]]=this.b[b[0]][b[1]]; this.b[b[0]][b[1]]=t; }
   fixTargets(){ for(let r=0;r<N;r++)for(let c=0;c<N;c++){ const g=this.b[r][c]; if(g){g.tx=c;g.ty=r;} } }
   moves() {
@@ -800,7 +808,7 @@ class Game {
       if(!m.cells.length) break;
       chain++;
       if (m.runs.some(r=>r.length>=4)) extra=true;
-      if (m.runs.some(r=>r.length>=5)) extra=true;
+      if (this.groupSizes(m.runs).some(n=>n>=5)) { if(!extra&&chain===1) this.floatText(240,300,"BIG MATCH!","#ffd36b"); extra=true; }   // 5+ gems in an L, T or + shape
       const cnt={}; for(const [r,c] of m.cells){ const g=this.b[r][c]; cnt[g.t]=(cnt[g.t]||0)+1; g.dying=true; this.burst(c*60+30,r*60+30,GEMS[g.t].col); }
       { const order=Object.keys(cnt).map(Number).sort((a,b)=>cnt[b]-cnt[a]);
         order.slice(0,chain===1?3:1).forEach((ty,k)=>{
@@ -1034,7 +1042,7 @@ class Game {
     openPanel(`<h2>How to Play</h2><div class="list txt">
       <p>Swap two neighboring gems to line up <b>3 or more</b>. Then the enemy takes its turn on the same board.</p>
       <p><b>Skulls</b> damage the foe. <b>Fire, Air, Water, Earth</b> gems fill mana for spells. <b>Stars</b> give XP. Earth gems also drop coins.</p>
-      <p>Matching <b>4+</b> in a line gives an <b>extra turn</b>; cascades hit harder.</p>
+      <p>Matching <b>4+</b> in a line, or <b>5+ in an L, T or + shape</b>, gives an <b>extra turn</b>; cascades hit harder.</p>
       <p>Spend coins in the shop after each battle. Watch the enemy's warning for its next special move.</p>
       <p><b>Keys:</b> arrows move the cursor, Space/Enter grabs a gem, then an arrow swaps it. 1-8 cast spells, H health potion, M mana potion, Esc menu.</p>
       <ul>${spells}</ul></div><div class="btns"><button class="big" data-act="back">Back</button></div>`, this.ctx==="menu");

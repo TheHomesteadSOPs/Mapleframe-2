@@ -4,7 +4,7 @@
 
 ## Gameplay
 - Match gems: **skulls** damage the enemy, **Fire / Air / Water / Earth** gems fill mana for spells, **stars** give XP, Earth gems drop coins.
-- 4+ matches give an **extra turn**; cascades hit harder.
+- 4+ in a line, or 5+ in an L, T or + shape, gives an **extra turn**; cascades hit harder.
 - 8 spells (Fireball, Heal, Frost, Smite, Wildfire, Cleanse, Stoneskin, Meteor), upgradeable to level 5 in the shop.
 - 10 enemies with special moves (steal, mana drain, stun, poison, shield, life drain, fire breath…) and a boss every 5th stage. Enemies telegraph their next special.
 - Shop between battles: potions, max HP, skull damage, spell levels.
