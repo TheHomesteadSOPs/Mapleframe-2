@@ -540,6 +540,10 @@ const CG = {
   }
 };
 
+// ---------- optional custom portraits: drop images in art/ (see scripts/generate-art.mjs); vector art is the fallback ----------
+const ART_FILES=[];
+const Art={ img:{}, load(){ ART_FILES.forEach(f=>{ const k=f.split("/").pop().replace(/\.\w+$/,""), im=new Image(); im.onload=()=>{ this.img[k]=im; }; im.src=f; }); } };
+
 // ---------- character portraits (vector art, animated) ----------
 const Fig = (() => {
   let c, T=0, bl=1;
@@ -688,6 +692,12 @@ const Fig = (() => {
     draw(cv,name,t,shake=0,kick=0,still=false){
       const S=cv.width; c=cv.getContext("2d"); T=t; bl=((t%3600)<130)?.1:1;
       c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,S,S);
+      const im=Art.img[name];
+      if(im){   // custom portrait: gentle breathing zoom, hit shake and lunge
+        const zoom=1.1+(still?0:Math.sin(t/700)*.012)+kick*.14, w=S*zoom, ox=(S-w)/2+(Math.random()-.5)*shake*S/200, oy=(S-w)/2+(still?0:Math.sin(t/420)*S*.008)+kick*S*.03;
+        c.drawImage(im,ox,oy,w,w);
+        const g=c.createRadialGradient(S/2,S/2,S*.35,S/2,S/2,S*.75); g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,.4)"); c.fillStyle=g; c.fillRect(0,0,S,S); return;
+      }
       const th=THEME[name]||"#555", bg=c.createRadialGradient(S*.5,S*.45,S*.05,S*.5,S*.5,S*.75);
       bg.addColorStop(0,th+"aa"); bg.addColorStop(.6,th+"33"); bg.addColorStop(1,"#0b0814");
       c.fillStyle=bg; c.fillRect(0,0,S,S);
@@ -1882,6 +1892,7 @@ function shade(hex,amt){
 }
 
 Settings.load();
+Art.load();
 const game = new Game();
 game.applyLang();
 // wait briefly for the SDK (cloud save), then show the home screen - or, on a first visit, drop straight into the tutorial battle

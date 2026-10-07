@@ -48,3 +48,7 @@ Every 5th stage is a boss. On arrival the board darkens, the boss slams in, a fu
 - **Hint button** (lightbulb / `T`), idle hint after 6 s.
 - **Retention:** 13 achievements, a daily reward with a streak, a best-stage record, and endless mode after the Elder Dragon.
 - **Languages:** English, Spanish, Portuguese, French, German, Russian (auto-detected, switchable in Settings). Translations are machine-assisted and would benefit from a native review.
+
+## Custom art (optional)
+Portraits are vector art by default. To use generated or hand-made images instead, see `art/README.md`;
+`node scripts/generate-art.mjs` creates all 11 characters through OpenRouter (needs `OPENROUTER_API_KEY`).
