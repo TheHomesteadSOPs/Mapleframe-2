@@ -16,7 +16,8 @@ Features:
 - Eight spells (Fireball, Heal, Frost, Smite, Wildfire, Cleanse, Stoneskin, Meteor) powered by gem mana, upgradeable in the shop
 - Ten enemies with special moves, plus boss battles every five stages
 - Enemy AI that plays the same board against you
-- Saves your progress automatically
+- Saves your progress automatically; daily rewards, 13 achievements and an endless mode after the final boss
+- Easy / Normal / Hard difficulty and 6 languages (English, Spanish, Portuguese, French, German, Russian)
 - 10 drum & bass tracks that change as you level up
 - Plays on desktop and mobile, with fullscreen support
 
@@ -27,6 +28,8 @@ Features:
 **Languages:** English
 
 ## Files
+| promo_trailer_960x540.mp4 | 16 s | trailer clip (boss entrances + spell effects) |
+| promo_preview_560.gif | 16 s | animated preview |
 | File | Size | Use |
 |---|---|---|
 | cover_landscape_1920x1080.png | 16:9 | main cover |
