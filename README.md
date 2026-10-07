@@ -39,3 +39,13 @@ Gems are pre-rendered sprites, the board background/vignette are cached layers, 
 
 ## Bosses
 Every 5th stage is a boss. On arrival the board darkens, the boss slams in, a full-board flash and shockwave hits the gems (Orc: ground cracks and flying rocks; Dragon: wings and a wall of fire), the gems jump in a wave, and a title card appears while the boss music starts. With reduced motion on, the shake and full-board effects are replaced by a short flash and the title card.
+
+## Player-facing extras
+- **Pause on leave:** switching tabs/apps or losing focus opens the pause menu, mutes, and stops gameplay in the SDK.
+- **Rewarded ads (CrazyGames only):** revive with 50% HP after a defeat, double the coins after a victory, double the daily reward. Buttons only appear when the SDK is available; rewards are granted only if the ad finishes. `happytime` fires on boss wins, level-ups and achievements.
+- **First visit:** drops straight into the tutorial battle (no title screen). Returning players see Continue.
+- **Difficulty:** Easy / Normal / Hard (enemy HP and attack, AI mistakes); set on the home screen or in Settings.
+- **Arenas:** every enemy fights on its own themed board background.
+- **Hint button** (lightbulb / `T`), idle hint after 6 s.
+- **Retention:** 13 achievements, a daily reward with a streak, a best-stage record, and endless mode after the Elder Dragon.
+- **Languages:** English, Spanish, Portuguese, French, German, Russian (auto-detected, switchable in Settings). Translations are machine-assisted and would benefit from a native review.

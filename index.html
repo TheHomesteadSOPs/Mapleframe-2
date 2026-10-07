@@ -10,7 +10,7 @@
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html { background:#0e0a18; overscroll-behavior:none; }
   body { margin:0; color:var(--txt); font-family:'Palatino Linotype','Book Antiqua',Georgia,serif;
-    background:radial-gradient(ellipse at 50% 0%,#3a2670 0%,#1a1030 45%,var(--bg) 100%) fixed;
+    background:radial-gradient(ellipse at 50% 0%,var(--tint,#3a2670) 0%,#1a1030 45%,var(--bg) 100%) fixed;
     display:flex; flex-direction:column; align-items:center; min-height:100vh; min-height:100dvh; padding:8px; padding-left:max(8px,env(safe-area-inset-left)); padding-right:max(8px,env(safe-area-inset-right)); padding-bottom:max(8px,env(safe-area-inset-bottom)); user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:none; }
   h1 { font-size:26px; margin:2px 0 8px; letter-spacing:6px; font-weight:900;
     background:linear-gradient(#fff3c4,#ffb82e 55%,#b86a00); -webkit-background-clip:text; background-clip:text; color:transparent;
@@ -46,7 +46,7 @@
   .spell[disabled] { opacity:.45; cursor:not-allowed; }
   @keyframes glow { 0%,100%{box-shadow:0 0 6px #7f78} 50%{box-shadow:0 0 16px #9f9c} }
   .spell.ready { border-color:#8f8; animation:glow 1.6s infinite; }
-  .frame { padding:6px; border-radius:14px; background:linear-gradient(135deg,#ffe08a,#a86a14 50%,#ffd36b); box-shadow:0 6px 20px #000a; }
+  .frame { padding:6px; border-radius:14px; background:linear-gradient(135deg,#ffe08a,#a86a14 50%,#ffd36b); box-shadow:0 6px 20px #000a,0 0 26px var(--arena,transparent); transition:box-shadow .6s; }
   canvas { width:100%; aspect-ratio:1; background:#0b0814; border:3px solid #2a1c10; border-radius:9px; touch-action:none; display:block; }
   #log { height:64px; overflow:hidden; font-family:system-ui,sans-serif; font-size:12px; color:var(--dim); background:#0006; border-radius:10px; padding:6px 8px; border:1px solid #fff1; }
   #log div:first-child { color:var(--txt); }
@@ -119,14 +119,24 @@
   @media (max-width:600px) { .spell span { font-size:10px; } .spell.potion span { display:none; } #topbar { text-align:left; padding-left:4px; } #topbar h1 { font-size:19px; letter-spacing:3px; } }
   @media (max-height:520px) and (min-aspect-ratio:1/1) { .spell span { display:none; } #spells .spell, .spell.potion { padding:3px 6px; } .spell b { font-size:11px; } }
   @media (max-width:600px) and (max-height:700px) and (max-aspect-ratio:1/1) { canvas.fig { max-width:60px; margin:2px auto; } .card { padding:6px 8px; } .bar { height:12px; } .xp { height:8px; } .small { font-size:11px; } .name { font-size:14px !important; } h1 { font-size:17px; margin:0 0 4px; } #mana { gap:4px; } }
+  #toast { position:fixed; z-index:40; left:50%; top:12px; transform:translate(-50%,-220%); opacity:0; background:#1c1430f2; border:2px solid var(--gold); border-radius:12px; padding:8px 14px; font:700 14px system-ui,sans-serif; display:flex; gap:8px; align-items:center; box-shadow:0 6px 24px #000c; transition:transform .35s cubic-bezier(.2,.8,.3,1),opacity .25s; pointer-events:none; max-width:92vw; }
+  #toast.show { transform:translate(-50%,0); opacity:1; } #toast .ico { width:22px; height:22px; flex:none; }
+  #panelbox button.ad { background:linear-gradient(#6bd48a,#2f9a55); color:#052a14; border:0; font-weight:900; }
+  #panelbox button.alt { background:#3a2c63; }
+  .row2.lock { opacity:.5; } .row2 .tick { color:#7f7; font-size:20px; font-weight:900; min-width:24px; text-align:center; }
+  .pills { display:inline-flex; gap:4px; } #panelbox button.pill { padding:6px 12px; font-size:13px; border-radius:20px; background:#2a1f45; }
+  #panelbox button.pill.on { background:var(--gold); color:#2a1604; border-color:var(--gold); }
+  .homeopts { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
+  select { background:#2a1f45; color:var(--txt); border:2px solid var(--edge); border-radius:8px; padding:6px 8px; font:14px system-ui,sans-serif; }
+  .set select { display:block; width:100%; margin-top:4px; }
 </style>
 </head>
 <body>
-<div id="topbar"><h1>GEMHOLLOW</h1><div id="tools"><button id="menu" title="Menu (Esc)" aria-label="Menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><button id="mute" title="Sound on/off" aria-label="Sound"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path class="wave" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="slash" d="M3 3l18 18" stroke="#ff6b6b"/></svg></button><button id="fs" title="Fullscreen" aria-label="Fullscreen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
+<div id="topbar"><h1>GEMHOLLOW</h1><div id="tools"><button id="hint" data-i18n-title="Hint (T)" title="Hint (T)" aria-label="Hint (T)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></button><button id="menu" data-i18n-title="Menu (Esc)" title="Menu (Esc)" aria-label="Menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><button id="mute" data-i18n-title="Sound on/off" title="Sound on/off" aria-label="Sound"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path class="wave" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="slash" d="M3 3l18 18" stroke="#ff6b6b"/></svg></button><button id="fs" data-i18n-title="Fullscreen" title="Fullscreen" aria-label="Fullscreen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
 <div id="game">
   <div class="row" id="cards">
     <div class="card" id="pcard">
-      <div class="name"><span id="pname">Wanderer</span><span id="plv"></span></div>
+      <div class="name"><span id="pname" data-i18n="Wanderer">Wanderer</span><span id="plv"></span></div>
       <canvas class="fig" id="pcv" width="240" height="240"></canvas>
       <div class="bar hp"><i id="php"></i></div>
       <div class="small" id="phptxt"></div>
@@ -147,13 +157,14 @@
   <div id="log" role="log" aria-live="polite"></div>
 </div>
 <div id="panel" role="dialog" aria-modal="true"><div id="panelbox"></div></div>
-<div id="tip" hidden role="status"><span id="tiptext"></span> <button id="tipok">Got it</button></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="tip" hidden role="status"><span id="tiptext"></span> <button id="tipok" data-i18n="Got it">Got it</button></div>
 
 <script>
 "use strict";
 const N = 8, CELL = 60;
 const SKULL=0, RED=1, GREEN=2, BLUE=3, EARTH=4, STAR=5;
-const ICO = {'fire': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5c.8 4.2 6.2 6 6.2 12.2a6.2 6.2 0 0 1-12.4 0c0-3.2 2-4.4 3.2-7.4 1 .9 1.4 1.9 1.6 3 1-1.9 1.4-4.6 1.4-7.8z" fill="#ff8a3a" stroke="#5a1208" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 22a3.3 3.3 0 0 1-3.3-3.4c0-2 1.6-2.8 2.2-4.6 1 .9 1.1 1.7 1.1 2.4.7-.5.9-1.4.9-2.2 1.3 1.2 2.4 2.4 2.4 4.4A3.3 3.3 0 0 1 12 22z" fill="#ffe08a"/></svg>', 'air': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke-linecap="round"><path d="M3 8.5h10.5a2.7 2.7 0 1 0-2.6-3.3M3 13h14.5a2.9 2.9 0 1 1-2.8 3.6M3 17.5h7a2.2 2.2 0 1 1-2.1 2.8" stroke="#0d4a36" stroke-width="4.2"/><path d="M3 8.5h10.5a2.7 2.7 0 1 0-2.6-3.3M3 13h14.5a2.9 2.9 0 1 1-2.8 3.6M3 17.5h7a2.2 2.2 0 1 1-2.1 2.8" stroke="#dcfff0" stroke-width="2.2"/></g></svg>', 'water': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8c3.2 5 7 8 7 12.2a7 7 0 0 1-14 0c0-4.2 3.8-7.2 7-12.2z" fill="#6bb4ff" stroke="#10306a" stroke-width="1.5" stroke-linejoin="round"/><path d="M8.5 14.5a3.6 3.6 0 0 0 2.6 3.6" fill="none" stroke="#e8f6ff" stroke-width="1.6" stroke-linecap="round"/></svg>', 'earth': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.8 20.5 9 6.8l4 7.2 3-4.2 6.2 10.7z" fill="#e8b84a" stroke="#4a3000" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 6.8 7.4 11l1.8-1 1.4 2z" fill="#fff0c8"/></svg>', 'coin': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#ffd35a" stroke="#7a4a08" stroke-width="1.6"/><circle cx="12" cy="12" r="6.2" fill="none" stroke="#c88a1a" stroke-width="1.4"/><path d="M12 8v8M9.5 10.2h3.8a1.6 1.6 0 0 1 0 3.2H10" fill="none" stroke="#9a620c" stroke-width="1.4" stroke-linecap="round"/></svg>'};
+const ICO = {'trophy': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v5a5 5 0 0 1-10 0V3z" fill="#ffd35a" stroke="#7a4a08" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 5H3.5c0 3 1.5 4.5 3.7 4.8M17 5h3.5c0 3-1.5 4.5-3.7 4.8M12 13v4M8 21h8M9.5 17h5v4h-5z" fill="none" stroke="#7a4a08" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>', 'fire': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5c.8 4.2 6.2 6 6.2 12.2a6.2 6.2 0 0 1-12.4 0c0-3.2 2-4.4 3.2-7.4 1 .9 1.4 1.9 1.6 3 1-1.9 1.4-4.6 1.4-7.8z" fill="#ff8a3a" stroke="#5a1208" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 22a3.3 3.3 0 0 1-3.3-3.4c0-2 1.6-2.8 2.2-4.6 1 .9 1.1 1.7 1.1 2.4.7-.5.9-1.4.9-2.2 1.3 1.2 2.4 2.4 2.4 4.4A3.3 3.3 0 0 1 12 22z" fill="#ffe08a"/></svg>', 'air': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke-linecap="round"><path d="M3 8.5h10.5a2.7 2.7 0 1 0-2.6-3.3M3 13h14.5a2.9 2.9 0 1 1-2.8 3.6M3 17.5h7a2.2 2.2 0 1 1-2.1 2.8" stroke="#0d4a36" stroke-width="4.2"/><path d="M3 8.5h10.5a2.7 2.7 0 1 0-2.6-3.3M3 13h14.5a2.9 2.9 0 1 1-2.8 3.6M3 17.5h7a2.2 2.2 0 1 1-2.1 2.8" stroke="#dcfff0" stroke-width="2.2"/></g></svg>', 'water': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8c3.2 5 7 8 7 12.2a7 7 0 0 1-14 0c0-4.2 3.8-7.2 7-12.2z" fill="#6bb4ff" stroke="#10306a" stroke-width="1.5" stroke-linejoin="round"/><path d="M8.5 14.5a3.6 3.6 0 0 0 2.6 3.6" fill="none" stroke="#e8f6ff" stroke-width="1.6" stroke-linecap="round"/></svg>', 'earth': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.8 20.5 9 6.8l4 7.2 3-4.2 6.2 10.7z" fill="#e8b84a" stroke="#4a3000" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 6.8 7.4 11l1.8-1 1.4 2z" fill="#fff0c8"/></svg>', 'coin': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#ffd35a" stroke="#7a4a08" stroke-width="1.6"/><circle cx="12" cy="12" r="6.2" fill="none" stroke="#c88a1a" stroke-width="1.4"/><path d="M12 8v8M9.5 10.2h3.8a1.6 1.6 0 0 1 0 3.2H10" fill="none" stroke="#9a620c" stroke-width="1.4" stroke-linecap="round"/></svg>'};
 const GEMS = [
   {name:"Skull", emoji:"💀", col:"#5a4a6a"},
   {name:"Fire",  emoji:ICO.fire, col:"#d8402f"},
@@ -258,7 +269,7 @@ TRACKS.forEach((T,ti)=>{
 const mtof=m=>440*Math.pow(2,(m-69)/12);
 
 const Snd = {
-  ctx:null, master:null, sfxG:null, musG:null, drumG:null, noiseBuf:null, muted:false, forced:false,
+  ctx:null, master:null, sfxG:null, musG:null, drumG:null, noiseBuf:null, muted:false, forced:false, away:false,
   track:0, pending:null, nextT:0, step:0, bar:0, tr0:0, timer:null,
   load(){ try{ this.muted=localStorage.getItem("gh_muted")==="1"; }catch(e){} },
   init(){
@@ -276,7 +287,8 @@ const Snd = {
       if(this.ctx.state==="suspended") this.ctx.resume();
     }catch(e){}
   },
-  apply(){ if(!this.master) return; this.master.gain.value=(this.muted||this.forced)?0:Settings.master; this.sfxG.gain.value=.8*Settings.sfx; this.musG.gain.cancelScheduledValues(0); this.musG.gain.value=.45*Settings.music*(TRACKS[this.track].gain||1); },
+  silent(){ return this.muted||this.forced||this.away; },
+  apply(){ if(!this.master) return; this.master.gain.value=(this.muted||this.forced||this.away)?0:Settings.master; this.sfxG.gain.value=.8*Settings.sfx; this.musG.gain.cancelScheduledValues(0); this.musG.gain.value=.45*Settings.music*(TRACKS[this.track].gain||1); },
   setMuted(m){ this.muted=m; try{ localStorage.setItem("gh_muted",m?"1":"0"); }catch(e){} this.apply(); },
   force(f){ this.forced=f; this.apply(); },
   setTrack(i){ i=((i%TRACKS.length)+TRACKS.length)%TRACKS.length; if(i!==this.track) this.pending=i; },
@@ -297,7 +309,7 @@ const Snd = {
   tone(f,d,type="sine",v=.3,when=0,to=null){ if(this.ctx) this.osc(this.ctx.currentTime+when,f,d,type,v,null,to); },
   // ----- sound effects -----
   elem(kind,vol=1,big=false){
-    if(!this.ctx||this.muted||this.forced) return;
+    if(!this.ctx||this.silent()) return;
     const t=this.ctx.currentTime, R=Math.random, v=vol;
     switch(kind){
       case "fire":
@@ -331,7 +343,7 @@ const Snd = {
     }
   },
   play(name,n=1){
-    if(!this.ctx||this.muted||this.forced) return;
+    if(!this.ctx||this.silent()) return;
     switch(name){
       case "swap": this.tone(380,.08,"triangle",.25,0,520); break;
       case "bad": this.tone(200,.15,"square",.15,0,120); break;
@@ -369,7 +381,7 @@ const Snd = {
     if(this.nextT<c.currentTime-.05) this.nextT=c.currentTime+.05;   // fell behind (stall/background): resync instead of bursting
     while(this.nextT<c.currentTime+.6){
       const T=TRACKS[this.track], sp=60/T.bpm/4;
-      if(!this.muted&&!this.forced) this.playStep(T,this.step,this.bar,this.nextT,sp);
+      if(!this.silent()) this.playStep(T,this.step,this.bar,this.nextT,sp);
       this.nextT+=sp; this.step++;
       if(this.step===16){ this.step=0; this.bar++;
         if(this.pending!==null){ this.track=this.pending; this.pending=null; this.bar=0; this.tr0=0; this.delay.delayTime.setValueAtTime(60/TRACKS[this.track].bpm*.75,this.nextT); } }
@@ -501,22 +513,30 @@ Snd.load();
 
 document.addEventListener("pointerdown",()=>Snd.init());
 document.addEventListener("keydown",()=>Snd.init());
-document.addEventListener("visibilitychange",()=>{ if(Snd.ctx) document.hidden?Snd.ctx.suspend():Snd.ctx.resume(); });
+
 
 // ---------- CrazyGames SDK wrapper (safe when SDK is absent) ----------
 const CG = {
-  ready:false, playing:false,
+  ready:false, playing:false, adActive:false,
   sdk(){ return window.CrazyGames&&window.CrazyGames.SDK; },
-  async init(){ try{ const k=this.sdk(); if(!k) return; await k.init(); this.ready=true; try{ k.game.loadingStart(); }catch(e){} }catch(e){} },
+  async init(){ try{ const k=this.sdk(); if(!k) return; await k.init(); this.ready=true; try{ k.game.loadingStart(); }catch(e){} if(this.playing){ try{ k.game.gameplayStart(); }catch(e){} } }catch(e){} },
   loaded(){ try{ if(this.ready) this.sdk().game.loadingStop(); }catch(e){} },
   dataGet(k){ try{ return this.ready?this.sdk().data.getItem(k):null; }catch(e){ return null; } },
   dataSet(k,v){ try{ if(this.ready) this.sdk().data.setItem(k,v); }catch(e){} },
   start(){ if(this.playing) return; this.playing=true; try{ if(this.ready) this.sdk().game.gameplayStart(); }catch(e){} },
   stop(){ if(!this.playing) return; this.playing=false; try{ if(this.ready) this.sdk().game.gameplayStop(); }catch(e){} },
+  happy(){ try{ if(this.ready) this.sdk().game.happytime(); }catch(e){} },
   ad(done){
-    let called=false; const fin=()=>{ if(called) return; called=true; Snd.force(false); done(); };
+    let called=false; const fin=()=>{ if(called) return; called=true; this.adActive=false; Snd.force(false); done(); };
     if(!this.ready) return fin();
+    this.adActive=true;
     try{ this.sdk().ad.requestAd("midgame",{ adStarted:()=>Snd.force(true), adFinished:fin, adError:fin }); setTimeout(fin,60000); }catch(e){ fin(); }
+  },
+  rewarded(ok,fail){   // opt-in ad: the reward is only granted if the ad finishes; errors / no fill call fail
+    let done=false; const end=g=>{ if(done) return; done=true; this.adActive=false; Snd.force(false); if(g) ok(); else if(fail) fail(); };
+    if(!this.ready) return end(false);
+    this.adActive=true;
+    try{ this.sdk().ad.requestAd("rewarded",{ adStarted:()=>Snd.force(true), adFinished:()=>end(true), adError:()=>end(false) }); setTimeout(()=>end(false),120000); }catch(e){ end(false); }
   }
 };
 
@@ -694,6 +714,187 @@ const sleep = async ms => { const g0=GEN; if(!FAST) await new Promise(r=>setTime
 const frame = async () => { const g0=GEN; if(FAST) await Promise.resolve(); else await new Promise(r=>requestAnimationFrame(r)); const g=gate(); if(g) await g; if(g0!==GEN) await dead(); };
 const rnd = n => Math.floor(Math.random()*n);
 
+// ---------- localization (English source strings are the keys; missing translations fall back to English) ----------
+const LANGS=[["en","English"],["es","Español"],["pt","Português"],["fr","Français"],["de","Deutsch"],["ru","Русский"]];
+const TR=[ // [en, es, pt, fr, de, ru]
+ ["Menu (Esc)","Menú (Esc)","Menu (Esc)","Menu (Échap)","Menü (Esc)","Меню (Esc)"],
+ ["Sound on/off","Sonido sí/no","Som ligado/desligado","Son activé/désactivé","Ton an/aus","Звук вкл/выкл"],
+ ["Fullscreen","Pantalla completa","Tela cheia","Plein écran","Vollbild","Полный экран"],
+ ["Hint (T)","Pista (T)","Dica (T)","Indice (T)","Tipp (T)","Подсказка (T)"],
+ ["Got it","Entendido","Entendi","Compris","Verstanden","Понятно"],
+ ["Wanderer","Errante","Andarilho","Vagabond","Wanderer","Странник"],
+ ["Lv {n}","Nv {n}","Nv {n}","Niv {n}","Stufe {n}","Ур. {n}"],
+ ["Stage {n}","Etapa {n}","Fase {n}","Étape {n}","Runde {n}","Этап {n}"],
+ ["Endless · Stage {n}","Infinito · Etapa {n}","Infinito · Fase {n}","Infini · Étape {n}","Endlos · Runde {n}","Бесконечный · Этап {n}"],
+ ["HP {a}/{b}","PV {a}/{b}","PV {a}/{b}","PV {a}/{b}","LP {a}/{b}","ОЗ {a}/{b}"],
+ ["Shield {n}","Escudo {n}","Escudo {n}","Bouclier {n}","Schild {n}","Щит {n}"],
+ ["Poison {n}","Veneno {n}","Veneno {n}","Poison {n}","Gift {n}","Яд {n}"],
+ ["Stunned","Aturdido","Atordoado","Étourdi","Betäubt","Оглушён"],
+ ["XP {a}/{b}","XP {a}/{b}","XP {a}/{b}","XP {a}/{b}","EP {a}/{b}","Опыт {a}/{b}"],
+ ["BOSS","JEFE","CHEFE","BOSS","BOSS","БОСС"],
+ ["Attack {n}","Ataque {n}","Ataque {n}","Attaque {n}","Angriff {n}","Атака {n}"],
+ ["Frozen","Congelado","Congelado","Gelé","Eingefroren","Заморожен"],
+ ["⚠ Next turn:","⚠ Próximo turno:","⚠ Próximo turno:","⚠ Prochain tour :","⚠ Nächster Zug:","⚠ Следующий ход:"],
+ ["Special:","Especial:","Especial:","Spécial :","Spezial:","Умение:"],
+ ["in {n}","en {n}","em {n}","dans {n}","in {n}","через {n}"],
+ ["Regenerates HP","Regenera PV","Regenera PV","Régénère ses PV","Regeneriert LP","Восстанавливает ОЗ"],
+ ["Health Potion ×{n}","Poción de salud ×{n}","Poção de vida ×{n}","Potion de soin ×{n}","Heiltrank ×{n}","Зелье здоровья ×{n}"],
+ ["Restore 50% HP","Restaura 50% PV","Restaura 50% PV","Rend 50 % PV","Stellt 50 % LP her","Восстанавливает 50% ОЗ"],
+ ["Mana Potion ×{n}","Poción de maná ×{n}","Poção de mana ×{n}","Potion de mana ×{n}","Manatrank ×{n}","Зелье маны ×{n}"],
+ ["+4 of each mana","+4 de cada maná","+4 de cada mana","+4 de chaque mana","+4 für jedes Mana","+4 каждой маны"],
+ ["{el} mana","Maná: {el}","Mana: {el}","Mana : {el}","Mana: {el}","Мана: {el}"],
+ ["Fire","Fuego","Fogo","Feu","Feuer","Огонь"],["Air","Aire","Ar","Air","Luft","Воздух"],["Water","Agua","Água","Eau","Wasser","Вода"],
+ ["Earth","Tierra","Terra","Terre","Erde","Земля"],["Skull","Calavera","Caveira","Crâne","Totenkopf","Череп"],["Star","Estrella","Estrela","Étoile","Stern","Звезда"],
+ ["+{n} {el}","+{n} {el}","+{n} {el}","+{n} {el}","+{n} {el}","+{n} {el}"],
+ ["Fireball","Bola de fuego","Bola de fogo","Boule de feu","Feuerball","Огненный шар"],["Heal","Curar","Curar","Soin","Heilen","Лечение"],
+ ["Frost","Escarcha","Gelo","Givre","Frost","Холод"],["Smite","Castigo","Punição","Châtiment","Strafe","Кара"],
+ ["Wildfire","Incendio","Incêndio","Brasier","Flächenbrand","Пожар"],["Cleanse","Purificar","Purificar","Purification","Läutern","Очищение"],
+ ["Stoneskin","Piel de piedra","Pele de pedra","Peau de pierre","Steinhaut","Каменная кожа"],["Meteor","Meteoro","Meteoro","Météore","Meteor","Метеор"],
+ ["{n} damage","{n} de daño","{n} de dano","{n} dégâts","{n} Schaden","{n} урона"],
+ ["Restore {n} HP","Restaura {n} PV","Restaura {n} PV","Rend {n} PV","Stellt {n} LP her","Восстанавливает {n} ОЗ"],
+ ["{n} dmg, freeze enemy 1 turn","{n} daño, congela al enemigo 1 turno","{n} dano, congela o inimigo por 1 turno","{n} dégâts, gèle l'ennemi 1 tour","{n} Schaden, friert den Gegner 1 Zug ein","{n} урона, замораживает врага на 1 ход"],
+ ["Destroy all skulls, {n} dmg each","Destruye todas las calaveras, {n} de daño c/u","Destrói todas as caveiras, {n} de dano cada","Détruit tous les crânes, {n} dégâts chacun","Zerstört alle Totenköpfe, je {n} Schaden","Уничтожает все черепа, по {n} урона"],
+ ["Burn a row and column, {n} dmg per gem","Quema una fila y una columna, {n} de daño por gema","Queima uma linha e uma coluna, {n} de dano por gema","Brûle une ligne et une colonne, {n} dégâts par gemme","Verbrennt eine Reihe und Spalte, {n} Schaden pro Stein","Сжигает ряд и столбец, {n} урона за камень"],
+ ["Cure poison & stun, heal {n}","Cura veneno y aturdimiento, sana {n}","Cura veneno e atordoamento, cura {n}","Soigne poison et étourdissement, rend {n}","Heilt Gift & Betäubung, heilt {n}","Снимает яд и оглушение, лечит {n}"],
+ ["Block the next {n} damage","Bloquea los próximos {n} de daño","Bloqueia os próximos {n} de dano","Bloque les {n} prochains dégâts","Blockt die nächsten {n} Schaden","Блокирует следующие {n} урона"],
+ ["{n} damage, shakes the board","{n} de daño, sacude el tablero","{n} de dano, sacode o tabuleiro","{n} dégâts, secoue le plateau","{n} Schaden, erschüttert das Brett","{n} урона, трясёт поле"],
+ ["(Lv {n})","(Nv {n})","(Nv {n})","(Niv {n})","(Stufe {n})","(Ур. {n})"],
+ ["+Shield","+Escudo","+Escudo","+Bouclier","+Schild","+Щит"],
+ ["The enemy is frozen!","¡El enemigo está congelado!","O inimigo está congelado!","L'ennemi est gelé !","Der Gegner ist eingefroren!","Враг заморожен!"],
+ ["Ailments cleansed.","Males purificados.","Males purificados.","Maux purifiés.","Leiden geläutert.","Недуги очищены."],
+ ["Pilfer","Hurtar","Furtar","Chaparder","Stehlen","Кража"],["Frenzy","Frenesí","Frenesi","Frénésie","Raserei","Неистовство"],
+ ["Mana Drain","Drenar maná","Drenar mana","Drain de mana","Manaentzug","Похищение маны"],["Stun","Aturdir","Atordoar","Étourdir","Betäuben","Оглушение"],
+ ["Poison","Veneno","Veneno","Poison","Gift","Яд"],["Harden","Endurecer","Endurecer","Durcir","Härten","Закалка"],
+ ["Life Drain","Drenar vida","Drenar vida","Drain de vie","Lebensentzug","Похищение жизни"],["Fire Breath","Aliento de fuego","Sopro de fogo","Souffle de feu","Feueratem","Огненное дыхание"],
+ ["steals coins","roba monedas","rouba moedas","vole des pièces","stiehlt Münzen","крадёт монеты"],
+ ["takes an extra move","hace un movimiento extra","faz um movimento extra","joue un coup de plus","macht einen Extrazug","делает лишний ход"],
+ ["steals mana","roba maná","rouba mana","vole du mana","stiehlt Mana","крадёт ману"],
+ ["you skip a turn","pierdes un turno","você perde um turno","vous passez un tour","du setzt einen Zug aus","вы пропускаете ход"],
+ ["poisons you for 3 turns","te envenena 3 turnos","envenena você por 3 turnos","vous empoisonne 3 tours","vergiftet dich für 3 Züge","отравляет вас на 3 хода"],
+ ["gains a shield","gana un escudo","ganha um escudo","gagne un bouclier","erhält einen Schild","получает щит"],
+ ["steals HP","roba PV","rouba PV","vole des PV","stiehlt LP","крадёт ОЗ"],
+ ["burns you and spawns skulls","te quema y crea calaveras","queima você e cria caveiras","vous brûle et crée des crânes","verbrennt dich und erzeugt Totenköpfe","жжёт вас и создаёт черепа"],
+ ["-{n} coins","-{n} monedas","-{n} moedas","-{n} pièces","-{n} Münzen","-{n} монет"],
+ ["Nothing to steal","Nada que robar","Nada para furtar","Rien à voler","Nichts zu stehlen","Нечего красть"],
+ ["No mana to drain","Sin maná que drenar","Sem mana para drenar","Pas de mana à drainer","Kein Mana zu entziehen","Нет маны для похищения"],
+ ["-{n} {el} mana","-{n} de maná de {el}","-{n} de mana de {el}","-{n} mana {el}","-{n} {el}-Mana","-{n} маны: {el}"],
+ ["Stunned!","¡Aturdido!","Atordoado!","Étourdi !","Betäubt!","Оглушён!"],["Poisoned!","¡Envenenado!","Envenenado!","Empoisonné !","Vergiftet!","Отравлен!"],
+ ["+{n} shield","+{n} escudo","+{n} escudo","+{n} bouclier","+{n} Schild","+{n} щит"],
+ ["Slime","Limo","Gosma","Gelée","Schleim","Слизень"],["Goblin","Goblin","Goblin","Gobelin","Goblin","Гоблин"],["Wolf","Lobo","Lobo","Loup","Wolf","Волк"],
+ ["Bandit","Bandido","Bandido","Bandit","Bandit","Бандит"],["Orc","Orco","Orc","Orc","Ork","Орк"],["Skeleton","Esqueleto","Esqueleto","Squelette","Skelett","Скелет"],
+ ["Troll","Troll","Troll","Troll","Troll","Тролль"],["Golem","Gólem","Golem","Golem","Golem","Голем"],["Wraith","Espectro","Espectro","Spectre","Geist","Призрак"],
+ ["Dragon","Dragón","Dragão","Dragon","Drache","Дракон"],["Orc Warlord","Señor de la Guerra Orco","Senhor da Guerra Orc","Chef de guerre orc","Ork-Kriegsherr","Орк-полководец"],
+ ["Elder Dragon","Dragón Ancestral","Dragão Ancião","Dragon ancestral","Uralter Drache","Древний дракон"],
+ ["Swap two neighboring gems to line up 3 or more of the same kind. Try it now!","Intercambia dos gemas vecinas para alinear 3 o más iguales. ¡Pruébalo ahora!","Troque duas gemas vizinhas para alinhar 3 ou mais iguais. Experimente agora!","Échangez deux gemmes voisines pour aligner 3 gemmes identiques ou plus. Essayez !","Tausche zwei benachbarte Steine, um 3 oder mehr gleiche in eine Reihe zu bringen. Probier es aus!","Поменяйте местами два соседних камня, чтобы собрать 3 и более одинаковых. Попробуйте!"],
+ ["Skulls hurt your enemy. Bigger matches and cascades hit harder.","Las calaveras dañan al enemigo. Las combinaciones grandes y las cascadas pegan más fuerte.","Caveiras ferem o inimigo. Combinações maiores e cascatas causam mais dano.","Les crânes blessent l'ennemi. Les grosses combinaisons et les cascades frappent plus fort.","Totenköpfe verletzen deinen Gegner. Größere Kombinationen und Kaskaden treffen härter.","Черепа ранят врага. Большие комбинации и каскады бьют сильнее."],
+ ["Fire, Air, Water and Earth gems fill your mana bars. Mana pays for spells.","Las gemas de Fuego, Aire, Agua y Tierra llenan tus barras de maná. El maná paga los hechizos.","Gemas de Fogo, Ar, Água e Terra enchem suas barras de mana. A mana paga os feitiços.","Les gemmes de Feu, d'Air, d'Eau et de Terre remplissent vos jauges de mana. Le mana paie les sorts.","Feuer-, Luft-, Wasser- und Erdsteine füllen deine Manaleisten. Mana bezahlt Zauber.","Камни Огня, Воздуха, Воды и Земли наполняют шкалы маны. Мана нужна для заклинаний."],
+ ["A spell is ready! Tap a glowing spell button (or press its number). Casting doesn't end your turn.","¡Un hechizo está listo! Toca un botón brillante (o pulsa su número). Lanzarlo no termina tu turno.","Um feitiço está pronto! Toque em um botão brilhante (ou pressione seu número). Lançar não encerra seu turno.","Un sort est prêt ! Touchez un bouton lumineux (ou appuyez sur son numéro). Lancer un sort ne termine pas votre tour.","Ein Zauber ist bereit! Tippe auf eine leuchtende Taste (oder drücke ihre Nummer). Zaubern beendet deinen Zug nicht.","Заклинание готово! Нажмите светящуюся кнопку (или её номер). Заклинание не завершает ход."],
+ ["Nice! Matching 4 or more gems in a line, or 5 in an L, T or + shape, earns an extra turn.","¡Bien! Combinar 4 o más gemas en línea, o 5 en forma de L, T o +, da un turno extra.","Legal! Combinar 4 ou mais gemas em linha, ou 5 em forma de L, T ou +, dá um turno extra.","Bien ! Aligner 4 gemmes ou plus, ou 5 en forme de L, T ou +, donne un tour supplémentaire.","Super! 4 oder mehr Steine in einer Reihe oder 5 in L-, T- oder +-Form bringen einen Extrazug.","Отлично! 4 и более камня в ряд или 5 в форме L, T или + дают дополнительный ход."],
+ ["Now the enemy plays on the same board. Its skull matches hurt you, so keep an eye on your HP.","Ahora el enemigo juega en el mismo tablero. Sus calaveras te hieren, así que vigila tus PV.","Agora o inimigo joga no mesmo tabuleiro. As caveiras dele ferem você, então fique de olho nos seus PV.","L'ennemi joue maintenant sur le même plateau. Ses crânes vous blessent, surveillez vos PV.","Jetzt spielt der Gegner auf demselben Brett. Seine Totenköpfe verletzen dich – behalte deine LP im Blick.","Теперь враг ходит на том же поле. Его черепа ранят вас, следите за своими ОЗ."],
+ ["Stuck? Tap the lightbulb for a hint.","¿Atascado? Toca la bombilla para ver una pista.","Travado? Toque na lâmpada para uma dica.","Bloqué ? Touchez l'ampoule pour un indice.","Nicht weiter? Tippe auf die Glühbirne für einen Tipp.","Не знаете, что делать? Нажмите на лампочку для подсказки."],
+ ["Boss Defeated!","¡Jefe derrotado!","Chefe derrotado!","Boss vaincu !","Boss besiegt!","Босс повержен!"],["Victory!","¡Victoria!","Vitória!","Victoire !","Sieg!","Победа!"],
+ ["{name} defeated.","{name} derrotado.","{name} derrotado.","{name} vaincu.","{name} besiegt.","{name} побеждён."],
+ ["+{n} XP","+{n} XP","+{n} XP","+{n} XP","+{n} EP","+{n} опыта"],
+ ["Spend your coins in the shop on potions and upgrades before the next battle.","Gasta tus monedas en la tienda en pociones y mejoras antes del próximo combate.","Gaste suas moedas na loja com poções e melhorias antes da próxima batalha.","Dépensez vos pièces à la boutique en potions et améliorations avant le prochain combat.","Gib deine Münzen im Shop für Tränke und Verbesserungen aus, bevor der nächste Kampf beginnt.","Потратьте монеты в магазине на зелья и улучшения перед следующим боем."],
+ ["Next Battle","Siguiente combate","Próxima batalha","Combat suivant","Nächster Kampf","Следующий бой"],
+ ["Shop ({n})","Tienda ({n})","Loja ({n})","Boutique ({n})","Shop ({n})","Магазин ({n})"],["Shop","Tienda","Loja","Boutique","Shop","Магазин"],
+ ["Defeated","Derrotado","Derrotado","Vaincu","Besiegt","Поражение"],
+ ["You fell to the {name}.","Te derrotó {name}.","{name} derrotou você.","{name} vous a vaincu.","{name} hat dich besiegt.","{name} победил вас."],
+ ["Consolation: +{xp} XP, +{c}","Consuelo: +{xp} XP, +{c}","Consolo: +{xp} XP, +{c}","Consolation : +{xp} XP, +{c}","Trostpreis: +{xp} EP, +{c}","Утешение: +{xp} опыта, +{c}"],
+ ["Stages cleared: {n}","Etapas superadas: {n}","Fases concluídas: {n}","Étapes terminées : {n}","Runden geschafft: {n}","Пройдено этапов: {n}"],
+ ["Retry Battle","Reintentar combate","Tentar novamente","Réessayer","Kampf wiederholen","Повторить бой"],
+ ["Back","Volver","Voltar","Retour","Zurück","Назад"],["Max","Máx","Máx","Max","Max","Макс"],
+ ["Health Potion","Poción de salud","Poção de vida","Potion de soin","Heiltrank","Зелье здоровья"],
+ ["Restore 50% HP any time on your turn","Restaura 50% de PV en tu turno","Restaura 50% dos PV no seu turno","Rend 50 % des PV pendant votre tour","Stellt in deinem Zug 50 % LP wieder her","Восстанавливает 50% ОЗ в ваш ход"],
+ ["Mana Potion","Poción de maná","Poção de mana","Potion de mana","Manatrank","Зелье маны"],
+ ["+4 of every mana color","+4 de cada color de maná","+4 de cada cor de mana","+4 de chaque couleur de mana","+4 für jede Manafarbe","+4 каждого цвета маны"],
+ ["Vitality","Vitalidad","Vitalidade","Vitalité","Vitalität","Живучесть"],["+10 max HP","+10 PV máx.","+10 PV máx.","+10 PV max","+10 max. LP","+10 макс. ОЗ"],
+ ["Whetstone","Piedra de afilar","Pedra de amolar","Pierre à aiguiser","Wetzstein","Точило"],
+ ["+1 damage per skull matched","+1 de daño por calavera","+1 de dano por caveira","+1 dégât par crâne","+1 Schaden pro Totenkopf","+1 урона за череп"],
+ ["{name} Lv {l}","{name} Nv {l}","{name} Nv {l}","{name} Niv {l}","{name} Stufe {l}","{name} ур. {l}"],
+ [" (max)"," (máx.)"," (máx.)"," (max)"," (max.)"," (макс.)"],
+ ["Paused","En pausa","Pausado","Pause","Pausiert","Пауза"],["Resume","Continuar","Continuar","Reprendre","Weiter","Продолжить"],
+ ["Restart Battle","Reiniciar combate","Reiniciar batalha","Recommencer le combat","Kampf neu starten","Перезапустить бой"],
+ ["How to Play","Cómo jugar","Como jogar","Comment jouer","Spielanleitung","Как играть"],["Settings","Ajustes","Configurações","Paramètres","Einstellungen","Настройки"],
+ ["New Game","Nueva partida","Novo jogo","Nouvelle partie","Neues Spiel","Новая игра"],["Achievements","Logros","Conquistas","Succès","Erfolge","Достижения"],
+ ["Master volume","Volumen general","Volume geral","Volume général","Gesamtlautstärke","Общая громкость"],
+ ["Music volume","Volumen de música","Volume da música","Volume de la musique","Musiklautstärke","Громкость музыки"],
+ ["Effects volume","Volumen de efectos","Volume dos efeitos","Volume des effets","Effektlautstärke","Громкость эффектов"],
+ ["Reduce motion & screen shake","Reducir movimiento y temblor de pantalla","Reduzir movimento e tremor de tela","Réduire les mouvements et les secousses","Bewegung & Bildschirmwackeln reduzieren","Меньше движения и тряски экрана"],
+ ["High-contrast HUD text","Texto de interfaz de alto contraste","Texto da interface em alto contraste","Texte d'interface à fort contraste","Kontrastreicher Interface-Text","Контрастный текст интерфейса"],
+ ["Mute all sound","Silenciar todo","Silenciar tudo","Couper tout le son","Alles stummschalten","Выключить весь звук"],
+ ["Replay tutorial","Repetir tutorial","Repetir tutorial","Rejouer le tutoriel","Tutorial wiederholen","Повторить обучение"],
+ ["Language","Idioma","Idioma","Langue","Sprache","Язык"],["Difficulty","Dificultad","Dificuldade","Difficulté","Schwierigkeit","Сложность"],
+ ["Easy","Fácil","Fácil","Facile","Leicht","Легко"],["Normal","Normal","Normal","Normal","Normal","Нормально"],["Hard","Difícil","Difícil","Difficile","Schwer","Сложно"],
+ ["Swap two neighboring gems to line up <b>3 or more</b>. Then the enemy takes its turn on the same board.","Intercambia dos gemas vecinas para alinear <b>3 o más</b>. Luego el enemigo juega su turno en el mismo tablero.","Troque duas gemas vizinhas para alinhar <b>3 ou mais</b>. Depois o inimigo joga no mesmo tabuleiro.","Échangez deux gemmes voisines pour aligner <b>3 ou plus</b>. L'ennemi joue ensuite sur le même plateau.","Tausche zwei benachbarte Steine, um <b>3 oder mehr</b> in eine Reihe zu bringen. Danach ist der Gegner auf demselben Brett dran.","Поменяйте два соседних камня, чтобы собрать <b>3 и более</b>. Затем враг ходит на том же поле."],
+ ["<b>Skulls</b> damage the foe. <b>Fire, Air, Water, Earth</b> gems fill mana for spells. <b>Stars</b> give XP. Earth gems also drop coins.","Las <b>calaveras</b> dañan al enemigo. Las gemas de <b>Fuego, Aire, Agua y Tierra</b> llenan el maná de los hechizos. Las <b>estrellas</b> dan XP. Las gemas de Tierra también sueltan monedas.","<b>Caveiras</b> ferem o inimigo. Gemas de <b>Fogo, Ar, Água e Terra</b> enchem a mana dos feitiços. <b>Estrelas</b> dão XP. Gemas de Terra também soltam moedas.","Les <b>crânes</b> blessent l'ennemi. Les gemmes de <b>Feu, d'Air, d'Eau et de Terre</b> remplissent le mana des sorts. Les <b>étoiles</b> donnent de l'XP. Les gemmes de Terre rapportent aussi des pièces.","<b>Totenköpfe</b> verletzen den Gegner. <b>Feuer-, Luft-, Wasser- und Erdsteine</b> füllen Mana für Zauber. <b>Sterne</b> geben EP. Erdsteine bringen auch Münzen.","<b>Черепа</b> ранят врага. Камни <b>Огня, Воздуха, Воды и Земли</b> наполняют ману для заклинаний. <b>Звёзды</b> дают опыт. Камни Земли также приносят монеты."],
+ ["Matching <b>4+</b> in a line, or <b>5+ in an L, T or + shape</b>, gives an <b>extra turn</b>; cascades hit harder.","Combinar <b>4+</b> en línea, o <b>5+ en forma de L, T o +</b>, da un <b>turno extra</b>; las cascadas pegan más fuerte.","Combinar <b>4+</b> em linha, ou <b>5+ em forma de L, T ou +</b>, dá um <b>turno extra</b>; cascatas causam mais dano.","Aligner <b>4+</b> gemmes, ou <b>5+ en forme de L, T ou +</b>, donne un <b>tour supplémentaire</b> ; les cascades frappent plus fort.","<b>4+</b> in einer Reihe oder <b>5+ in L-, T- oder +-Form</b> bringen einen <b>Extrazug</b>; Kaskaden treffen härter.","<b>4+</b> в ряд или <b>5+ в форме L, T или +</b> дают <b>дополнительный ход</b>; каскады бьют сильнее."],
+ ["Spend coins in the shop after each battle. Watch the enemy's warning for its next special move.","Gasta monedas en la tienda tras cada combate. Atiende el aviso del próximo movimiento especial del enemigo.","Gaste moedas na loja após cada batalha. Fique atento ao aviso do próximo golpe especial do inimigo.","Dépensez vos pièces à la boutique après chaque combat. Surveillez l'avertissement du prochain coup spécial de l'ennemi.","Gib nach jedem Kampf Münzen im Shop aus. Beachte die Warnung vor dem nächsten Spezialangriff des Gegners.","Тратьте монеты в магазине после каждого боя. Следите за предупреждением о следующем особом приёме врага."],
+ ["<b>Keys:</b> arrows move the cursor, Space/Enter grabs a gem, then an arrow swaps it. 1-8 cast spells, H health potion, M mana potion, T hint, Esc menu.","<b>Teclas:</b> las flechas mueven el cursor, Espacio/Intro agarra una gema y luego una flecha la intercambia. 1-8 lanzan hechizos, H poción de salud, M poción de maná, T pista, Esc menú.","<b>Teclas:</b> setas movem o cursor, Espaço/Enter pega uma gema e depois uma seta a troca. 1-8 lançam feitiços, H poção de vida, M poção de mana, T dica, Esc menu.","<b>Touches :</b> les flèches déplacent le curseur, Espace/Entrée saisit une gemme, puis une flèche l'échange. 1-8 lancent les sorts, H potion de soin, M potion de mana, T indice, Échap menu.","<b>Tasten:</b> Pfeile bewegen den Cursor, Leertaste/Enter greift einen Stein, dann tauscht ihn ein Pfeil. 1-8 wirken Zauber, H Heiltrank, M Manatrank, T Tipp, Esc Menü.","<b>Клавиши:</b> стрелки двигают курсор, Пробел/Enter берёт камень, затем стрелка меняет его местами. 1-8 — заклинания, H — зелье здоровья, M — зелье маны, T — подсказка, Esc — меню."],
+ ["Shards of the Ember Crown","Fragmentos de la Corona de Brasas","Fragmentos da Coroa de Brasas","Éclats de la Couronne de braise","Splitter der Glutkrone","Осколки Угольной короны"],
+ ["Match gems, smash skulls and channel mana to slay the denizens of the hollow.","Combina gemas, aplasta calaveras y canaliza maná para derrotar a los habitantes del hueco.","Combine gemas, esmague caveiras e canalize mana para derrotar os habitantes do vale.","Alignez des gemmes, brisez des crânes et canalisez le mana pour terrasser les habitants du val.","Verbinde Edelsteine, zerschmettere Totenköpfe und kanalisiere Mana, um die Bewohner der Senke zu besiegen.","Собирайте камни, разбивайте черепа и направляйте ману, чтобы одолеть обитателей Лощины."],
+ ["Saved game: level {l}, stage {s}","Partida guardada: nivel {l}, etapa {s}","Jogo salvo: nível {l}, fase {s}","Partie sauvegardée : niveau {l}, étape {s}","Spielstand: Stufe {l}, Runde {s}","Сохранение: уровень {l}, этап {s}"],
+ ["Best stage: {n}","Mejor etapa: {n}","Melhor fase: {n}","Meilleure étape : {n}","Beste Runde: {n}","Лучший этап: {n}"],
+ ["Continue","Continuar","Continuar","Continuer","Weiter","Продолжить"],["Begin Quest","Comenzar aventura","Começar aventura","Commencer la quête","Quest beginnen","Начать приключение"],
+ ["New Game?","¿Nueva partida?","Novo jogo?","Nouvelle partie ?","Neues Spiel?","Новая игра?"],
+ ["This erases your saved progress.","Esto borra tu progreso guardado.","Isso apaga seu progresso salvo.","Cela efface votre progression.","Das löscht deinen gespeicherten Fortschritt.","Это сотрёт ваш сохранённый прогресс."],
+ ["Erase & Restart","Borrar y reiniciar","Apagar e reiniciar","Effacer et recommencer","Löschen & neu starten","Стереть и начать заново"],
+ ["Cancel","Cancelar","Cancelar","Annuler","Abbrechen","Отмена"],
+ ["{name} appears!","¡{name} aparece!","{name} aparece!","{name} apparaît !","{name} erscheint!","Появляется {name}!"],
+ [" Boss battle!"," ¡Combate contra jefe!"," Batalha de chefe!"," Combat de boss !"," Bosskampf!"," Битва с боссом!"],
+ ["Now playing: {t}","Sonando: {t}","Tocando: {t}","En lecture : {t}","Spielt: {t}","Играет: {t}"],
+ ["BIG MATCH!","¡GRAN COMBINACIÓN!","GRANDE COMBINAÇÃO!","GROSSE COMBINAISON !","GROSSE KOMBO!","БОЛЬШАЯ КОМБИНАЦИЯ!"],
+ ["Cascade x{n}!","¡Cascada x{n}!","Cascata x{n}!","Cascade x{n} !","Kaskade x{n}!","Каскад x{n}!"],
+ ["No moves left — reshuffling!","¡Sin movimientos! Barajando…","Sem movimentos — embaralhando!","Plus de coups — on mélange !","Keine Züge mehr – es wird gemischt!","Ходов нет — перемешиваем!"],
+ ["Blocked {n}","Bloqueado {n}","Bloqueado {n}","Bloqué {n}","Geblockt {n}","Блок {n}"],
+ ["+{n} HP","+{n} PV","+{n} PV","+{n} PV","+{n} LP","+{n} ОЗ"],
+ ["LEVEL UP! You are now level {n}. HP restored.","¡SUBES DE NIVEL! Ahora eres nivel {n}. PV restaurados.","SUBIU DE NÍVEL! Agora você é nível {n}. PV restaurados.","NIVEAU SUPÉRIEUR ! Vous êtes niveau {n}. PV restaurés.","STUFENAUFSTIEG! Du bist jetzt Stufe {n}. LP aufgefüllt.","НОВЫЙ УРОВЕНЬ! Теперь у вас уровень {n}. ОЗ восстановлены."],
+ ["LEVEL UP!","¡SUBIDA!","SUBIU!","NIVEAU !","AUFSTIEG!","УРОВЕНЬ!"],
+ ["Extra turn!","¡Turno extra!","Turno extra!","Tour supplémentaire !","Extrazug!","Дополнительный ход!"],
+ ["EXTRA TURN!","¡TURNO EXTRA!","TURNO EXTRA!","TOUR SUPPLÉMENTAIRE !","EXTRAZUG!","ДОП. ХОД!"],
+ ["Poison burns you.","El veneno te quema.","O veneno queima você.","Le poison vous ronge.","Das Gift brennt dich.","Яд жжёт вас."],
+ ["You are stunned and lose your turn!","¡Estás aturdido y pierdes tu turno!","Você está atordoado e perde o turno!","Vous êtes étourdi et perdez votre tour !","Du bist betäubt und verlierst deinen Zug!","Вы оглушены и пропускаете ход!"],
+ ["STUNNED","ATURDIDO","ATORDOADO","ÉTOURDI","BETÄUBT","ОГЛУШЁН"],
+ ["{name} uses {a}!","¡{name} usa {a}!","{name} usa {a}!","{name} utilise {a} !","{name} setzt {a} ein!","{name} использует: {a}!"],
+ ["{name} is frozen and skips its turn.","{name} está congelado y pierde su turno.","{name} está congelado e perde o turno.","{name} est gelé et passe son tour.","{name} ist eingefroren und setzt aus.","{name} заморожен и пропускает ход."],
+ ["{name} gets an extra turn!","¡{name} obtiene un turno extra!","{name} ganha um turno extra!","{name} gagne un tour supplémentaire !","{name} erhält einen Extrazug!","{name} получает дополнительный ход!"],
+ ["You cast {n}!","¡Lanzas {n}!","Você lança {n}!","Vous lancez {n} !","Du wirkst {n}!","Вы читаете заклинание: {n}!"],
+ ["+4 mana each","+4 de maná c/u","+4 de mana cada","+4 de mana chacun","+4 Mana je","+4 маны каждой"],
+ ["BOSS BATTLE","COMBATE DE JEFE","BATALHA DE CHEFE","COMBAT DE BOSS","BOSSKAMPF","БИТВА С БОССОМ"],
+ ["Achievement unlocked","Logro desbloqueado","Conquista desbloqueada","Succès débloqué","Erfolg freigeschaltet","Достижение получено"],
+ // --- new features ---
+ ["Revive with 50% HP (watch ad)","Revivir con 50% de PV (ver anuncio)","Reviver com 50% dos PV (ver anúncio)","Ressusciter avec 50 % PV (voir une pub)","Mit 50 % LP wiederbeleben (Werbung ansehen)","Воскреснуть с 50% ОЗ (смотреть рекламу)"],
+ ["Double coins (watch ad)","Monedas dobles (ver anuncio)","Moedas em dobro (ver anúncio)","Pièces doublées (voir une pub)","Münzen verdoppeln (Werbung ansehen)","Удвоить монеты (смотреть рекламу)"],
+ ["Ad unavailable","Anuncio no disponible","Anúncio indisponível","Publicité indisponible","Werbung nicht verfügbar","Реклама недоступна"],
+ ["Revived!","¡Revivido!","Revivido!","Ressuscité !","Wiederbelebt!","Воскрешение!"],["Coins doubled!","¡Monedas duplicadas!","Moedas dobradas!","Pièces doublées !","Münzen verdoppelt!","Монеты удвоены!"],
+ ["Daily Reward","Recompensa diaria","Recompensa diária","Récompense quotidienne","Tägliche Belohnung","Ежедневная награда"],
+ ["Day {n}","Día {n}","Dia {n}","Jour {n}","Tag {n}","День {n}"],["Claim","Reclamar","Resgatar","Récupérer","Abholen","Забрать"],
+ ["Claim ×2 (watch ad)","Reclamar ×2 (ver anuncio)","Resgatar ×2 (ver anúncio)","Récupérer ×2 (voir une pub)","×2 abholen (Werbung ansehen)","Забрать ×2 (смотреть рекламу)"],
+ ["+{n} coins","+{n} monedas","+{n} moedas","+{n} pièces","+{n} Münzen","+{n} монет"],
+ ["+1 Health Potion","+1 Poción de salud","+1 Poção de vida","+1 Potion de soin","+1 Heiltrank","+1 Зелье здоровья"],["+1 Mana Potion","+1 Poción de maná","+1 Poção de mana","+1 Potion de mana","+1 Manatrank","+1 Зелье маны"],
+ ["Come back tomorrow for a bigger reward!","¡Vuelve mañana para una recompensa mayor!","Volte amanhã para uma recompensa maior!","Revenez demain pour une plus grosse récompense !","Komm morgen wieder für eine größere Belohnung!","Возвращайтесь завтра за наградой побольше!"],
+ ["Campaign complete!","¡Campaña completada!","Campanha concluída!","Campagne terminée !","Kampagne abgeschlossen!","Кампания пройдена!"],
+ ["You claimed the Ember Crown. Endless mode begins: stages keep getting tougher — how far can you go?","Has reclamado la Corona de Brasas. Comienza el modo infinito: las etapas son cada vez más duras. ¿Hasta dónde llegarás?","Você conquistou a Coroa de Brasas. O modo infinito começa: as fases ficam cada vez mais difíceis — até onde você chega?","Vous avez conquis la Couronne de braise. Le mode infini commence : les étapes se durcissent — jusqu'où irez-vous ?","Du hast die Glutkrone errungen. Der Endlosmodus beginnt: Die Runden werden immer härter – wie weit kommst du?","Вы завоевали Угольную корону. Начинается бесконечный режим: этапы становятся всё сложнее — как далеко вы зайдёте?"],
+ ["{a} of {b} unlocked","{a} de {b} desbloqueados","{a} de {b} desbloqueadas","{a} sur {b} débloqués","{a} von {b} freigeschaltet","Получено {a} из {b}"],
+ ["First Blood","Primera sangre","Primeiro sangue","Premier sang","Erstes Blut","Первая кровь"],["Win your first battle","Gana tu primer combate","Vença sua primeira batalha","Gagnez votre premier combat","Gewinne deinen ersten Kampf","Выиграйте первый бой"],
+ ["Chain Reaction","Reacción en cadena","Reação em cadeia","Réaction en chaîne","Kettenreaktion","Цепная реакция"],["Trigger a cascade of 4 or more in one move","Provoca una cascada de 4 o más en un movimiento","Provoque uma cascata de 4 ou mais em uma jogada","Déclenchez une cascade de 4 ou plus en un coup","Löse mit einem Zug eine Kaskade von 4 oder mehr aus","Вызовите каскад из 4 и более за один ход"],
+ ["Shape Shifter","Cambiaformas","Mudança de forma","Métamorphe","Formwandler","Меняющий форму"],["Match 5 gems in an L, T or + shape","Combina 5 gemas en forma de L, T o +","Combine 5 gemas em forma de L, T ou +","Alignez 5 gemmes en forme de L, T ou +","Verbinde 5 Steine in L-, T- oder +-Form","Соберите 5 камней в форме L, T или +"],
+ ["Turn Taker","Turno tras turno","Turno após turno","Tours à gogo","Zugfolger","Ход за ходом"],["Earn 10 extra turns","Consigue 10 turnos extra","Ganhe 10 turnos extras","Gagnez 10 tours supplémentaires","Erhalte 10 Extrazüge","Получите 10 дополнительных ходов"],
+ ["Archmage","Archimago","Arquimago","Archimage","Erzmagier","Архимаг"],["Cast all 8 spells","Lanza los 8 hechizos","Lance os 8 feitiços","Lancez les 8 sorts","Wirke alle 8 Zauber","Примените все 8 заклинаний"],
+ ["Warlord Down","Señor de la guerra caído","Senhor da guerra derrotado","Chef de guerre vaincu","Kriegsherr gefallen","Полководец повержен"],["Defeat the Orc Warlord","Derrota al Señor de la Guerra Orco","Derrote o Senhor da Guerra Orc","Vainquez le chef de guerre orc","Besiege den Ork-Kriegsherrn","Победите орка-полководца"],
+ ["Dragon Slayer","Cazadragones","Mata-dragões","Tueur de dragons","Drachentöter","Убийца драконов"],["Defeat the Elder Dragon","Derrota al Dragón Ancestral","Derrote o Dragão Ancião","Vainquez le dragon ancestral","Besiege den Uralten Drachen","Победите древнего дракона"],
+ ["Treasure Hunter","Cazatesoros","Caçador de tesouros","Chasseur de trésors","Schatzjäger","Охотник за сокровищами"],["Hold 500 coins at once","Ten 500 monedas a la vez","Tenha 500 moedas ao mesmo tempo","Possédez 500 pièces en même temps","Besitze 500 Münzen gleichzeitig","Накопите 500 монет"],
+ ["Prepared","Preparado","Preparado","Préparé","Vorbereitet","Подготовлен"],["Buy your first shop upgrade","Compra tu primera mejora en la tienda","Compre sua primeira melhoria na loja","Achetez votre première amélioration","Kaufe dein erstes Upgrade im Shop","Купите первое улучшение в магазине"],
+ ["Untouchable","Intocable","Intocável","Intouchable","Unberührbar","Неуязвимый"],["Win a battle without taking damage","Gana un combate sin recibir daño","Vença uma batalha sem sofrer dano","Gagnez un combat sans subir de dégâts","Gewinne einen Kampf ohne Schaden zu nehmen","Выиграйте бой, не получив урона"],
+ ["Close Call","Por los pelos","Por um triz","De justesse","Knapp davongekommen","На волоске"],["Win a battle with under 10% HP","Gana un combate con menos del 10% de PV","Vença uma batalha com menos de 10% dos PV","Gagnez un combat avec moins de 10 % de PV","Gewinne einen Kampf mit unter 10 % LP","Выиграйте бой, имея менее 10% ОЗ"],
+ ["Into the Endless","Hacia lo infinito","Rumo ao infinito","Vers l'infini","Ins Endlose","В бесконечность"],["Reach stage 15","Llega a la etapa 15","Chegue à fase 15","Atteignez l'étape 15","Erreiche Runde 15","Дойдите до этапа 15"],
+ ["Regular","Habitual","Frequentador","Habitué","Stammgast","Постоянный гость"],["Claim a daily reward 3 days in a row","Reclama la recompensa diaria 3 días seguidos","Resgate a recompensa diária 3 dias seguidos","Récupérez la récompense quotidienne 3 jours de suite","Hole die tägliche Belohnung 3 Tage in Folge ab","Заберите ежедневную награду 3 дня подряд"],
+];
+const DICT={es:{},pt:{},fr:{},de:{},ru:{}};
+TR.forEach(r=>["es","pt","fr","de","ru"].forEach((l,i)=>{ if(r[i+1]) DICT[l][r[0]]=r[i+1]; }));
+const T=(s,v)=>{ const d=DICT[Settings.lang]; let r=(d&&d[s])||s; return v?r.replace(/\{(\w+)\}/g,(m,k)=>v[k]!==undefined?v[k]:m):r; };
+function detectLang(){ const codes=[...(navigator.languages||[]),navigator.language||"en"].map(x=>String(x).slice(0,2).toLowerCase()); return codes.find(c=>LANGS.some(l=>l[0]===c))||"en"; }
+
 // ---------- settings & storage (all wrapped: storage can be blocked) ----------
 const Store = {
   key:"gemhollow_save_v1", skey:"gemhollow_settings_v1",
@@ -701,46 +902,48 @@ const Store = {
   set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} },
 };
 const Settings = {
-  master:1, music:1, sfx:1, reduced:false, hc:false,
+  master:1, music:1, sfx:1, reduced:false, hc:false, lang:"en", langSet:false, diff:"normal",
   load(){ try{ this.reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){}
-    const s=Store.get(Store.skey); if(s) for(const k of ["master","music","sfx","reduced","hc"]) if(k in s) this[k]=s[k]; this.apply(); },
-  save(){ Store.set(Store.skey,{master:this.master,music:this.music,sfx:this.sfx,reduced:this.reduced,hc:this.hc}); },
-  apply(){ document.body.classList.toggle("hc",this.hc); document.body.classList.toggle("rm",this.reduced); Snd.apply(); },
+    const s=Store.get(Store.skey); if(s) for(const k of ["master","music","sfx","reduced","hc","lang","langSet","diff"]) if(k in s) this[k]=s[k];
+    if(!this.langSet) this.lang=detectLang(); if(!LANGS.some(l=>l[0]===this.lang)) this.lang="en"; if(!DIFF[this.diff]) this.diff="normal"; this.apply(); },
+  save(){ Store.set(Store.skey,{master:this.master,music:this.music,sfx:this.sfx,reduced:this.reduced,hc:this.hc,lang:this.lang,langSet:this.langSet,diff:this.diff}); },
+  apply(){ document.documentElement.lang=this.lang; document.body.classList.toggle("hc",this.hc); document.body.classList.toggle("rm",this.reduced); Snd.apply(); },
 };
 
 // ---------- progression data ----------
+const DIFF = {easy:{hp:.8,atk:.75,rand:.2}, normal:{hp:1,atk:1,rand:0}, hard:{hp:1.25,atk:1.25,rand:-.15}};   // enemy HP / attack multipliers, AI mistake chance offset
 const mult = L => 1 + 0.3*(L-1);
 const SPELLS = [
-  {name:"Fireball", cost:{[RED]:6}, desc:L=>`${Math.round(12*mult(L))} damage`,
+  {name:"Fireball", cost:{[RED]:6}, desc:L=>T("{n} damage",{n:Math.round(12*mult(L))}),
     async run(g,L){ g.spawnFx("fireball"); await sleep(520); await g.hurtEnemy(Math.round(12*mult(L))); }},
-  {name:"Heal", cost:{[GREEN]:5}, desc:(L,g)=>`Restore ${Math.round((8+.2*g.p.max)*mult(L))} HP`,
+  {name:"Heal", cost:{[GREEN]:5}, desc:(L,g)=>T("Restore {n} HP",{n:Math.round((8+.2*g.p.max)*mult(L))}),
     async run(g,L){ g.spawnFx("ring",0,{col:"#6bff9a",up:true}); g.glow("pcard","healglow"); await sleep(250); g.healPlayer(Math.round((8+.2*g.p.max)*mult(L))); }},
-  {name:"Frost", cost:{[BLUE]:6}, desc:L=>`${Math.round(5*mult(L))} dmg, freeze enemy 1 turn`,
-    async run(g,L){ g.spawnFx("frost"); await sleep(380); await g.hurtEnemy(Math.round(5*mult(L))); g.e.frozen=true; g.log("The enemy is frozen!"); }},
-  {name:"Smite", cost:{[EARTH]:6,[RED]:2}, desc:L=>`Destroy all skulls, ${Math.round(3*mult(L))} dmg each`,
+  {name:"Frost", cost:{[BLUE]:6}, desc:L=>T("{n} dmg, freeze enemy 1 turn",{n:Math.round(5*mult(L))}),
+    async run(g,L){ g.spawnFx("frost"); await sleep(380); await g.hurtEnemy(Math.round(5*mult(L))); g.e.frozen=true; g.log(T("The enemy is frozen!")); }},
+  {name:"Smite", cost:{[EARTH]:6,[RED]:2}, desc:L=>T("Destroy all skulls, {n} dmg each",{n:Math.round(3*mult(L))}),
     async run(g,L){ const cells=[]; for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(g.b[r][c]&&g.b[r][c].t===SKULL) cells.push([r,c]);
       g.spawnFx("bolt",0,{cells}); await sleep(450); g.after={cells,per:Math.round(3*mult(L))}; }},
-  {name:"Wildfire", cost:{[RED]:5,[GREEN]:3}, desc:L=>`Burn a row and column, ${Math.round(2*mult(L))} dmg per gem`,
+  {name:"Wildfire", cost:{[RED]:5,[GREEN]:3}, desc:L=>T("Burn a row and column, {n} dmg per gem",{n:Math.round(2*mult(L))}),
     async run(g,L){ const row=rnd(N), col=rnd(N), cells=[]; for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(r===row||c===col) cells.push([r,c]);
       g.spawnFx("burn",0,{row,col}); g.spawnFx(RED,100); await sleep(500); g.after={cells,per:Math.round(2*mult(L))}; }},
-  {name:"Cleanse", cost:{[BLUE]:3,[GREEN]:3}, desc:L=>`Cure poison & stun, heal ${Math.round(8*mult(L))}`,
-    async run(g,L){ g.spawnFx("ring",0,{col:"#7ff0ff",up:true}); g.glow("pcard","healglow"); await sleep(250); g.p.poison=0; g.p.stunned=false; g.healPlayer(Math.round(8*mult(L))); g.log("Ailments cleansed."); }},
-  {name:"Stoneskin", cost:{[EARTH]:5}, desc:L=>`Block the next ${Math.round(14*mult(L))} damage`,
-    async run(g,L){ g.spawnFx("ring",0,{col:"#e8b84a"}); g.spawnFx(EARTH); await sleep(300); g.p.shield+=Math.round(14*mult(L)); g.floatText(240,240,"+Shield","#e8b84a"); }},
-  {name:"Meteor", cost:{[RED]:5,[EARTH]:6}, desc:L=>`${Math.round(26*mult(L))} damage, shakes the board`,
+  {name:"Cleanse", cost:{[BLUE]:3,[GREEN]:3}, desc:L=>T("Cure poison & stun, heal {n}",{n:Math.round(8*mult(L))}),
+    async run(g,L){ g.spawnFx("ring",0,{col:"#7ff0ff",up:true}); g.glow("pcard","healglow"); await sleep(250); g.p.poison=0; g.p.stunned=false; g.healPlayer(Math.round(8*mult(L))); g.log(T("Ailments cleansed.")); }},
+  {name:"Stoneskin", cost:{[EARTH]:5}, desc:L=>T("Block the next {n} damage",{n:Math.round(14*mult(L))}),
+    async run(g,L){ g.spawnFx("ring",0,{col:"#e8b84a"}); g.spawnFx(EARTH); await sleep(300); g.p.shield+=Math.round(14*mult(L)); g.floatText(240,240,T("+Shield"),"#e8b84a"); }},
+  {name:"Meteor", cost:{[RED]:5,[EARTH]:6}, desc:L=>T("{n} damage, shakes the board",{n:Math.round(26*mult(L))}),
     async run(g,L){ g.spawnFx("meteor"); await sleep(560); await g.hurtEnemy(Math.round(26*mult(L))); }},
 ];
 
 const ABIL = {
-  pilfer:{name:"Pilfer", cd:5, info:"steals coins", async run(g){ const n=Math.min(g.p.gold,5+2*g.stage); g.p.gold-=n; g.floatText(240,240,n?`-${n} coins`:"Nothing to steal","#ffd36b"); }},
+  pilfer:{name:"Pilfer", cd:5, info:"steals coins", async run(g){ const n=Math.min(g.p.gold,5+2*g.stage); g.p.gold-=n; g.floatText(240,240,n?T("-{n} coins",{n}):T("Nothing to steal"),"#ffd36b"); }},
   frenzy:{name:"Frenzy", cd:4, info:"takes an extra move", async run(g){ g.e.bonus=1; }},
   drain:{name:"Mana Drain", cd:4, info:"steals mana", async run(g){
     const t=MANA_TYPES.filter(x=>g.p.mana[x]>0).sort((a,b)=>g.p.mana[b]-g.p.mana[a])[0];
-    if(t===undefined){ g.floatText(240,240,"No mana to drain","#aaa"); return; }
-    const n=Math.min(4,g.p.mana[t]); g.p.mana[t]-=n; g.floatText(240,240,`-${n} ${GEMS[t].name} mana`,GEMS[t].col); }},
-  stun:{name:"Stun", cd:6, info:"you skip a turn", async run(g){ g.p.stunned=true; g.floatText(240,240,"Stunned!","#ffe14a"); }},
-  poison:{name:"Poison", cd:4, info:"poisons you for 3 turns", async run(g){ g.p.poison=3; g.p.poisonDmg=1+Math.floor(g.stage/3); g.floatText(240,240,"Poisoned!","#7f7"); }},
-  harden:{name:"Harden", cd:5, info:"gains a shield", async run(g){ const s=Math.round(g.e.max*.15); g.e.shield+=s; g.floatText(240,40,"+"+s+" shield","#ccd"); }},
+    if(t===undefined){ g.floatText(240,240,T("No mana to drain"),"#aaa"); return; }
+    const n=Math.min(4,g.p.mana[t]); g.p.mana[t]-=n; g.floatText(240,240,T("-{n} {el} mana",{n,el:T(GEMS[t].name)}),GEMS[t].col); }},
+  stun:{name:"Stun", cd:6, info:"you skip a turn", async run(g){ g.p.stunned=true; g.floatText(240,240,T("Stunned!"),"#ffe14a"); }},
+  poison:{name:"Poison", cd:4, info:"poisons you for 3 turns", async run(g){ g.p.poison=3; g.p.poisonDmg=1+Math.floor(g.stage/3); g.floatText(240,240,T("Poisoned!"),"#7f7"); }},
+  harden:{name:"Harden", cd:5, info:"gains a shield", async run(g){ const s=Math.round(g.e.max*.15); g.e.shield+=s; g.floatText(240,40,T("+{n} shield",{n:s}),"#ccd"); }},
   lifedrain:{name:"Life Drain", cd:4, info:"steals HP", async run(g){ const d=g.e.atk*3; await g.hurtPlayer(d); g.e.hp=Math.min(g.e.max,g.e.hp+d); g.floatText(240,40,"+"+d,"#6f6"); }},
   breath:{name:"Fire Breath", cd:3, info:"burns you and spawns skulls", async run(g){
     g.spawnFx(RED); await g.hurtPlayer(g.e.atk*2); let n=0;
@@ -769,11 +972,12 @@ const Tut = {
       mana:{hl:"mana",text:"Fire, Air, Water and Earth gems fill your mana bars. Mana pays for spells."},
       spell:{hl:"spells",text:"A spell is ready! Tap a glowing spell button (or press its number). Casting doesn't end your turn."},
       extra:{hl:"cv",text:"Nice! Matching 4 or more gems in a line, or 5 in an L, T or + shape, earns an extra turn."},
-      enemy:{hl:"pcard",text:"Now the enemy plays on the same board. Its skull matches hurt you, so keep an eye on your HP."} },
+      enemy:{hl:"pcard",text:"Now the enemy plays on the same board. Its skull matches hurt you, so keep an eye on your HP."},
+      hint:{hl:"hint",text:"Stuck? Tap the lightbulb for a hint."} },
   reset(){ this.done=false; this.shown={}; this.queue=[]; this.hide(); },
   event(id){ if(this.done||this.shown[id]||!this.T[id]) return; this.shown[id]=true; this.queue.push(id); if(!this.cur) this.next(); },
   next(){ const id=this.queue.shift(); if(!id){ this.cur=null; return; } this.cur=id; const t=this.T[id];
-    $("tiptext").textContent=t.text; $("tip").hidden=false; document.querySelectorAll(".hl").forEach(e=>e.classList.remove("hl")); const h=$(t.hl); if(h) (h.closest(".frame")||h).classList.add("hl");
+    $("tiptext").textContent=T(t.text); $("tip").hidden=false; document.querySelectorAll(".hl").forEach(e=>e.classList.remove("hl")); const h=$(t.hl); if(h) (h.closest(".frame")||h).classList.add("hl");
     clearTimeout(this.timer); this.timer=setTimeout(()=>this.dismiss(id),id==="start"?20000:11000); },
   dismiss(id){ if(id&&this.cur!==id) return; this.hide(); setTimeout(()=>this.next(),400); },
   hide(){ clearTimeout(this.timer); $("tip").hidden=true; this.cur=null; document.querySelectorAll(".hl").forEach(e=>e.classList.remove("hl")); },
@@ -792,7 +996,58 @@ function closePanel(){
   if(panelPaused){ panelPaused=false; setPaused(false); if(game.started&&!game.over) CG.start(); }
 }
 const panelOpen = () => panelEl().classList.contains("show");
+const ACH=[
+  {id:"first",n:"First Blood",d:"Win your first battle"}, {id:"combo",n:"Chain Reaction",d:"Trigger a cascade of 4 or more in one move"},
+  {id:"shape",n:"Shape Shifter",d:"Match 5 gems in an L, T or + shape"}, {id:"extra",n:"Turn Taker",d:"Earn 10 extra turns"},
+  {id:"casters",n:"Archmage",d:"Cast all 8 spells"}, {id:"orc",n:"Warlord Down",d:"Defeat the Orc Warlord"},
+  {id:"dragon",n:"Dragon Slayer",d:"Defeat the Elder Dragon"}, {id:"rich",n:"Treasure Hunter",d:"Hold 500 coins at once"},
+  {id:"shop",n:"Prepared",d:"Buy your first shop upgrade"}, {id:"flawless",n:"Untouchable",d:"Win a battle without taking damage"},
+  {id:"clutch",n:"Close Call",d:"Win a battle with under 10% HP"}, {id:"endless",n:"Into the Endless",d:"Reach stage 15"},
+  {id:"daily",n:"Regular",d:"Claim a daily reward 3 days in a row"},
+];
 const costIcons = c => Object.entries(c).map(([t,n])=>`${n} ${GEMS[t].emoji}`).join(" ");
+
+// ---------- arena backgrounds (one per enemy; drawn once into a cached layer, low contrast so gems stay readable) ----------
+const hash=(i,j=0)=>{ const x=Math.sin(i*127.1+j*311.7)*43758.5453; return x-Math.floor(x); };
+const ARENAS={
+  default:{top:"#241942",bot:"#120b22",acc:"#ffd36b",tint:"#3a2670",m:null},
+  slime:{top:"#1f5a46",bot:"#0b2a1d",acc:"#3fe0a0",tint:"#1f6a50",m:k=>{
+    for(let i=0;i<16;i++){ k.fillStyle=`rgba(190,255,220,${.05+hash(i)*.08})`; k.beginPath(); k.arc(hash(i,1)*480,hash(i,2)*440,6+hash(i,3)*22,0,6.2832); k.fill(); }
+    k.fillStyle="rgba(10,60,30,.55)"; for(let i=0;i<30;i++){ const x=i*17+hash(i)*8, h=18+hash(i,4)*30; k.beginPath(); k.moveTo(x,480); k.lineTo(x+7,480-h); k.lineTo(x+14,480); k.fill(); } }},
+  goblin:{top:"#3a2e1a",bot:"#140f08",acc:"#c8a050",tint:"#4a3a20",m:k=>{
+    k.fillStyle="rgba(20,14,6,.6)"; for(let i=0;i<9;i++){ const x=i*58+hash(i)*20, h=40+hash(i,2)*70; k.beginPath(); k.moveTo(x,0); k.lineTo(x+26,0); k.lineTo(x+13,h); k.fill(); }
+    for(const [x,y,c] of [[40,455,"#5cffd0"],[110,468,"#5cffd0"],[400,458,"#ffb85c"],[450,470,"#5cffd0"]]){ const g=k.createRadialGradient(x,y,0,x,y,60); g.addColorStop(0,c+"88"); g.addColorStop(1,c+"00"); k.fillStyle=g; k.fillRect(x-60,y-60,120,120); } }},
+  wolf:{top:"#1a2748",bot:"#080c18",acc:"#9fc4ff",tint:"#24366a",m:k=>{
+    for(let i=0;i<40;i++){ k.fillStyle=`rgba(255,255,255,${.15+hash(i)*.4})`; k.fillRect(hash(i,1)*480,hash(i,2)*260,1.6,1.6); }
+    const g=k.createRadialGradient(390,80,10,390,80,120); g.addColorStop(0,"rgba(190,215,255,.45)"); g.addColorStop(1,"rgba(190,215,255,0)"); k.fillStyle=g; k.fillRect(260,-40,260,260);
+    k.fillStyle="rgba(225,235,255,.75)"; k.beginPath(); k.arc(390,80,38,0,6.2832); k.fill();
+    k.fillStyle="rgba(4,8,18,.7)"; for(let i=0;i<14;i++){ const x=i*36+hash(i)*10, h=50+hash(i,2)*60; for(let j=0;j<3;j++){ k.beginPath(); k.moveTo(x-18+j*3,480-j*h*.3); k.lineTo(x+4,480-h+j*18); k.lineTo(x+26-j*3,480-j*h*.3); k.fill(); } } }},
+  bandit:{top:"#6a3320",bot:"#1e0e08",acc:"#ffa05a",tint:"#7a3a1e",m:k=>{
+    const g=k.createRadialGradient(130,320,5,130,320,150); g.addColorStop(0,"rgba(255,200,110,.6)"); g.addColorStop(1,"rgba(255,140,60,0)"); k.fillStyle=g; k.fillRect(-20,170,300,300);
+    k.fillStyle="rgba(255,225,150,.55)"; k.beginPath(); k.arc(130,320,34,0,6.2832); k.fill();
+    k.fillStyle="rgba(40,14,6,.7)"; for(const [x,w,h] of [[20,90,120],[150,60,170],[250,110,100],[390,80,150]]){ k.fillRect(x,480-h,w,h); k.fillRect(x-8,480-h,w+16,12); } }},
+  orc:{top:"#4a1412",bot:"#160606",acc:"#ff6b4a",tint:"#6a1c18",m:k=>{
+    k.fillStyle="rgba(20,4,4,.7)"; k.beginPath(); k.moveTo(-20,480); for(let i=0;i<=12;i++) k.lineTo(i*42-20,480-60-hash(i)*110); k.lineTo(500,480); k.fill();
+    for(let i=0;i<26;i++){ k.fillStyle=`rgba(255,${120+hash(i)*100},60,${.2+hash(i,2)*.4})`; k.beginPath(); k.arc(hash(i,3)*480,hash(i,4)*480,1.5+hash(i,5)*2.5,0,6.2832); k.fill(); } }},
+  skeleton:{top:"#222a4a",bot:"#0a0c1a",acc:"#8fe4ff",tint:"#2a3a6a",m:k=>{
+    k.strokeStyle="rgba(150,200,255,.25)"; k.lineWidth=3; for(let i=0;i<4;i++){ const x=i*120+10; k.beginPath(); k.moveTo(x,480); k.lineTo(x,160); k.arc(x+50,160,50,Math.PI,0); k.lineTo(x+100,480); k.stroke(); }
+    for(let i=0;i<6;i++){ k.fillStyle=`rgba(170,200,240,${.07+hash(i)*.07})`; k.beginPath(); k.ellipse(hash(i,1)*480,300+hash(i,2)*180,90+hash(i,3)*60,22+hash(i,4)*14,0,0,6.2832); k.fill(); } }},
+  troll:{top:"#353b4a",bot:"#14161c",acc:"#b0c0d8",tint:"#4a5468",m:k=>{
+    for(let L=0;L<2;L++){ k.fillStyle=L?"rgba(16,18,26,.65)":"rgba(70,78,98,.55)"; k.beginPath(); k.moveTo(-20,480); for(let i=0;i<=8;i++) k.lineTo(i*64-20,480-(L?70:140)-hash(i,L)*(L?60:100)); k.lineTo(500,480); k.fill(); }
+    k.fillStyle="rgba(235,240,250,.4)"; for(let i=0;i<4;i++){ const x=40+i*120, y=480-210-hash(i)*40; k.beginPath(); k.moveTo(x-22,y+30); k.lineTo(x,y); k.lineTo(x+22,y+30); k.fill(); } }},
+  golem:{top:"#4a3320",bot:"#1a0e06",acc:"#ffa23a",tint:"#6a4018",m:k=>{
+    const g=k.createRadialGradient(240,520,10,240,520,360); g.addColorStop(0,"rgba(255,150,40,.55)"); g.addColorStop(1,"rgba(255,120,30,0)"); k.fillStyle=g; k.fillRect(-20,150,520,350);
+    k.fillStyle="rgba(20,12,6,.5)"; for(const [x,y,r] of [[90,110,60],[400,380,80]]){ k.beginPath(); for(let i=0;i<16;i++){ const a=i*Math.PI/8, rr=i%2?r:r*1.18; k[i?"lineTo":"moveTo"](x+Math.cos(a)*rr,y+Math.sin(a)*rr); } k.closePath(); k.fill(); k.fillStyle="rgba(60,34,14,.6)"; k.beginPath(); k.arc(x,y,r*.35,0,6.2832); k.fill(); k.fillStyle="rgba(20,12,6,.5)"; } }},
+  wraith:{top:"#33195a",bot:"#0c0618",acc:"#c690ff",tint:"#4a2480",m:k=>{
+    k.fillStyle="rgba(230,215,255,.6)"; k.beginPath(); k.arc(110,90,34,0,6.2832); k.fill(); k.fillStyle="#33195a"; k.beginPath(); k.arc(126,82,30,0,6.2832); k.fill();
+    for(let i=0;i<7;i++){ k.fillStyle=`rgba(190,150,255,${.08+hash(i)*.08})`; k.beginPath(); k.ellipse(hash(i,1)*480,240+hash(i,2)*240,100+hash(i,3)*70,26+hash(i,4)*16,0,0,6.2832); k.fill(); }
+    for(let i=0;i<10;i++){ const g=k.createRadialGradient(hash(i,5)*480,hash(i,6)*480,0,hash(i,5)*480,hash(i,6)*480,14); g.addColorStop(0,"rgba(160,240,255,.5)"); g.addColorStop(1,"rgba(160,240,255,0)"); k.fillStyle=g; k.fillRect(hash(i,5)*480-14,hash(i,6)*480-14,28,28); } }},
+  dragon:{top:"#561008",bot:"#150302",acc:"#ff7a30",tint:"#7a1c0c",m:k=>{
+    k.fillStyle="rgba(18,3,2,.75)"; k.beginPath(); k.moveTo(60,480); k.lineTo(190,190); k.lineTo(240,230); k.lineTo(300,150); k.lineTo(440,480); k.fill();
+    const g=k.createRadialGradient(300,150,4,300,150,120); g.addColorStop(0,"rgba(255,170,60,.7)"); g.addColorStop(1,"rgba(255,80,20,0)"); k.fillStyle=g; k.fillRect(170,30,260,260);
+    const l=k.createLinearGradient(0,430,0,480); l.addColorStop(0,"rgba(255,90,20,0)"); l.addColorStop(1,"rgba(255,140,40,.65)"); k.fillStyle=l; k.fillRect(-20,430,520,60);
+    for(let i=0;i<30;i++){ k.fillStyle=`rgba(255,${130+hash(i)*100},50,${.2+hash(i,2)*.4})`; k.beginPath(); k.arc(hash(i,3)*480,hash(i,4)*470,1.4+hash(i,5)*2.4,0,6.2832); k.fill(); } }},
+};
 
 class Game {
   constructor() {
@@ -800,7 +1055,7 @@ class Game {
       mana:{[RED]:0,[GREEN]:0,[BLUE]:0,[EARTH]:0}, shield:0, poison:0, poisonDmg:0, stunned:false};
     this.stage=0; this.best=0; this.busy=true; this.turn="player"; this.over=false; this.started=false; this.moveCount=0;
     this.floats=[]; this.parts=[]; this.fx=[]; this.hurtT={p:0,e:0}; this.shakeT=0; this.lastAct=0; this.sel=null; this.hint=null;
-    this.scale=1; this.qcap=2; this.sprites={}; this.layers={}; this.dirty=3; this.ema=16; this.lastQ=0; this.lastPortrait=0; this.cursor=null; this.kb=false; this.grab=false; this.flash=null; this.lunge=0; this.after=null; this.ctx="";
+    this.scale=1; this.qcap=2; this.sprites={}; this.layers={}; this.dirty=3; this.ema=16; this.lastQ=0; this.lastPortrait=0; this.ach={}; this.stats={extra:0,spells:0}; this.daily={last:"",streak:0}; this.campaign=false; this.tookDamage=false; this.revived=false; this.hintHold=false; this.cursor=null; this.kb=false; this.grab=false; this.flash=null; this.lunge=0; this.after=null; this.ctx="";
     const s=Store.get(Store.key); this.hasSave=!!s; if(s) this.applySave(s);
     this.buildUI(); this.startBattle(); this.resizeCanvas();
     try{ new ResizeObserver(()=>this.resizeCanvas()).observe(cv); }catch(e){ addEventListener("resize",()=>this.resizeCanvas()); }
@@ -808,32 +1063,34 @@ class Game {
   }
   // ----- save / load -----
   recalc(){ const p=this.p; p.max=50+10*(p.lv-1)+10*p.hpUp; p.hp=Math.min(p.hp,p.max); }
-  toSave(){ const p=this.p; return {v:1,lv:p.lv,xp:p.xp,gold:p.gold,stage:this.stage,best:this.best,hpUp:p.hpUp,blade:p.blade,spellLv:p.spellLv,potions:p.potions,tut:Tut.done,savedAt:Date.now()}; }
+  toSave(){ const p=this.p; return {v:1,lv:p.lv,xp:p.xp,gold:p.gold,stage:this.stage,best:this.best,hpUp:p.hpUp,blade:p.blade,spellLv:p.spellLv,potions:p.potions,tut:Tut.done,ach:this.ach,stats:this.stats,daily:this.daily,campaign:this.campaign,savedAt:Date.now()}; }
   applySave(s){
     const p=this.p, num=(v,d)=>Number.isFinite(v)?v:d;
     p.lv=Math.max(1,num(s.lv,1)); p.xp=Math.max(0,num(s.xp,0)); p.gold=Math.max(0,num(s.gold,0)); this.stage=Math.max(0,num(s.stage,0)); this.best=num(s.best,this.stage);
     p.hpUp=num(s.hpUp,0); p.blade=num(s.blade,0);
     if(Array.isArray(s.spellLv)) p.spellLv=SPELLS.map((_,i)=>Math.min(5,Math.max(1,num(s.spellLv[i],1))));
     if(s.potions) p.potions={hp:num(s.potions.hp,0),mana:num(s.potions.mana,0)};
+    this.ach=(s.ach&&typeof s.ach==="object")?s.ach:{}; this.stats=Object.assign({extra:0,spells:0},s.stats&&typeof s.stats==="object"?s.stats:{});
+    this.daily=(s.daily&&typeof s.daily.last==="string")?{last:s.daily.last,streak:num(s.daily.streak,0)}:{last:"",streak:0}; this.campaign=!!s.campaign;
     Tut.done=!!s.tut; this.recalc(); p.hp=p.max;
   }
-  saveGame(){ const d=this.toSave(); Store.set(Store.key,d); CG.dataSet(Store.key,JSON.stringify(d)); this.hasSave=true; }
+  saveGame(){ if(!this.daily.last) this.daily.last=this.dayStr(); const d=this.toSave(); Store.set(Store.key,d); CG.dataSet(Store.key,JSON.stringify(d)); this.hasSave=true; }
   resetProgress(){ try{ localStorage.removeItem(Store.key); }catch(e){} CG.dataSet(Store.key,""); location.reload(); }
   // ----- battle setup -----
   newEnemy() {
     const st=this.stage, T=ENEMIES[st%ENEMIES.length], boss=!!T.boss;
-    const max=Math.round((20+14*st)*T.hm*(boss?1.5:1));
-    this.e={name:boss?T.title:T.name, key:T.key, boss, lv:st+1, max, hp:max, atk:Math.max(1,Math.round(1+.68*st+T.ad)), frozen:false, shield:0, regen:!!T.regen, bonus:0,
+    const df=DIFF[Settings.diff]||DIFF.normal, max=Math.round((20+14*st)*T.hm*(boss?1.5:1)*df.hp);
+    this.e={name:boss?T.title:T.name, key:T.key, boss, lv:st+1, max, hp:max, atk:Math.max(1,Math.round((1+.68*st+T.ad)*df.atk)), frozen:false, shield:0, regen:!!T.regen, bonus:0,
       abil:T.ab.map(id=>({id,cd:ABIL[id].cd}))};
   }
   startBattle(){
     const p=this.p; this.recalc(); this.newEnemy(); this.newBoard();
     p.hp=p.max; for(const t of MANA_TYPES) p.mana[t]=0; p.shield=0; p.poison=0; p.stunned=false;
     if(!Tut.done && this.stage===0) p.mana[RED]=6;
-    this.over=false; this.turn="player"; this.busy=false; this.sel=null; this.moveCount=0; this.fx=[]; this.after=null;
-    this.intro=null; this.updateUI(); this.log(`${this.e.name} appears!${this.e.boss?" Boss battle!":""}`);
+    this.over=false; this.turn="player"; this.busy=false; this.sel=null; this.moveCount=0; this.fx=[]; this.after=null; this.tookDamage=false; this.revived=false; this.hintHold=false;
+    this.intro=null; this.updateUI(); this.log(T("{name} appears!",{name:T(this.e.name)})+(this.e.boss?T(" Boss battle!"):""));
     const ti=this.stage%ENEMIES.length;                               // every enemy has its own music track
-    if(this.e.boss&&this.started) this.bossIntro(); else { Snd.setTrackNow(ti); this.log("Now playing: "+TRACKS[ti].n); }
+    if(this.e.boss&&this.started) this.bossIntro(); else { Snd.setTrackNow(ti); this.log(T("Now playing: {t}",{t:TRACKS[ti].n})); }
   }
   // ----- board -----
   mk(r,c,t){ return {t: t===undefined?this.rndType():t, x:c, y:r, tx:c, ty:r, s:1, dying:false, bad:0}; }
@@ -914,9 +1171,9 @@ class Game {
       if (forced) { m={cells:forced, runs:[]}; forced=null; }
       else m=this.findMatches();
       if(!m.cells.length) break;
-      chain++;
+      chain++; if(who==="player"&&chain>=4) this.award("combo");
       if (m.runs.some(r=>r.length>=4)) extra=true;
-      if (this.groupSizes(m.runs).some(n=>n>=5)) { if(!extra&&chain===1) this.floatText(240,300,"BIG MATCH!","#ffd36b"); extra=true; }   // 5+ gems in an L, T or + shape
+      if (this.groupSizes(m.runs).some(n=>n>=5)) { if(!extra&&chain===1) this.floatText(240,300,T("BIG MATCH!"),"#ffd36b"); if(who==="player"&&!m.runs.some(r=>r.length>=5)) this.award("shape"); extra=true; }   // 5+ gems in an L, T or + shape
       const cnt={}; for(const [r,c] of m.cells){ const g=this.b[r][c]; cnt[g.t]=(cnt[g.t]||0)+1; g.dying=true; this.burst(c*60+30,r*60+30,GEMS[g.t].col); }
       { const order=Object.keys(cnt).map(Number).sort((a,b)=>cnt[b]-cnt[a]);
         order.slice(0,chain===1?3:1).forEach((ty,k)=>{
@@ -925,7 +1182,7 @@ class Game {
           if(chain===1) this.spawnFx(ty,k*140); });
         Snd.play("match",chain); }
       const bonus = chain>1 ? 1+0.25*(chain-1) : 1;
-      if(chain>1) this.floatText(240,30,`Cascade x${chain}!`,"#ffd36b");
+      if(chain>1) this.floatText(240,30,T("Cascade x{n}!",{n:chain}),"#ffd36b");
       // effects
       const cx=m.cells.reduce((s,[r,c])=>s+c,0)/m.cells.length*CELL+30, cy=m.cells.reduce((s,[r,c])=>s+r,0)/m.cells.length*CELL+30;
       for(const t in cnt){ const n=cnt[t], ti=+t;
@@ -933,8 +1190,8 @@ class Game {
           const dmg=Math.round(n*(who==="player"?this.skullDmg():this.enemyAtk())*bonus);
           if(who==="player") await this.hurtEnemy(dmg,cx,cy); else await this.hurtPlayer(dmg,cx,cy);
         } else if(who==="player"){
-          if(MANA_TYPES.includes(ti)){ this.p.mana[ti]=Math.min(MANA_MAX,this.p.mana[ti]+Math.round(n*bonus)); this.floatText(cx,cy,`+${n} ${GEMS[ti].name}`,GEMS[ti].col); }
-          else if(ti===STAR){ const x=n*3; this.floatText(cx,cy,`+${x} XP`,"#c9f"); await this.addXp(x); }
+          if(MANA_TYPES.includes(ti)){ this.p.mana[ti]=Math.min(MANA_MAX,this.p.mana[ti]+Math.round(n*bonus)); this.floatText(cx,cy,T("+{n} {el}",{n,el:T(GEMS[ti].name)}),GEMS[ti].col); }
+          else if(ti===STAR){ const x=n*3; this.floatText(cx,cy,T("+{n} XP",{n:x}),"#c9f"); await this.addXp(x); }
         }
       }
       if(who==="player" && cnt[EARTH]) { const g=cnt[EARTH]*2; this.p.gold+=g; }
@@ -960,7 +1217,7 @@ class Game {
   }
   async ensureMoves(){
     if(this.moves().length) return;
-    this.log("No moves left — reshuffling!");
+    this.log(T("No moves left — reshuffling!"));
     do { for(let r=0;r<N;r++)for(let c=0;c<N;c++){ this.b[r][c]=this.mk(r,c); this.b[r][c].y=r-N; } }
     while(this.findMatches().cells.length || !this.moves().length);
     await this.settle();
@@ -971,22 +1228,22 @@ class Game {
   glow(id,cls){ const el=$(id); el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),900); }
   async hurtEnemy(d,x=240,y=60){
     const e=this.e; Snd.play("hit");
-    if(e.shield>0){ const a=Math.min(d,e.shield); e.shield-=a; d-=a; this.floatText(x,y+26,"Blocked "+a,"#ccd"); }
+    if(e.shield>0){ const a=Math.min(d,e.shield); e.shield-=a; d-=a; this.floatText(x,y+26,T("Blocked {n}",{n:a}),"#ccd"); }
     if(d>0){ e.hp=Math.max(0,e.hp-d); this.floatText(x,y,"-"+d,"#ff7b6b"); }
     this.shake("ecard"); this.updateUI(); await sleep(150);
   }
   async hurtPlayer(d,x=240,y=420){
     const p=this.p; Snd.play("hurt");
-    if(p.shield>0){ const a=Math.min(d,p.shield); p.shield-=a; d-=a; this.floatText(x,y+26,"Blocked "+a,"#e8b84a"); }
-    if(d>0){ p.hp=Math.max(0,p.hp-d); this.floatText(x,y,"-"+d,"#ff4d4d"); this.flash={col:"255,40,40",t0:performance.now(),dur:380}; }
+    if(p.shield>0){ const a=Math.min(d,p.shield); p.shield-=a; d-=a; this.floatText(x,y+26,T("Blocked {n}",{n:a}),"#e8b84a"); }
+    if(d>0){ p.hp=Math.max(0,p.hp-d); this.floatText(x,y,"-"+d,"#ff4d4d"); this.tookDamage=true; this.flash={col:"255,40,40",t0:performance.now(),dur:380}; }
     this.shake("pcard"); this.updateUI(); await sleep(150);
   }
-  healPlayer(h){ Snd.play("heal"); const a=Math.min(h,this.p.max-this.p.hp); this.p.hp+=a; this.floatText(240,240,"+"+a+" HP","#6f6"); this.updateUI(); }
+  healPlayer(h){ Snd.play("heal"); const a=Math.min(h,this.p.max-this.p.hp); this.p.hp+=a; this.floatText(240,240,T("+{n} HP",{n:a}),"#6f6"); this.updateUI(); }
   need(){ return 30+(this.p.lv-1)*20; }
   async addXp(x){
     const p=this.p; p.xp+=x;
     while(p.xp>=this.need()){ p.xp-=this.need(); p.lv++; this.recalc(); p.hp=p.max; Snd.play("level");
-      this.log(`LEVEL UP! You are now level ${p.lv}. HP restored.`); this.floatText(240,240,"LEVEL UP!","#ffd36b"); }
+      this.log(T("LEVEL UP! You are now level {n}. HP restored.",{n:p.lv})); this.floatText(240,240,T("LEVEL UP!"),"#ffd36b"); CG.happy(); }
     this.updateUI();
   }
   checkEnd(){
@@ -997,16 +1254,23 @@ class Game {
   }
   async winBattle(){
     this.over=true; this.busy=true; CG.stop(); Snd.play("win");
-    const boss=this.e.boss, xp=Math.round((15+8*this.stage)*(boss?1.5:1)), coins=Math.round((20+10*this.stage)*(boss?2:1));
-    this.p.gold+=coins; this.rewards={xp,coins,name:this.e.name,boss};
+    const boss=this.e.boss, key=this.e.key, low=this.p.hp<this.p.max*.1, xp=Math.round((15+8*this.stage)*(boss?1.5:1)), coins=Math.round((20+10*this.stage)*(boss?2:1));
+    this.p.gold+=coins; this.rewards={xp,coins,name:this.e.name,boss,campaign:false,doubled:false};
     await this.addXp(xp); this.stage++; this.best=Math.max(this.best,this.stage);
-    const first=!Tut.done; Tut.done=true; Tut.hide(); this.saveGame(); this.ctx="victory"; this.victoryPanel(first);
+    if(this.stage===ENEMIES.length&&!this.campaign){ this.campaign=true; this.rewards.campaign=true; }   // first Elder Dragon kill: campaign complete, endless mode continues
+    const first=!Tut.done; Tut.done=true; Tut.hide();
+    this.award("first"); if(boss&&key==="orc") this.award("orc"); if(boss&&key==="dragon") this.award("dragon");
+    if(!this.tookDamage) this.award("flawless"); if(low) this.award("clutch"); if(this.p.gold>=500) this.award("rich"); if(this.stage>=14) this.award("endless");
+    if(boss) CG.happy();
+    this.saveGame(); this.ctx="victory"; this.victoryPanel(first);
   }
   victoryPanel(first){
     const r=this.rewards;
-    openPanel(`<h2>${r.boss?"Boss Defeated!":"Victory!"}</h2><p>${r.name} defeated.<br>+${r.xp} XP &nbsp; +${r.coins} ${ICO.coin}</p>
-      ${first?`<p class="hint">Spend your coins in the shop on potions and upgrades before the next battle.</p>`:""}
-      <div class="btns"><button class="big" data-act="next">Next Battle</button><button class="alt" data-act="shop">Shop (${this.p.gold} ${ICO.coin})</button></div>`);
+    openPanel(`<h2>${r.boss?T("Boss Defeated!"):T("Victory!")}</h2><p>${T("{name} defeated.",{name:T(r.name)})}<br>${T("+{n} XP",{n:r.xp})} &nbsp; +${r.coins} ${ICO.coin}</p>
+      ${r.campaign?`<p class="hint"><b>${T("Campaign complete!")}</b><br>${T("You claimed the Ember Crown. Endless mode begins: stages keep getting tougher — how far can you go?")}</p>`:""}
+      ${first?`<p class="hint">${T("Spend your coins in the shop on potions and upgrades before the next battle.")}</p>`:""}
+      <div class="btns"><button class="big" data-act="next">${T("Next Battle")}</button><button class="alt" data-act="shop">${T("Shop ({n})",{n:this.p.gold+" "+ICO.coin})}</button></div>
+      ${CG.ready&&!r.doubled?`<div class="btns"><button class="ad" data-act="double">${T("Double coins (watch ad)")}</button></div>`:""}`);
   }
   async lose(){
     this.over=true; this.busy=true; CG.stop(); Snd.play("lose"); this.ctx="defeat"; Tut.hide();
@@ -1015,49 +1279,48 @@ class Game {
   }
   defeatPanel(){
     const c=this.consol||{xp:0,coins:0};
-    openPanel(`<h2>Defeated</h2><p>You fell to the ${this.e.name}.<br>Consolation: +${c.xp} XP, +${c.coins} ${ICO.coin}<br><small>Stages cleared: ${this.stage}</small></p>
-      <div class="btns"><button class="big" data-act="retry">Retry Battle</button><button class="alt" data-act="shop">Shop (${this.p.gold} ${ICO.coin})</button></div>`);
+    openPanel(`<h2>${T("Defeated")}</h2><p>${T("You fell to the {name}.",{name:T(this.e.name)})}<br>${T("Consolation: +{xp} XP, +{c}",{xp:c.xp,c:c.coins+" "+ICO.coin})}<br><small>${T("Stages cleared: {n}",{n:this.stage})}${this.best?" · "+T("Best stage: {n}",{n:this.best}):""}</small></p>
+      <div class="btns"><button class="big" data-act="retry">${T("Retry Battle")}</button><button class="alt" data-act="shop">${T("Shop ({n})",{n:this.p.gold+" "+ICO.coin})}</button></div>
+      ${CG.ready&&!this.revived?`<div class="btns"><button class="ad" data-act="revive">${T("Revive with 50% HP (watch ad)")}</button></div>`:""}`);
   }
   async playerMove(a,b){
     if(this.busy||this.over||this.turn!=="player") return;
-    this.busy=true; this.sel=null; this.hint=null; this.grab=false;
+    this.busy=true; this.sel=null; this.hint=null; this.hintHold=false; this.grab=false;
     if(!(await this.trySwap(a,b,"player"))){ this.busy=false; return; }
     this.moveCount++; Tut.dismiss("start");
     const extra=await this.resolve("player");
-    if(extra) Tut.event("extra");
+    if(extra){ Tut.event("extra"); this.stats.extra++; if(this.stats.extra>=10) this.award("extra"); }
     await this.afterAction(extra);
   }
   async afterAction(extra){
     if(this.checkEnd()) return;
     await this.ensureMoves();
-    if(extra){ this.log("Extra turn!"); this.floatText(240,240,"EXTRA TURN!","#ffd36b"); this.busy=false; this.updateUI(); return; }
+    if(extra){ this.log(T("Extra turn!")); this.floatText(240,240,T("EXTRA TURN!"),"#ffd36b"); this.busy=false; this.updateUI(); return; }
     await this.enemyTurn();
   }
   async beginPlayerTurn(){
-    const p=this.p; this.turn="player";
-    if(p.poison>0){ p.poison--; this.log("Poison burns you."); await this.hurtPlayer(p.poisonDmg); if(this.checkEnd()) return; }
-    if(p.stunned){ p.stunned=false; this.log("You are stunned and lose your turn!"); this.floatText(240,240,"STUNNED","#ffe14a"); this.updateUI(); await sleep(800); return this.enemyTurn(); }
+    const p=this.p; this.turn="player"; this.hintHold=false;
+    if(p.poison>0){ p.poison--; this.log(T("Poison burns you.")); await this.hurtPlayer(p.poisonDmg); if(this.checkEnd()) return; }
+    if(p.stunned){ p.stunned=false; this.log(T("You are stunned and lose your turn!")); this.floatText(240,240,T("STUNNED"),"#ffe14a"); this.updateUI(); await sleep(800); return this.enemyTurn(); }
     this.busy=false; this.updateUI();
     if(this.moveCount>0 && SPELLS.some((s,i)=>Object.keys(s.cost).every(t=>p.mana[t]>=s.cost[t]))) Tut.event("spell");
   }
   async telegraph(name){
-    this.log(`${this.e.name} uses ${name}!`); this.lunge=performance.now(); this.flash={col:"170,60,255",t0:performance.now(),dur:500};
-    Snd.play("ability"); this.floatText(240,200,name+"!","#ffe08a"); await sleep(650);
+    this.log(T("{name} uses {a}!",{name:T(this.e.name),a:T(name)})); this.lunge=performance.now(); this.flash={col:"170,60,255",t0:performance.now(),dur:500};
+    Snd.play("ability"); this.floatText(240,200,T(name)+"!","#ffe08a"); await sleep(650);
   }
   async enemyTurn(){
     this.turn="enemy"; this.busy=true; this.updateUI(); Tut.event("enemy"); const e=this.e;
     await sleep(350);
     if(e.regen&&e.hp<e.max){ const h=Math.round(e.max*.05); e.hp=Math.min(e.max,e.hp+h); this.floatText(240,40,"+"+h,"#6f6"); this.updateUI(); }
-    if(e.frozen){ e.frozen=false; this.log(e.name+" is frozen and skips its turn."); this.updateUI(); await sleep(700); return this.beginPlayerTurn(); }
+    if(e.frozen){ e.frozen=false; this.log(T("{name} is frozen and skips its turn.",{name:T(e.name)})); this.updateUI(); await sleep(700); return this.beginPlayerTurn(); }
     for(const a of e.abil){ a.cd--; if(a.cd<=0){ a.cd=ABIL[a.id].cd; await this.telegraph(ABIL[a.id].name); await ABIL[a.id].run(this); this.updateUI(); if(this.checkEnd()) return; break; } }
     this.updateUI();
     let n=1+e.bonus; e.bonus=0;
-    const rand=Math.max(.12,.42-.03*this.stage);
+    const rand=Math.max(.05,Math.min(.6,Math.max(.12,.42-.03*this.stage)+(DIFF[Settings.diff]||DIFF.normal).rand));
     while(n-->0){
       const ms=this.moves(); if(!ms.length) break;
-      // the AI values skulls and big matches, and goes out of its way for extra turns (4+ in a line, or 5+ in an L/T/+ shape)
-      for(const m of ms){ const runs=m.m.runs, extraTurn=runs.some(x=>x.length>=4)||this.groupSizes(runs).some(g=>g>=5);
-        m.score=m.m.cells.filter(([r,c])=>this.b[r][c].t===SKULL).length*3 + Math.max(...runs.map(x=>x.length))*2 + (extraTurn?14:0) + Math.random()*2; }
+      for(const m of ms) m.score=this.moveScore(m,"enemy");   // skulls, big matches and extra-turn moves
       ms.sort((x,y)=>y.score-x.score);
       const pick = Math.random()<rand ? ms[rnd(ms.length)] : ms[0];
       this.sel=pick.a; await sleep(380); this.sel=pick.b; await sleep(300); this.sel=null;
@@ -1065,17 +1328,17 @@ class Game {
       const extra=await this.resolve("enemy");
       if(this.checkEnd()) return;
       await this.ensureMoves();
-      if(extra){ n++; this.log(e.name+" gets an extra turn!"); this.floatText(240,240,"EXTRA TURN!","#ff6b5a"); await sleep(500); }
+      if(extra){ n++; this.log(T("{name} gets an extra turn!",{name:T(e.name)})); this.floatText(240,240,T("EXTRA TURN!"),"#ff6b5a"); await sleep(500); }
     }
     await this.beginPlayerTurn();
   }
   canCast(i){ const s=SPELLS[i]; return !this.busy&&!this.over&&this.turn==="player"&&Object.keys(s.cost).every(t=>this.p.mana[t]>=s.cost[t]); }
   async cast(i){
     if(!this.canCast(i)) return;
-    const s=SPELLS[i], L=this.p.spellLv[i]; this.busy=true; Tut.dismiss("spell");
+    const s=SPELLS[i], L=this.p.spellLv[i]; this.busy=true; Tut.dismiss("spell"); this.stats.spells|=1<<i; if(this.stats.spells===255) this.award("casters");
     for(const t in s.cost) this.p.mana[t]-=s.cost[t];
-    this.log(`You cast ${s.name}!`); Snd.play("spell"); Snd.play("spell_"+s.name.toLowerCase());
-    this.floatText(240,130,s.name.toUpperCase()+"!","#fff"); this.after=null;
+    this.log(T("You cast {n}!",{n:T(s.name)})); Snd.play("spell"); Snd.play("spell_"+s.name.toLowerCase());
+    this.floatText(240,130,T(s.name).toLocaleUpperCase()+"!","#fff"); this.after=null;
     await s.run(this,L); this.updateUI();
     if(this.after){
       const {cells,per}=this.after; this.after=null;
@@ -1088,7 +1351,7 @@ class Game {
   usePotion(kind){
     const p=this.p; if(this.busy||this.over||this.turn!=="player"||p.potions[kind]<=0) return;
     if(kind==="hp"){ if(p.hp>=p.max) return; p.potions.hp--; this.healPlayer(Math.round(p.max*.5)); }
-    else { p.potions.mana--; for(const t of MANA_TYPES) p.mana[t]=Math.min(MANA_MAX,p.mana[t]+4); this.floatText(240,240,"+4 mana each","#9cf"); Snd.play("potion"); }
+    else { p.potions.mana--; for(const t of MANA_TYPES) p.mana[t]=Math.min(MANA_MAX,p.mana[t]+4); this.floatText(240,240,T("+4 mana each"),"#9cf"); Snd.play("potion"); }
     Snd.play("potion"); this.saveGame(); this.updateUI();
   }
   // ----- keyboard -----
@@ -1102,18 +1365,18 @@ class Game {
   // ----- shop -----
   items(){
     const p=this.p, out=[];
-    out.push({id:"pot_hp", name:"Health Potion", desc:"Restore 50% HP any time on your turn", cost:30, have:p.potions.hp, max:9, ok:p.potions.hp<9});
-    out.push({id:"pot_mana", name:"Mana Potion", desc:"+4 of every mana color", cost:40, have:p.potions.mana, max:9, ok:p.potions.mana<9});
-    out.push({id:"hp", name:"Vitality", desc:"+10 max HP", cost:40+30*p.hpUp, have:p.hpUp, max:8, ok:p.hpUp<8});
-    out.push({id:"blade", name:"Whetstone", desc:"+1 damage per skull matched", cost:70+60*p.blade, have:p.blade, max:5, ok:p.blade<5});
-    SPELLS.forEach((s,i)=>{ const L=p.spellLv[i]; out.push({id:"sp"+i, name:`${s.name} Lv ${L}${L<5?" → "+(L+1):" (max)"}`, desc:s.desc(Math.min(5,L+1),this), cost:60*L, have:L, max:5, ok:L<5}); });
+    out.push({id:"pot_hp", name:T("Health Potion"), desc:T("Restore 50% HP any time on your turn"), cost:30, ok:p.potions.hp<9});
+    out.push({id:"pot_mana", name:T("Mana Potion"), desc:T("+4 of every mana color"), cost:40, ok:p.potions.mana<9});
+    out.push({id:"hp", name:T("Vitality"), desc:T("+10 max HP"), cost:40+30*p.hpUp, ok:p.hpUp<8});
+    out.push({id:"blade", name:T("Whetstone"), desc:T("+1 damage per skull matched"), cost:70+60*p.blade, ok:p.blade<5});
+    SPELLS.forEach((s,i)=>{ const L=p.spellLv[i]; out.push({id:"sp"+i, name:T("{name} Lv {l}",{name:T(s.name),l:L})+(L<5?" → "+(L+1):T(" (max)")), desc:s.desc(Math.min(5,L+1),this), cost:60*L, ok:L<5}); });
     return out;
   }
   shopPanel(){
     const rows=this.items().map(it=>`<div class="row2"><div><b>${it.name}</b><br><small>${it.desc}</small></div>
-      <button data-act="buy" data-id="${it.id}" ${(!it.ok||this.p.gold<it.cost)?"disabled":""}>${it.ok?`${it.cost} ${ICO.coin}`:"Max"}</button></div>`).join("");
-    openPanel(`<h2>Shop</h2><p class="coins">${ICO.coin} ${this.p.gold}</p><div class="list">${rows}</div>
-      <div class="btns"><button class="big" data-act="shopback">${this.ctx==="menu"?"Back":(this.ctx==="defeat"?"Back":"Back")}</button></div>`, this.ctx==="menu");
+      <button data-act="buy" data-id="${it.id}" ${(!it.ok||this.p.gold<it.cost)?"disabled":""}>${it.ok?`${it.cost} ${ICO.coin}`:T("Max")}</button></div>`).join("");
+    openPanel(`<h2>${T("Shop")}</h2><p class="coins">${ICO.coin} ${this.p.gold}</p><div class="list">${rows}</div>
+      <div class="btns"><button class="big" data-act="shopback">${T("Back")}</button></div>`, this.ctx==="menu");
     const l=$("panelbox").querySelector(".list"); if(l&&this.shopScroll) l.scrollTop=this.shopScroll;
   }
   buy(id){
@@ -1123,52 +1386,129 @@ class Game {
     else if(id==="hp"){ p.hpUp++; this.recalc(); p.hp=Math.min(p.max,p.hp+10); }
     else if(id==="blade") p.blade++;
     else p.spellLv[+id.slice(2)]++;
-    this.saveGame(); this.updateUI();
+    this.award("shop"); this.saveGame(); this.updateUI();
     const l=$("panelbox").querySelector(".list"); this.shopScroll=l?l.scrollTop:0; this.shopPanel();
   }
-  // ----- menus -----
-  openMenu(){
-    if(!this.started||panelOpen()) return; this.ctx="menu";
-    openPanel(`<h2>Paused</h2><div class="btns col">
-      <button class="big" data-act="resume">Resume</button>
-      <button data-act="restartBattle">Restart Battle</button>
-      <button data-act="howto">How to Play</button>
-      <button data-act="settings">Settings</button>
-      <button data-act="newgame">New Game</button></div>`, !this.over);
+  // ----- achievements, toasts, daily reward -----
+  award(id){
+    if(this.ach[id]) return; this.ach[id]=Date.now(); const a=ACH.find(x=>x.id===id);
+    this.toast(T("Achievement unlocked")+": "+T(a.n),ICO.trophy); Snd.play("level"); CG.happy(); this.saveGame();
   }
+  toast(text,icon=""){ this.toastQ=this.toastQ||[]; this.toastQ.push({text,icon}); if(!this.toastBusy) this.nextToast(); }
+  nextToast(){
+    const t=(this.toastQ||[]).shift(), el=$("toast"); if(!t){ this.toastBusy=false; el.classList.remove("show"); return; }
+    this.toastBusy=true; el.innerHTML=`${t.icon}<span>${t.text}</span>`; el.classList.add("show");
+    setTimeout(()=>{ el.classList.remove("show"); setTimeout(()=>this.nextToast(),350); },3000);
+  }
+  achPanel(){
+    const got=ACH.filter(a=>this.ach[a.id]).length;
+    const rows=ACH.map(a=>`<div class="row2 ${this.ach[a.id]?"":"lock"}"><div><b>${T(a.n)}</b><br><small>${T(a.d)}</small></div><span class="tick">${this.ach[a.id]?"✓":""}</span></div>`).join("");
+    openPanel(`<h2>${T("Achievements")}</h2><p class="coins">${T("{a} of {b} unlocked",{a:got,b:ACH.length})}</p><div class="list">${rows}</div><div class="btns"><button class="big" data-act="back">${T("Back")}</button></div>`, this.ctx==="menu");
+  }
+  dayStr(off=0){ const d=new Date(); d.setDate(d.getDate()+off); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  dailyAvailable(){ return this.hasSave && this.daily.last!=="" && this.daily.last!==this.dayStr(); }
+  dailyInfo(){ const streak=this.daily.last===this.dayStr(-1)?this.daily.streak+1:1; return {streak,coins:40+20*Math.min(streak,7),potion:streak%7===0?"mana":(streak%3===0?"hp":null)}; }
+  dailyPanel(){
+    const i=this.dailyInfo(); this.ctx="daily";
+    openPanel(`<h2>${T("Daily Reward")}</h2><p>${T("Day {n}",{n:i.streak})}</p>
+      <p class="coins">${T("+{n} coins",{n:i.coins})} ${ICO.coin}</p>${i.potion?`<p class="hint">${i.potion==="hp"?T("+1 Health Potion"):T("+1 Mana Potion")}</p>`:""}
+      <p><small>${T("Come back tomorrow for a bigger reward!")}</small></p>
+      <div class="btns"><button class="big" data-act="claim">${T("Claim")}</button>${CG.ready?`<button class="ad" data-act="claim2">${T("Claim ×2 (watch ad)")}</button>`:""}</div>`);
+  }
+  claimDaily(m){
+    const i=this.dailyInfo(), p=this.p; p.gold+=i.coins*m; if(i.potion) p.potions[i.potion]=Math.min(9,p.potions[i.potion]+m);
+    this.daily={last:this.dayStr(),streak:i.streak}; if(i.streak>=3) this.award("daily"); if(p.gold>=500) this.award("rich");
+    this.saveGame(); CG.happy(); Snd.play("buy"); this.beginPlay();
+  }
+  // ----- hint -----
+  moveScore(m,who){
+    const runs=m.m.runs, extraTurn=runs.some(x=>x.length>=4)||this.groupSizes(runs).some(g=>g>=5);
+    let s=m.m.cells.filter(([r,c])=>this.b[r][c].t===SKULL).length*3 + Math.max(...runs.map(x=>x.length))*2 + (extraTurn?14:0) + Math.random()*2;
+    if(who==="player") s+=m.m.cells.filter(([r,c])=>MANA_TYPES.includes(this.b[r][c].t)).length*.6;
+    return s;
+  }
+  showHint(){
+    if(!this.started||this.busy||this.over||this.turn!=="player"||panelOpen()) return;
+    const ms=this.moves(); if(!ms.length) return; for(const m of ms) m.score=this.moveScore(m,"player"); ms.sort((a,b)=>b.score-a.score);
+    this.hint=[ms[0].a,ms[0].b]; this.hintHold=true; this.dirty=3; Snd.play("click"); Tut.dismiss("hint");
+  }
+  // ----- rewarded ads -----
+  async revive(){
+    const p=this.p; this.revived=true; closePanel(); this.over=false; this.busy=true; p.hp=Math.max(1,Math.round(p.max*.5)); p.poison=0; p.stunned=false;
+    if(this.b.some(row=>row.some(g=>!g))){ this.gravity(); await this.settle(); }       // a fatal cascade can leave empty cells
+    await this.ensureMoves(); this.turn="player"; this.busy=false; CG.start(); CG.happy(); Snd.play("heal"); this.floatText(240,240,T("Revived!"),"#6f6"); this.updateUI();
+  }
+  doubleCoins(){
+    const r=this.rewards; if(!r||r.doubled) return; this.p.gold+=r.coins; r.coins*=2; r.doubled=true; if(this.p.gold>=500) this.award("rich");
+    this.saveGame(); CG.happy(); Snd.play("buy"); this.toast(T("Coins doubled!"),ICO.coin); this.victoryPanel(false);
+  }
+  // ----- menus -----
+  menuHtml(){
+    return `<h2>${T("Paused")}</h2><div class="btns col">
+      <button class="big" data-act="resume">${T("Resume")}</button>
+      <button data-act="restartBattle">${T("Restart Battle")}</button>
+      <button data-act="achievements">${T("Achievements")}</button>
+      <button data-act="howto">${T("How to Play")}</button>
+      <button data-act="settings">${T("Settings")}</button>
+      <button data-act="newgame">${T("New Game")}</button></div>`;
+  }
+  openMenu(){ if(!this.started||panelOpen()) return; this.ctx="menu"; openPanel(this.menuHtml(), !this.over); }
+  openMenuFromPanel(){ this.ctx="menu"; openPanel(this.menuHtml(), !this.over); }
+  langSelect(){ return `<select data-set="lang" aria-label="${T("Language")}">${LANGS.map(([c,n])=>`<option value="${c}" ${Settings.lang===c?"selected":""}>${n}</option>`).join("")}</select>`; }
   settingsPanel(){
-    const v=k=>Math.round(Settings[k]*100);
-    openPanel(`<h2>Settings</h2><div class="list set">
-      <label>Master volume <input type="range" min="0" max="100" value="${v("master")}" data-set="master" aria-label="Master volume"></label>
-      <label>Music volume <input type="range" min="0" max="100" value="${v("music")}" data-set="music" aria-label="Music volume"></label>
-      <label>Effects volume <input type="range" min="0" max="100" value="${v("sfx")}" data-set="sfx" aria-label="Effects volume"></label>
-      <label class="chk"><input type="checkbox" data-set="reduced" ${Settings.reduced?"checked":""}> Reduce motion &amp; screen shake</label>
-      <label class="chk"><input type="checkbox" data-set="hc" ${Settings.hc?"checked":""}> High-contrast HUD text</label>
-      <label class="chk"><input type="checkbox" data-set="mute" ${Snd.muted?"checked":""}> Mute all sound</label></div>
-      <div class="btns"><button data-act="replayTut">Replay tutorial</button><button class="big" data-act="back">Back</button></div>`, this.ctx==="menu");
+    const v=k=>Math.round(Settings[k]*100), opt=(k,l)=>`<option value="${k}" ${Settings.diff===k?"selected":""}>${T(l)}</option>`;
+    openPanel(`<h2>${T("Settings")}</h2><div class="list set">
+      <label>${T("Language")} ${this.langSelect()}</label>
+      <label>${T("Difficulty")} <select data-set="diff" aria-label="${T("Difficulty")}">${opt("easy","Easy")}${opt("normal","Normal")}${opt("hard","Hard")}</select></label>
+      <label>${T("Master volume")} <input type="range" min="0" max="100" value="${v("master")}" data-set="master" aria-label="${T("Master volume")}"></label>
+      <label>${T("Music volume")} <input type="range" min="0" max="100" value="${v("music")}" data-set="music" aria-label="${T("Music volume")}"></label>
+      <label>${T("Effects volume")} <input type="range" min="0" max="100" value="${v("sfx")}" data-set="sfx" aria-label="${T("Effects volume")}"></label>
+      <label class="chk"><input type="checkbox" data-set="reduced" ${Settings.reduced?"checked":""}> ${T("Reduce motion & screen shake")}</label>
+      <label class="chk"><input type="checkbox" data-set="hc" ${Settings.hc?"checked":""}> ${T("High-contrast HUD text")}</label>
+      <label class="chk"><input type="checkbox" data-set="mute" ${Snd.muted?"checked":""}> ${T("Mute all sound")}</label></div>
+      <div class="btns"><button data-act="replayTut">${T("Replay tutorial")}</button><button class="big" data-act="back">${T("Back")}</button></div>`, this.ctx==="menu");
   }
   howtoPanel(){
-    const spells=SPELLS.map((s,i)=>`<li><b>${s.name}</b> (${costIcons(s.cost)}): ${s.desc(this.p.spellLv[i],this)}</li>`).join("");
-    openPanel(`<h2>How to Play</h2><div class="list txt">
-      <p>Swap two neighboring gems to line up <b>3 or more</b>. Then the enemy takes its turn on the same board.</p>
-      <p><b>Skulls</b> damage the foe. <b>Fire, Air, Water, Earth</b> gems fill mana for spells. <b>Stars</b> give XP. Earth gems also drop coins.</p>
-      <p>Matching <b>4+</b> in a line, or <b>5+ in an L, T or + shape</b>, gives an <b>extra turn</b>; cascades hit harder.</p>
-      <p>Spend coins in the shop after each battle. Watch the enemy's warning for its next special move.</p>
-      <p><b>Keys:</b> arrows move the cursor, Space/Enter grabs a gem, then an arrow swaps it. 1-8 cast spells, H health potion, M mana potion, Esc menu.</p>
-      <ul>${spells}</ul></div><div class="btns"><button class="big" data-act="back">Back</button></div>`, this.ctx==="menu");
+    const spells=SPELLS.map((s,i)=>`<li><b>${T(s.name)}</b> (${costIcons(s.cost)}): ${s.desc(this.p.spellLv[i],this)}</li>`).join("");
+    openPanel(`<h2>${T("How to Play")}</h2><div class="list txt">
+      <p>${T("Swap two neighboring gems to line up <b>3 or more</b>. Then the enemy takes its turn on the same board.")}</p>
+      <p>${T("<b>Skulls</b> damage the foe. <b>Fire, Air, Water, Earth</b> gems fill mana for spells. <b>Stars</b> give XP. Earth gems also drop coins.")}</p>
+      <p>${T("Matching <b>4+</b> in a line, or <b>5+ in an L, T or + shape</b>, gives an <b>extra turn</b>; cascades hit harder.")}</p>
+      <p>${T("Spend coins in the shop after each battle. Watch the enemy's warning for its next special move.")}</p>
+      <p>${T("<b>Keys:</b> arrows move the cursor, Space/Enter grabs a gem, then an arrow swaps it. 1-8 cast spells, H health potion, M mana potion, T hint, Esc menu.")}</p>
+      <ul>${spells}</ul></div><div class="btns"><button class="big" data-act="back">${T("Back")}</button></div>`, this.ctx==="menu");
   }
   homePanel(){
-    this.ctx="home";
-    openPanel(`<h2>GEMHOLLOW</h2><p>Shards of the Ember Crown<br><small>Match gems, smash skulls and channel mana to slay the denizens of the hollow.</small></p>
-      ${this.hasSave?`<p class="hint">Saved game: level ${this.p.lv}, stage ${this.stage+1}</p>`:""}
-      <div class="btns col"><button class="big" data-act="play">${this.hasSave?"Continue":"Begin Quest"}</button>
-      <button data-act="howto">How to Play</button><button data-act="settings">Settings</button></div>`);
+    this.ctx="home"; const pill=(k,l)=>`<button class="pill ${Settings.diff===k?"on":""}" data-act="diff" data-v="${k}" aria-pressed="${Settings.diff===k}">${T(l)}</button>`;
+    openPanel(`<h2>GEMHOLLOW</h2><p>${T("Shards of the Ember Crown")}<br><small>${T("Match gems, smash skulls and channel mana to slay the denizens of the hollow.")}</small></p>
+      ${this.hasSave?`<p class="hint">${T("Saved game: level {l}, stage {s}",{l:this.p.lv,s:this.stage+1})}${this.best?` · ${T("Best stage: {n}",{n:this.best})}`:""}</p>`:""}
+      <div class="btns col"><button class="big" data-act="play">${this.hasSave?T("Continue"):T("Begin Quest")}</button>
+      <button data-act="achievements">${T("Achievements")}</button><button data-act="howto">${T("How to Play")}</button><button data-act="settings">${T("Settings")}</button></div>
+      <div class="homeopts"><span class="pills" role="group" aria-label="${T("Difficulty")}">${pill("easy","Easy")}${pill("normal","Normal")}${pill("hard","Hard")}</span>${this.langSelect()}</div>`);
+  }
+  beginPlay(){
+    closePanel(); this.started=true; Snd.init(); Snd.play("click"); CG.start(); Tut.event("start"); this.updateUI();
+    if(this.e.boss) this.bossIntro(); else Snd.setTrackNow(this.stage%ENEMIES.length);
+  }
+  autoStart(){ this.started=true; CG.start(); Tut.event("start"); this.updateUI(); Snd.setTrackNow(0); }   // first visit: straight into the tutorial battle
+  applyLang(){
+    document.documentElement.lang=Settings.lang;
+    document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent=T(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-title]").forEach(el=>{ const t=T(el.dataset.i18nTitle); el.title=t; el.setAttribute("aria-label",t); });
+    this.buildUI(); this.updateUI();
   }
   act(a,d){
-    const back=()=>{ if(this.ctx==="victory") this.victoryPanel(false); else if(this.ctx==="defeat") this.defeatPanel(); else if(this.ctx==="home") this.homePanel(); else this.openMenuFromPanel(); };
+    const back=()=>{ if(this.ctx==="victory") this.victoryPanel(false); else if(this.ctx==="defeat") this.defeatPanel(); else if(this.ctx==="home"||this.ctx==="daily"){ this.ctx="home"; this.homePanel(); } else this.openMenuFromPanel(); };
+    const noAd=()=>this.toast(T("Ad unavailable"));
     switch(a){
-      case "play": closePanel(); this.started=true; Snd.init(); Snd.play("click"); CG.start(); Tut.event("start"); this.updateUI(); if(this.e.boss) this.bossIntro(); else Snd.setTrackNow(this.stage%ENEMIES.length); break;
+      case "play": if(this.dailyAvailable()) this.dailyPanel(); else this.beginPlay(); break;
+      case "claim": this.claimDaily(1); break;
+      case "claim2": CG.rewarded(()=>this.claimDaily(2),noAd); break;
       case "next": case "retry": closePanel(); this.busy=true; CG.ad(()=>{ CG.start(); this.startBattle(); }); break;
+      case "revive": CG.rewarded(()=>this.revive(),noAd); break;
+      case "double": CG.rewarded(()=>this.doubleCoins(),noAd); break;
+      case "diff": Settings.diff=d.v; Settings.save(); this.homePanel(); break;
+      case "achievements": this.achPanel(); break;
       case "shop": this.shopPanel(); break;
       case "shopback": back(); break;
       case "buy": this.buy(d.id); break;
@@ -1178,29 +1518,28 @@ class Game {
       case "settings": this.settingsPanel(); break;
       case "back": back(); break;
       case "replayTut": Tut.reset(); if(this.ctx!=="home"&&this.moveCount===0) Tut.event("start"); Snd.play("click"); break;
-      case "newgame": openPanel(`<h2>New Game?</h2><p>This erases your saved progress.</p><div class="btns"><button class="big" data-act="confirmNew">Erase &amp; Restart</button><button data-act="back">Cancel</button></div>`, this.ctx==="menu"); break;
+      case "newgame": openPanel(`<h2>${T("New Game?")}</h2><p>${T("This erases your saved progress.")}</p><div class="btns"><button class="big" data-act="confirmNew">${T("Erase & Restart")}</button><button data-act="back">${T("Cancel")}</button></div>`, this.ctx==="menu"); break;
       case "confirmNew": this.resetProgress(); break;
     }
   }
-  openMenuFromPanel(){ this.ctx="menu"; openPanel(`<h2>Paused</h2><div class="btns col">
-      <button class="big" data-act="resume">Resume</button><button data-act="restartBattle">Restart Battle</button><button data-act="howto">How to Play</button><button data-act="settings">Settings</button><button data-act="newgame">New Game</button></div>`, !this.over); }
   // ---------- UI ----------
   buildUI(){
-    $("mana").innerHTML=MANA_TYPES.map(t=>`<div class="m" id="m${t}" style="color:${GEMS[t].col}" title="${GEMS[t].name} mana">${GEMS[t].emoji} <span></span><div class="mb" id="mb${t}"></div></div>`).join("");
-    $("spells").innerHTML=SPELLS.map((s,i)=>`<button class="spell" id="sp${i}" aria-label="${s.name}"><b>${i+1}. ${s.name} <i>${costIcons(s.cost)}</i></b><span id="sd${i}"></span></button>`).join("")
+    $("mana").innerHTML=MANA_TYPES.map(t=>`<div class="m" id="m${t}" style="color:${GEMS[t].col}" title="${T("{el} mana",{el:T(GEMS[t].name)})}">${GEMS[t].emoji} <span></span><div class="mb" id="mb${t}"></div></div>`).join("");
+    $("spells").innerHTML=SPELLS.map((s,i)=>`<button class="spell" id="sp${i}" aria-label="${T(s.name)}"><b>${i+1}. ${T(s.name)} <i>${costIcons(s.cost)}</i></b><span id="sd${i}"></span></button>`).join("")
       +`<button class="spell potion" id="pothp"></button><button class="spell potion" id="potmana"></button>`;
     SPELLS.forEach((_,i)=>$("sp"+i).onclick=()=>this.cast(i));
     $("pothp").onclick=()=>this.usePotion("hp"); $("potmana").onclick=()=>this.usePotion("mana");
   }
   updateUI(){
-    const p=this.p,e=this.e; this.lastAct=performance.now(); this.hint=null; this.dirty=3;
-    $("plv").textContent="Lv "+p.lv; $("elv").textContent="Stage "+e.lv;
-    $("php").style.width=100*p.hp/p.max+"%"; $("phptxt").textContent=`HP ${p.hp}/${p.max}`+(p.shield?` · Shield ${p.shield}`:"")+(p.poison?` · Poison ${p.poison}`:"")+(p.stunned?" · Stunned":"");
-    $("pxp").style.width=100*p.xp/this.need()+"%"; $("pgold").innerHTML=`XP ${p.xp}/${this.need()}  ·  ${ICO.coin} ${p.gold}`;
-    $("ename").innerHTML=e.name+(e.boss?' <span class="badge">BOSS</span>':"");
-    $("ehp").style.width=100*e.hp/e.max+"%"; $("ehptxt").textContent=`HP ${e.hp}/${e.max}`+(e.shield?` · Shield ${e.shield}`:"");
+    const p=this.p,e=this.e; this.lastAct=performance.now(); if(!this.hintHold) this.hint=null; this.dirty=3;
+    $("plv").textContent=T("Lv {n}",{n:p.lv}); $("elv").textContent=e.lv>ENEMIES.length?T("Endless · Stage {n}",{n:e.lv}):T("Stage {n}",{n:e.lv});
+    $("php").style.width=100*p.hp/p.max+"%"; $("phptxt").textContent=T("HP {a}/{b}",{a:p.hp,b:p.max})+(p.shield?" · "+T("Shield {n}",{n:p.shield}):"")+(p.poison?" · "+T("Poison {n}",{n:p.poison}):"")+(p.stunned?" · "+T("Stunned"):"");
+    $("pxp").style.width=100*p.xp/this.need()+"%"; $("pgold").innerHTML=T("XP {a}/{b}",{a:p.xp,b:this.need()})+"  ·  "+ICO.coin+" "+p.gold;
+    $("ename").innerHTML=T(e.name)+(e.boss?` <span class="badge">${T("BOSS")}</span>`:"");
+    $("ehp").style.width=100*e.hp/e.max+"%"; $("ehptxt").textContent=T("HP {a}/{b}",{a:e.hp,b:e.max})+(e.shield?" · "+T("Shield {n}",{n:e.shield}):"");
     const warn=e.abil.map(a=>({a,d:ABIL[a.id]})).sort((x,y)=>x.a.cd-y.a.cd)[0];
-    $("estat").innerHTML=`Attack ${this.enemyAtk()}`+(e.frozen?" · Frozen":"")+(warn?`<br><span class="${warn.a.cd<=1?"warn":""}">${warn.a.cd<=1?"⚠ Next turn: ":"Special: "}${warn.d.name} <em>(${warn.d.info})</em>${warn.a.cd>1?` in ${warn.a.cd}`:""}</span>`:(e.regen?"<br>Regenerates HP":""));
+    $("estat").innerHTML=T("Attack {n}",{n:this.enemyAtk()})+(e.frozen?" · "+T("Frozen"):"")+(warn?`<br><span class="${warn.a.cd<=1?"warn":""}">${warn.a.cd<=1?T("⚠ Next turn:")+" ":T("Special:")+" "}${T(warn.d.name)} <em>(${T(warn.d.info)})</em>${warn.a.cd>1?" "+T("in {n}",{n:warn.a.cd}):""}</span>`:(e.regen?"<br>"+T("Regenerates HP"):""));
+    { const A=ARENAS[e.key]||ARENAS.default; document.body.style.setProperty("--arena",A.acc); document.body.style.setProperty("--tint",A.tint); }
     $("ecard").classList.toggle("boss",!!e.boss);
     $("pcard").classList.toggle("active",this.turn==="player"); $("ecard").classList.toggle("active",this.turn==="enemy");
     const cl=(id,c,on)=>$(id).classList.toggle(c,!!on);
@@ -1209,10 +1548,10 @@ class Game {
     const can=this.turn==="player"&&!this.busy&&!this.over;
     SPELLS.forEach((s,i)=>{
       const ok=Object.keys(s.cost).every(t=>p.mana[t]>=s.cost[t]), b=$("sp"+i); b.disabled=!ok||!can; b.classList.toggle("ready",ok);
-      const d=`${s.desc(p.spellLv[i],this)}${p.spellLv[i]>1?" (Lv "+p.spellLv[i]+")":""}`; $("sd"+i).textContent=d; b.title=d;
+      const d=s.desc(p.spellLv[i],this)+(p.spellLv[i]>1?" "+T("(Lv {n})",{n:p.spellLv[i]}):""); $("sd"+i).textContent=d; b.title=d;
     });
-    $("pothp").innerHTML=`Health Potion ×${p.potions.hp} <span>Restore 50% HP</span>`; $("pothp").disabled=!can||p.potions.hp<=0||p.hp>=p.max; $("pothp").setAttribute("aria-label","Health potion");
-    $("potmana").innerHTML=`Mana Potion ×${p.potions.mana} <span>+4 of each mana</span>`; $("potmana").disabled=!can||p.potions.mana<=0;
+    $("pothp").innerHTML=`${T("Health Potion ×{n}",{n:p.potions.hp})} <span>${T("Restore 50% HP")}</span>`; $("pothp").disabled=!can||p.potions.hp<=0||p.hp>=p.max; $("pothp").setAttribute("aria-label",T("Health Potion"));
+    $("potmana").innerHTML=`${T("Mana Potion ×{n}",{n:p.potions.mana})} <span>${T("+4 of each mana")}</span>`; $("potmana").disabled=!can||p.potions.mana<=0;
   }
   log(t){ const d=$("log"); d.innerHTML=`<div>${t}</div>`+d.innerHTML; while(d.children.length>5) d.lastChild.remove(); }
   shake(id){ const el=$(id); this.hurtT[id==="pcard"?"p":"e"]=performance.now()+250;
@@ -1224,11 +1563,11 @@ class Game {
   async bossIntro(){
     const e=this.e, kind=e.key==="dragon"?"dragon":"orc", ti=this.stage%ENEMIES.length, IMP=450, g=GEN;
     this.busy=true; Tut.hide(); this.updateUI();
-    this.intro={t0:performance.now(),dur:2700,impact:IMP,name:e.name.toUpperCase(),kind};
+    this.intro={t0:performance.now(),dur:2700,impact:IMP,name:T(e.name).toLocaleUpperCase(),kind};
     Snd.duck(); Snd.play("boss_"+kind);
     const el=$("ecard"); el.classList.remove("bossenter"); void el.offsetWidth; el.classList.add("bossenter"); setTimeout(()=>el.classList.remove("bossenter"),1100);
     this.spawnFx("boss",0,{kind});
-    setTimeout(()=>{ if(g!==GEN) return; Snd.setTrackNow(ti); this.log("Now playing: "+TRACKS[ti].n);
+    setTimeout(()=>{ if(g!==GEN) return; Snd.setTrackNow(ti); this.log(T("Now playing: {t}",{t:TRACKS[ti].n}));
       if(!Settings.reduced) this.shakeT=Math.max(this.shakeT,20);
       this.flash={col:kind==="dragon"?"255,150,60":"255,255,255",t0:performance.now(),dur:450,a:.9}; this.lunge=performance.now(); this.dirty=3; },IMP);
     await sleep(2700); if(g!==GEN) return;
@@ -1274,7 +1613,7 @@ class Game {
     if(!Settings.reduced&&tq<1) ctx.translate((Math.random()-.5)*6,(Math.random()-.5)*6);
     ctx.shadowColor="#ff3b1f"; ctx.shadowBlur=26; ctx.lineWidth=8; ctx.strokeStyle="#1a0408"; ctx.lineJoin="round"; ctx.strokeText(I.name,0,0);
     const g=ctx.createLinearGradient(0,-30,0,30); g.addColorStop(0,"#fff3c4"); g.addColorStop(.55,"#ffb82e"); g.addColorStop(1,"#c0381e"); ctx.fillStyle=g; ctx.fillText(I.name,0,0);
-    ctx.shadowBlur=0; ctx.font="700 20px 'Palatino Linotype',Georgia,serif"; ctx.fillStyle="#ff6b5a"; ctx.fillText("—  BOSS BATTLE  —",0,-50*1.0); ctx.restore();
+    ctx.shadowBlur=0; ctx.font="700 20px 'Palatino Linotype',Georgia,serif"; ctx.fillStyle="#ff6b5a"; ctx.fillText("—  "+T("BOSS BATTLE")+"  —",0,-50*1.0); ctx.restore();
   }
 
   // ---------- match animations (full-board, initial match only) ----------
@@ -1439,8 +1778,10 @@ class Game {
     if(this.layers[name]) return this.layers[name];
     const px=Math.round(520*this.scale), c=document.createElement("canvas"); c.width=c.height=px; const k=c.getContext("2d"); k.setTransform(px/520,0,0,px/520,20*px/520,20*px/520);
     const prev=ctx; ctx=k; const S=480/N;
-    if(name==="bg"){
-      const bg=k.createLinearGradient(0,0,0,480); bg.addColorStop(0,"#241942"); bg.addColorStop(1,"#120b22"); k.fillStyle=bg; k.fillRect(-20,-20,520,520);
+    if(name.startsWith("bg")){
+      const A=ARENAS[name.slice(3)]||ARENAS.default;
+      const bg=k.createLinearGradient(0,0,0,480); bg.addColorStop(0,A.top); bg.addColorStop(1,A.bot); k.fillStyle=bg; k.fillRect(-20,-20,520,520);
+      if(A.m) A.m(k);
       for(let r=0;r<N;r++)for(let c2=0;c2<N;c2++){ k.fillStyle=(r+c2)%2?"#ffffff08":"#00000030"; k.fillRect(c2*S,r*S,S,S); k.strokeStyle="#ffffff0d"; k.lineWidth=1; k.strokeRect(c2*S+.5,r*S+.5,S-1,S-1); }
     } else { const v=k.createRadialGradient(240,240,200,240,240,360); v.addColorStop(0,"#0000"); v.addColorStop(1,"#000a"); k.fillStyle=v; k.fillRect(-20,-20,520,520); }
     ctx=prev; return this.layers[name]=c;
@@ -1548,14 +1889,14 @@ class Game {
       if(this.qcap>.8){ this.qcap=Math.max(.75,this.qcap*.8); this.resizeCanvas(); } else if(!Settings.lowFx){ Settings.lowFx=true; } }
     // idle hint
     if(this.turn==="player"&&!this.busy&&!this.over){
-      if(!this.hint&&t-this.lastAct>6000){ const m=this.moves(); if(m.length) this.hint=[m[0].a,m[0].b]; }
+      if(!this.hint&&t-this.lastAct>6000){ const m=this.moves(); if(m.length) this.hint=[m[0].a,m[0].b]; if(!Tut.done) Tut.event("hint"); }
     } else this.hint=null;
     if(this.needsBoard(t)){
       if(this.dirty>0) this.dirty--;
       const S=480/N, sc=this.scale;
       ctx.setTransform(sc,0,0,sc,0,0); ctx.clearRect(-20,-20,520,520);
       if(this.shakeT>0){ this.shakeT*=0.88; if(this.shakeT<0.3) this.shakeT=0; ctx.translate((Math.random()-.5)*this.shakeT,(Math.random()-.5)*this.shakeT); }
-      ctx.drawImage(this.layer("bg"),-20,-20,520,520);
+      ctx.drawImage(this.layer("bg:"+this.e.key),-20,-20,520,520);
       for(const row of this.b) for(const g of row) if(g) this.drawGem(g,S,t);
       this.parts=this.parts.filter(p=>--p.life>0);
       for(const p of this.parts){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.18; ctx.globalAlpha=Math.min(1,p.life/p.max*1.5); ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r*p.life/p.max+.5,0,6.2832); ctx.fill(); }
@@ -1587,26 +1928,31 @@ function shade(hex,amt){
 
 Settings.load();
 const game = new Game();
-game.homePanel();
-CG.init().then(()=>{ CG.loaded();
+game.applyLang();
+// wait briefly for the SDK (cloud save), then show the home screen - or, on a first visit, drop straight into the tutorial battle
+Promise.race([CG.init(),new Promise(r=>setTimeout(r,2500))]).then(()=>{ CG.loaded();
   try{ const raw=CG.dataGet(Store.key); if(raw&&!game.started){ const c=JSON.parse(raw), l=Store.get(Store.key);   // cloud save newer than local? use it
-    if(c&&c.savedAt&&(!l||c.savedAt>l.savedAt)){ Store.set(Store.key,c); game.applySave(c); game.hasSave=true; game.startBattle(); game.homePanel(); } } }catch(e){} });
+    if(c&&c.savedAt&&(!l||c.savedAt>l.savedAt)){ Store.set(Store.key,c); game.applySave(c); game.hasSave=true; game.startBattle(); } } }catch(e){}
+  if(!game.started){ if(game.hasSave) game.homePanel(); else game.autoStart(); } });
 
 // ---------- toolbar ----------
 const muteBtn=document.getElementById("mute"), syncMute=()=>muteBtn.classList.toggle("off",Snd.muted);
 muteBtn.onclick=()=>{ Snd.init(); Snd.setMuted(!Snd.muted); syncMute(); }; syncMute();
 document.getElementById("menu").onclick=()=>game.openMenu();
+$("hint").onclick=()=>game.showHint();
 $("tipok").onclick=()=>Tut.dismiss(Tut.cur);
 $("panel").addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); if(b&&!b.disabled){ Snd.init(); Snd.play("click"); game.act(b.dataset.act,b.dataset); } });
 $("panel").addEventListener("input",e=>{ const k=e.target.dataset.set; if(k&&e.target.type==="range"){ Settings[k]=e.target.value/100; Settings.apply(); } });
 $("panel").addEventListener("change",e=>{ const k=e.target.dataset.set; if(!k) return;
+  if(e.target.tagName==="SELECT"){ Settings[k]=e.target.value; if(k==="lang"){ Settings.langSet=true; Settings.apply(); game.applyLang(); } Settings.save();
+    if(game.ctx==="home"&&k!=="diff") game.homePanel(); else if(game.ctx==="home") game.homePanel(); else game.settingsPanel(); return; }
   if(k==="mute"){ Snd.setMuted(e.target.checked); syncMute(); } else if(e.target.type==="checkbox"){ Settings[k]=e.target.checked; Settings.apply(); }
   Settings.save(); });
 document.addEventListener("keydown",e=>{
   if(e.ctrlKey||e.metaKey||e.altKey) return;
   if(panelOpen()){
     if(e.key==="Escape"&&game.ctx==="menu"){ e.preventDefault(); closePanel(); }
-    else if(e.key==="Tab"){ const f=[...$("panelbox").querySelectorAll("button:not([disabled]),input")]; if(!f.length) return;
+    else if(e.key==="Tab"){ const f=[...$("panelbox").querySelectorAll("button:not([disabled]),input,select")]; if(!f.length) return;
       const i=f.indexOf(document.activeElement), n=e.shiftKey?(i<=0?f.length-1:i-1):(i===f.length-1?0:i+1); e.preventDefault(); f[n].focus(); }
     return; }
   if(!game.started) return;
@@ -1617,7 +1963,18 @@ document.addEventListener("keydown",e=>{
   else if(/^[1-8]$/.test(k)) game.cast(+k-1);
   else if(k==="h"||k==="H") game.usePotion("hp");
   else if(k==="m"||k==="M") game.usePotion("mana");
+  else if(k==="t"||k==="T") game.showHint();
 });
+// pause when the player leaves (tab hidden, app switch, window loses focus): open the pause menu, stop gameplay in the SDK, mute
+let away=false;
+function goAway(){
+  if(away) return; away=true; Snd.away=true; Snd.apply(); try{ if(Snd.ctx) Snd.ctx.suspend(); }catch(e){}
+  if(CG.adActive) return;
+  if(game.started&&!game.over&&!panelOpen()) game.openMenu(); else CG.stop();
+}
+function comeBack(){ if(!away) return; away=false; Snd.away=false; Snd.apply(); try{ if(Snd.ctx&&!document.hidden) Snd.ctx.resume(); }catch(e){} }
+document.addEventListener("visibilitychange",()=>document.hidden?goAway():comeBack());
+window.addEventListener("blur",goAway); window.addEventListener("focus",comeBack); window.addEventListener("pagehide",goAway);
 { const d=document.documentElement; if(!(d.requestFullscreen||d.webkitRequestFullscreen)) document.getElementById("fs").style.display="none"; }
 document.getElementById("fs").onclick=()=>{ const d=document.documentElement;
   try{ document.fullscreenElement?document.exitFullscreen():(d.requestFullscreen||d.webkitRequestFullscreen).call(d); }catch(e){} };
@@ -1629,7 +1986,7 @@ const cellAt=e=>{ const R=cv.getBoundingClientRect(); const c=Math.floor((e.clie
 const adj=(a,b)=>Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])===1;
 cv.addEventListener("pointerdown",e=>{
   game.kb=false;
-  if(game.busy||game.over||game.turn!=="player") return;
+  if(!game.started||game.busy||game.over||game.turn!=="player") return;
   const cell=cellAt(e); if(!cell) return;
   if(game.sel && adj(game.sel,cell)){ const a=game.sel; game.playerMove(a,cell); down=null; return; }
   game.sel=cell; down={cell,x:e.clientX,y:e.clientY};
