@@ -45,7 +45,6 @@ Every 5th stage is a boss. On arrival the board darkens, the boss slams in, a fu
 - **Rewarded ads (CrazyGames only):** revive with 50% HP after a defeat, double the coins after a victory, double the daily reward. Buttons only appear when the SDK is available; rewards are granted only if the ad finishes. `happytime` fires on boss wins, level-ups and achievements.
 - **First visit:** drops straight into the tutorial battle (no title screen). Returning players see Continue.
 - **Difficulty:** Easy / Normal / Hard (enemy HP and attack, AI mistakes); set on the home screen or in Settings.
-- **Arenas:** every enemy fights on its own themed board background.
 - **Hint button** (lightbulb / `T`), idle hint after 6 s.
 - **Retention:** 13 achievements, a daily reward with a streak, a best-stage record, and endless mode after the Elder Dragon.
 - **Languages:** English, Spanish, Portuguese, French, German, Russian (auto-detected, switchable in Settings). Translations are machine-assisted and would benefit from a native review.
