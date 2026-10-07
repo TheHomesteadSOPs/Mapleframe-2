@@ -136,7 +136,7 @@
 <div id="game">
   <div class="row" id="cards">
     <div class="card" id="pcard">
-      <div class="name"><span id="pname" data-i18n="Wanderer">Wanderer</span><span id="plv"></span></div>
+      <div class="name"><span id="pname">Wanderer</span><span id="plv"></span></div>
       <canvas class="fig" id="pcv" width="240" height="240"></canvas>
       <div class="bar hp"><i id="php"></i></div>
       <div class="small" id="phptxt"></div>
@@ -553,7 +553,7 @@ const Fig = (() => {
   const glow=(col,b)=>{ c.shadowColor=col; c.shadowBlur=b; };
   const ng=()=>{ c.shadowBlur=0; };
   const D={};
-  D.hero=()=>{
+  D.hero1=()=>{
     poly([[60,100],[140,100],[162,186],[38,186]],lg(0,100,0,186,"#d04a38","#6e1712"));
     rect(78,158,18,28,lg(0,158,0,186,"#6a4a2a","#2e1c0e")); rect(104,158,18,28,lg(0,158,0,186,"#6a4a2a","#2e1c0e"));
     poly([[70,98],[130,98],[136,162],[64,162]],lg(0,98,0,162,"#dfe7f1","#7788a0")); rect(66,146,68,10,"#8a5a22",OL,2);
@@ -565,6 +565,74 @@ const Fig = (() => {
     rect(96,60,8,30,lg(80,0,120,0,"#aab6c8","#e8eef7"),OL,2,2);
     poly([[100,42],[122,24],[138,38],[116,46]],lg(100,0,140,0,"#ff6b4a","#a82a1a"),OL,2);
     eye(86,76,6,5,"#3a74d8"); eye(114,76,6,5,"#3a74d8");
+  };
+  D.hero0=()=>{   // Wanderer: hooded traveller with a wooden shield
+    poly([[54,98],[146,98],[160,186],[40,186]],lg(0,98,0,186,"#5f7a3a","#26361a"));
+    rect(78,158,18,28,lg(0,158,0,186,"#6a4a2a","#2e1c0e")); rect(104,158,18,28,lg(0,158,0,186,"#6a4a2a","#2e1c0e"));
+    poly([[70,98],[130,98],[136,162],[64,162]],lg(0,98,0,162,"#d2b078","#7a5a32")); rect(64,146,72,9,"#6a4a22",OL,2);
+    rect(95,145,10,11,"#d9b24a",OL,2,2);
+    ell(50,130,21,21,lg(20,110,80,150,"#a8793c","#5e3c18"),OL,3); ell(50,130,6,6,"#8a8f99",OL,2);
+    c.lineWidth=2; c.strokeStyle="#4a2e12"; c.beginPath(); c.moveTo(50,110); c.lineTo(50,150); c.moveTo(30,130); c.lineTo(70,130); c.stroke();
+    poly([[148,56],[154,48],[160,56],[158,122],[150,122]],lg(140,0,170,0,"#f2f4f8","#98a4b8")); rect(140,120,28,7,"#7a5a22",OL,2); rect(150,125,8,20,"#5a3a1a",OL,2);
+    ell(142,130,10,8,"#e8c49a",OL,2);
+    ell(100,72,26,28,"#f1c9a0"); c.beginPath(); c.ellipse(100,68,31,31,0,Math.PI,0); c.closePath(); fl(lg(0,36,0,70,"#6e8c40","#2e4420"),OL,3);
+    poly([[70,70],[84,52],[100,66],[116,52],[130,70],[120,64],[100,74],[80,64]],lg(0,52,0,74,"#c68a4a","#7a4a22"),null);
+    rect(76,92,48,10,"#c8402c",OL,2,4);
+    eye(87,78,5.5,5,"#3a74d8"); eye(113,78,5.5,5,"#3a74d8");
+    c.lineWidth=3; c.strokeStyle="#5a3a1a"; c.beginPath(); c.moveTo(92,92); c.quadraticCurveTo(100,96,108,92); c.stroke();
+  };
+  D.hero2=()=>{   // Warrior: pauldrons, plumed helm, round emblem shield
+    poly([[54,98],[146,98],[164,186],[36,186]],lg(0,98,0,186,"#d04a38","#5e100e"));
+    rect(78,158,18,28,lg(0,158,0,186,"#55657e","#222a38")); rect(104,158,18,28,lg(0,158,0,186,"#55657e","#222a38"));
+    poly([[68,98],[132,98],[138,164],[62,164]],lg(0,98,0,164,"#e4ebf4","#6a7d98")); rect(62,148,76,11,"#b8892a",OL,2);
+    ell(100,128,10,10,"#ffd35a",OL,2);
+    ell(68,104,19,13,lg(0,92,0,116,"#e4ebf4","#7a8cab"),OL,3); ell(132,104,19,13,lg(0,92,0,116,"#e4ebf4","#7a8cab"),OL,3);
+    ell(48,134,26,26,lg(0,108,0,160,"#4a7de0","#1a3676"),OL,3); ell(48,134,20,20,null,"#ffd35a",3);
+    poly([[48,120],[54,134],[48,148],[42,134]],"#ffd35a",OL,2);
+    poly([[146,26],[154,16],[162,26],[160,120],[148,120]],lg(140,0,170,0,"#fff","#9fb0c8")); rect(134,118,36,9,"#e0b030"); rect(148,125,8,22,"#5a3a1a",OL,2);
+    ell(142,132,11,9,lg(0,122,0,142,"#cfd8e3","#7788a0"),OL,2);
+    ell(100,74,26,28,"#f1c9a0");
+    c.beginPath(); c.ellipse(100,68,31,30,0,Math.PI,0); c.lineTo(131,84); c.lineTo(69,84); c.closePath(); fl(lg(0,38,0,84,"#e8eef7","#7384a0"),OL,3);
+    rect(95,60,10,34,lg(80,0,120,0,"#aab6c8","#e8eef7"),OL,2,2);
+    poly([[100,40],[118,14],[136,26],[128,48],[110,48]],lg(100,0,140,0,"#ff5a3a","#9a1a12"),OL,2);
+    eye(86,80,6,4.5,"#3a74d8"); eye(114,80,6,4.5,"#3a74d8");
+  };
+  D.hero3=()=>{   // Knight: polished plate, great helm, kite shield, cape
+    poly([[50,98],[150,98],[170,186],[30,186]],lg(0,98,0,186,"#f4f6fa","#8a9ab4"));
+    rect(76,156,20,30,lg(0,156,0,186,"#d0d8e4","#58698a")); rect(104,156,20,30,lg(0,156,0,186,"#d0d8e4","#58698a"));
+    poly([[66,98],[134,98],[140,164],[60,164]],lg(0,98,0,164,"#f2f6fb","#7a8cab")); rect(60,148,80,11,"#2f5fc4",OL,2);
+    poly([[100,104],[108,128],[100,146],[92,128]],"#ffd35a",OL,2);
+    ell(66,104,21,15,lg(0,90,0,118,"#f6f9fd","#8294b4"),OL,3); ell(134,104,21,15,lg(0,90,0,118,"#f6f9fd","#8294b4"),OL,3);
+    poly([[24,102],[74,102],[74,146],[49,182],[24,146]],lg(0,102,0,182,"#3a6ad8","#142e72"));
+    rect(46,108,6,64,"#f4d070",null); rect(30,124,38,6,"#f4d070",null);
+    poly([[24,102],[74,102],[74,146],[49,182],[24,146]],null,"#d0d8e4",3);
+    poly([[146,16],[154,6],[162,16],[160,122],[148,122]],lg(140,0,170,0,"#fff","#a5b4cc")); rect(132,120,40,9,"#e0b030"); rect(148,127,8,24,"#2a3a7a",OL,2);
+    ell(142,134,11,9,lg(0,124,0,144,"#e4ebf4","#7788a0"),OL,2);
+    ell(100,76,31,33,lg(0,44,0,110,"#f4f7fb","#7384a0"));
+    rect(72,70,56,12,"#14182a",OL,2,3); c.fillStyle="#2a3050"; for(let i=0;i<5;i++) c.fillRect(77+i*10,84,4,14);
+    glow("#9cf",8); ell(88,76,4,2.5*bl+.3,"#bfe0ff",null); ell(112,76,4,2.5*bl+.3,"#bfe0ff",null); ng();
+    poly([[100,46],[94,10],[120,2],[132,24],[114,42]],lg(80,0,140,0,"#4a7de0","#1a3a8a"),OL,2);
+  };
+  D.hero4=()=>{   // Mythic Knight: gilded violet armour, winged helm, glowing blade, aura
+    const pulse=.6+.4*Math.sin(T/380);
+    const au=c.createRadialGradient(100,110,10,100,110,98); au.addColorStop(0,`rgba(255,215,110,${.35*pulse})`); au.addColorStop(1,"rgba(160,90,255,0)"); c.fillStyle=au; c.fillRect(0,0,200,200);
+    poly([[46,98],[154,98],[176,186],[24,186]],lg(0,98,0,186,"#8a4ae0","#2a0e5a"));
+    ell(100,150,5,5,"#ffe08a",null);
+    rect(76,156,20,30,lg(0,156,0,186,"#e8c050","#6a4a10")); rect(104,156,20,30,lg(0,156,0,186,"#e8c050","#6a4a10"));
+    poly([[64,98],[136,98],[142,164],[58,164]],lg(0,98,0,164,"#ffe9a0","#a87a1a")); rect(58,148,84,12,"#6a2ac0",OL,2);
+    glow("#ffd860",14); ell(100,126,11,11,"#fff0b0",OL,2); ng(); ell(100,126,5,5,"#9a4ae8",null);
+    poly([[52,100],[40,70],[66,86],[74,104]],lg(0,70,0,104,"#ffe9a0","#a87a1a"),OL,2); poly([[148,100],[160,70],[134,86],[126,104]],lg(0,70,0,104,"#ffe9a0","#a87a1a"),OL,2);
+    ell(66,106,21,15,lg(0,92,0,120,"#fff0b8","#b8861e"),OL,3); ell(134,106,21,15,lg(0,92,0,120,"#fff0b8","#b8861e"),OL,3);
+    poly([[22,102],[74,102],[74,146],[48,184],[22,146]],lg(0,102,0,184,"#a860f0","#34127a")); poly([[22,102],[74,102],[74,146],[48,184],[22,146]],null,"#ffd860",3);
+    glow("#ffe08a",12); poly([[48,116],[54,134],[48,152],[42,134]],"#fff4c0",null); ng();
+    glow("#9fe8ff",18*pulse+4); poly([[146,6],[154,-4],[162,6],[160,120],[148,120]],lg(140,0,170,0,"#ffffff","#7fd8ff"),null); ng();
+    rect(132,118,40,10,"#ffd860"); rect(148,126,8,24,"#5a2ab0",OL,2); ell(152,122,5,5,"#c07aff",null);
+    ell(142,136,11,9,lg(0,126,0,146,"#fff0b8","#b8861e"),OL,2);
+    poly([[70,70],[40,40],[48,66],[30,64],[56,86]],lg(0,40,0,86,"#fff4c8","#c8962a"),OL,2); poly([[130,70],[160,40],[152,66],[170,64],[144,86]],lg(0,40,0,86,"#fff4c8","#c8962a"),OL,2);
+    ell(100,76,31,33,lg(0,44,0,110,"#ffeaa8","#a87a1a"));
+    rect(72,70,56,12,"#1a0e3a",OL,2,3); c.fillStyle="#3a1e70"; for(let i=0;i<5;i++) c.fillRect(77+i*10,84,4,14);
+    glow("#ffd860",10); ell(88,76,4.5,2.6*bl+.3,"#fff0a0",null); ell(112,76,4.5,2.6*bl+.3,"#fff0a0",null); ng();
+    poly([[100,48],[92,12],[100,-2],[108,12]],lg(0,0,0,48,"#ff9aff","#8a2ad8"),OL,2);
   };
   D.goblin=()=>{
     poly([[72,128],[128,128],[140,186],[60,186]],lg(0,128,0,186,"#7a5632","#3e2a14"));
@@ -685,6 +753,7 @@ const Fig = (() => {
   };
   const THEME={slime:"#2fc08a",golem:"#8a8a96",hero:"#3b6fd1",goblin:"#4f9a2a",wolf:"#6b7a99",bandit:"#8a3a3a",orc:"#5a7a3a",skeleton:"#3a7a9a",troll:"#7a6a3a",wraith:"#6a3aa0",dragon:"#c0381e"};
   return {
+    tier:0,
     draw(cv,name,t,shake=0,kick=0,still=false){
       const S=cv.width; c=cv.getContext("2d"); T=t; bl=((t%3600)<130)?.1:1;
       c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,S,S);
@@ -695,7 +764,7 @@ const Fig = (() => {
       c.fillStyle="#0007"; c.beginPath(); c.ellipse(100,190,62,7,0,0,6.2832); c.fill();
       const bob=still?0:Math.sin(t/420+(name==="wraith"?1:0))*(name==="wraith"?6:2.5), sx=(Math.random()-.5)*shake;
       const br=still?0:Math.sin(t/420)*.012; c.translate(100+sx,185); c.scale(1+br+kick*.18,1-br+kick*.18); c.translate(-100,-185+bob+kick*10);
-      (D[name]||D.hero)();
+      (name==="hero"?D["hero"+Fig.tier]:(D[name]||D.hero1))();
     }
   };
 })();
@@ -722,6 +791,13 @@ const TR=[ // [en, es, pt, fr, de, ru]
  ["Fullscreen","Pantalla completa","Tela cheia","Plein écran","Vollbild","Полный экран"],
  ["Hint (T)","Pista (T)","Dica (T)","Indice (T)","Tipp (T)","Подсказка (T)"],
  ["Got it","Entendido","Entendi","Compris","Verstanden","Понятно"],
+ ["Fighter","Luchador","Lutador","Combattant","Kämpfer","Боец"],
+ ["Warrior","Guerrero","Guerreiro","Guerrier","Krieger","Воин"],
+ ["Knight","Caballero","Cavaleiro","Chevalier","Ritter","Рыцарь"],
+ ["Mythic Knight","Caballero mítico","Cavaleiro mítico","Chevalier mythique","Mythischer Ritter","Мифический рыцарь"],
+ ["You evolved into a {name}!","¡Has evolucionado a {name}!","Você evoluiu para {name}!","Vous êtes devenu {name} !","Du bist zum {name} aufgestiegen!","Вы стали: {name}!"],
+ ["Spell Power","Poder mágico","Poder mágico","Puissance magique","Zauberkraft","Сила магии"],
+ ["+5% spell strength per level","+5% de fuerza de hechizo por nivel","+5% de força de feitiço por nível","+5 % de puissance des sorts par niveau","+5 % Zauberstärke pro Stufe","+5% к силе заклинаний за уровень"],
  ["Wanderer","Errante","Andarilho","Vagabond","Wanderer","Странник"],
  ["Lv {n}","Nv {n}","Nv {n}","Niv {n}","Stufe {n}","Ур. {n}"],
  ["Stage {n}","Etapa {n}","Fase {n}","Étape {n}","Runde {n}","Этап {n}"],
@@ -912,7 +988,9 @@ const Settings = {
 
 // ---------- progression data ----------
 const DIFF = {easy:{hp:.8,atk:.75,rand:.2}, normal:{hp:1,atk:1,rand:0}, hard:{hp:1.25,atk:1.25,rand:-.15}};   // enemy HP / attack multipliers, AI mistake chance offset
-const mult = L => 1 + 0.3*(L-1);
+let POWER=0;
+const mult = L => (1 + 0.3*(L-1))*(1+0.05*POWER);
+const CLASS_TIERS=["Wanderer","Fighter","Warrior","Knight","Mythic Knight"];   // warrior line: evolves every 5 levels (cosmetic)
 const SPELLS = [
   {name:"Fireball", cost:{[RED]:6}, desc:L=>T("{n} damage",{n:Math.round(12*mult(L))}),
     async run(g,L){ g.spawnFx("fireball"); await sleep(520); await g.hurtEnemy(Math.round(12*mult(L))); }},
@@ -1009,7 +1087,7 @@ const costIcons = c => Object.entries(c).map(([t,n])=>`${n} ${GEMS[t].emoji}`).j
 
 class Game {
   constructor() {
-    this.p = {lv:1, xp:0, hp:50, max:50, gold:0, hpUp:0, blade:0, spellLv:SPELLS.map(()=>1), potions:{hp:1,mana:0},
+    this.p = {lv:1, xp:0, hp:50, max:50, gold:0, hpUp:0, blade:0, power:0, spellLv:SPELLS.map(()=>1), potions:{hp:1,mana:0},
       mana:{[RED]:0,[GREEN]:0,[BLUE]:0,[EARTH]:0}, shield:0, poison:0, poisonDmg:0, stunned:false};
     this.stage=0; this.best=0; this.busy=true; this.turn="player"; this.over=false; this.started=false; this.moveCount=0;
     this.floats=[]; this.parts=[]; this.fx=[]; this.hurtT={p:0,e:0}; this.shakeT=0; this.lastAct=0; this.sel=null; this.hint=null;
@@ -1020,12 +1098,13 @@ class Game {
     requestAnimationFrame(t=>this.loop(t));
   }
   // ----- save / load -----
-  recalc(){ const p=this.p; p.max=50+10*(p.lv-1)+10*p.hpUp; p.hp=Math.min(p.hp,p.max); }
-  toSave(){ const p=this.p; return {v:1,lv:p.lv,xp:p.xp,gold:p.gold,stage:this.stage,best:this.best,hpUp:p.hpUp,blade:p.blade,spellLv:p.spellLv,potions:p.potions,tut:Tut.done,ach:this.ach,stats:this.stats,daily:this.daily,campaign:this.campaign,savedAt:Date.now()}; }
+  tier(){ return Math.min(CLASS_TIERS.length-1,Math.floor(this.p.lv/5)); }
+  recalc(){ const p=this.p; POWER=p.power||0; p.max=50+10*(p.lv-1)+10*p.hpUp; p.hp=Math.min(p.hp,p.max); }
+  toSave(){ const p=this.p; return {v:1,lv:p.lv,xp:p.xp,gold:p.gold,stage:this.stage,best:this.best,hpUp:p.hpUp,blade:p.blade,power:p.power,spellLv:p.spellLv,potions:p.potions,tut:Tut.done,ach:this.ach,stats:this.stats,daily:this.daily,campaign:this.campaign,savedAt:Date.now()}; }
   applySave(s){
     const p=this.p, num=(v,d)=>Number.isFinite(v)?v:d;
     p.lv=Math.max(1,num(s.lv,1)); p.xp=Math.max(0,num(s.xp,0)); p.gold=Math.max(0,num(s.gold,0)); this.stage=Math.max(0,num(s.stage,0)); this.best=num(s.best,this.stage);
-    p.hpUp=num(s.hpUp,0); p.blade=num(s.blade,0);
+    p.hpUp=num(s.hpUp,0); p.blade=num(s.blade,0); p.power=Math.max(0,num(s.power,0));
     if(Array.isArray(s.spellLv)) p.spellLv=SPELLS.map((_,i)=>Math.min(5,Math.max(1,num(s.spellLv[i],1))));
     if(s.potions) p.potions={hp:num(s.potions.hp,0),mana:num(s.potions.mana,0)};
     this.ach=(s.ach&&typeof s.ach==="object")?s.ach:{}; this.stats=Object.assign({extra:0,spells:0},s.stats&&typeof s.stats==="object"?s.stats:{});
@@ -1211,7 +1290,8 @@ class Game {
   async addXp(x){
     const p=this.p; p.xp+=x;
     while(p.xp>=this.need()){ p.xp-=this.need(); p.lv++; this.recalc(); p.hp=p.max; Snd.play("level");
-      this.log(T("LEVEL UP! You are now level {n}. HP restored.",{n:p.lv})); this.floatText(240,240,T("LEVEL UP!"),"#ffd36b"); CG.happy(); }
+      this.log(T("LEVEL UP! You are now level {n}. HP restored.",{n:p.lv})); this.floatText(240,240,T("LEVEL UP!"),"#ffd36b"); CG.happy();
+      if(p.lv%5===0&&this.tier()<CLASS_TIERS.length&&p.lv/5<CLASS_TIERS.length){ const nm=T(CLASS_TIERS[this.tier()]); this.log(T("You evolved into a {name}!",{name:nm})); this.toast(T("You evolved into a {name}!",{name:nm}),ICO.trophy); } }
     this.updateUI();
   }
   checkEnd(){
@@ -1332,11 +1412,13 @@ class Game {
   kbSelect(){ if(!this.cursor) this.cursor=[3,3]; this.grab=!this.grab; this.sel=this.grab?this.cursor:null; }
   // ----- shop -----
   items(){
+    const sink=(n,cap,base,step,top)=>n<cap?base+step*n:Math.round(top*Math.pow(1.17,n-cap));   // linear to the old cap, then endless exponential
     const p=this.p, out=[];
     out.push({id:"pot_hp", name:T("Health Potion"), desc:T("Restore 50% HP any time on your turn"), cost:30, ok:p.potions.hp<9});
     out.push({id:"pot_mana", name:T("Mana Potion"), desc:T("+4 of every mana color"), cost:40, ok:p.potions.mana<9});
-    out.push({id:"hp", name:T("Vitality"), desc:T("+10 max HP"), cost:40+30*p.hpUp, ok:p.hpUp<8});
-    out.push({id:"blade", name:T("Whetstone"), desc:T("+1 damage per skull matched"), cost:70+60*p.blade, ok:p.blade<5});
+    out.push({id:"hp", name:T("Vitality"), desc:T("+10 max HP"), cost:sink(p.hpUp,8,40,30,280), ok:true});
+    out.push({id:"blade", name:T("Whetstone"), desc:T("+1 damage per skull matched"), cost:sink(p.blade,5,70,60,420), ok:true});
+    out.push({id:"power", name:T("Spell Power"), desc:T("+5% spell strength per level"), cost:sink(p.power,0,0,0,200), ok:true});
     SPELLS.forEach((s,i)=>{ const L=p.spellLv[i]; out.push({id:"sp"+i, name:T("{name} Lv {l}",{name:T(s.name),l:L})+(L<5?" → "+(L+1):T(" (max)")), desc:s.desc(Math.min(5,L+1),this), cost:60*L, ok:L<5}); });
     return out;
   }
@@ -1353,6 +1435,7 @@ class Game {
     if(id==="pot_hp") p.potions.hp++; else if(id==="pot_mana") p.potions.mana++;
     else if(id==="hp"){ p.hpUp++; this.recalc(); p.hp=Math.min(p.max,p.hp+10); }
     else if(id==="blade") p.blade++;
+    else if(id==="power"){ p.power++; this.recalc(); }
     else p.spellLv[+id.slice(2)]++;
     this.award("shop"); this.saveGame(); this.updateUI();
     const l=$("panelbox").querySelector(".list"); this.shopScroll=l?l.scrollTop:0; this.shopPanel();
@@ -1500,7 +1583,7 @@ class Game {
   }
   updateUI(){
     const p=this.p,e=this.e; this.lastAct=performance.now(); if(!this.hintHold) this.hint=null; this.dirty=3;
-    $("plv").textContent=T("Lv {n}",{n:p.lv}); $("elv").textContent=e.lv>ENEMIES.length?T("Endless · Stage {n}",{n:e.lv}):T("Stage {n}",{n:e.lv});
+    $("pname").textContent=T(CLASS_TIERS[this.tier()]); $("plv").textContent=T("Lv {n}",{n:p.lv}); $("elv").textContent=e.lv>ENEMIES.length?T("Endless · Stage {n}",{n:e.lv}):T("Stage {n}",{n:e.lv});
     $("php").style.width=100*p.hp/p.max+"%"; $("phptxt").textContent=T("HP {a}/{b}",{a:p.hp,b:p.max})+(p.shield?" · "+T("Shield {n}",{n:p.shield}):"")+(p.poison?" · "+T("Poison {n}",{n:p.poison}):"")+(p.stunned?" · "+T("Stunned"):"");
     $("pxp").style.width=100*p.xp/this.need()+"%"; $("pgold").innerHTML=T("XP {a}/{b}",{a:p.xp,b:this.need()})+"  ·  "+ICO.coin+" "+p.gold;
     $("ename").innerHTML=T(e.name)+(e.boss?` <span class="badge">${T("BOSS")}</span>`:"");
@@ -1882,7 +1965,7 @@ class Game {
     // portraits: ~20fps while idle, every frame while reacting
     const kick=t<this.lunge?0:Math.max(0,1-(t-this.lunge)/450), rm=Settings.reduced, hp=this.hurtT.p-t>0, he=this.hurtT.e-t>0;
     if(hp||he||kick>0||t-this.lastPortrait>50){ this.lastPortrait=t;
-      Fig.draw($("pcv"),"hero",t,rm?0:hp?6:0,0,rm); Fig.draw($("ecv"),this.e.key,t,rm?0:he?6:0,rm?0:Math.sin(kick*Math.PI),rm); }
+      Fig.tier=this.tier(); Fig.draw($("pcv"),"hero",t,rm?0:hp?6:0,0,rm); Fig.draw($("ecv"),this.e.key,t,rm?0:he?6:0,rm?0:Math.sin(kick*Math.PI),rm); }
   }
 }
 
