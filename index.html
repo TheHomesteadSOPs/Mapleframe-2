@@ -758,7 +758,7 @@ const ENEMIES = [   // hm: HP multiplier, ad: attack offset (see Game.newEnemy)
   {name:"Troll",    key:"troll",    hm:1.2, ad:1,  ab:[], regen:true},
   {name:"Golem",    key:"golem",    hm:1.3, ad:1,  ab:["harden"]},
   {name:"Wraith",   key:"wraith",   hm:1,   ad:.5, ab:["lifedrain"]},
-  {name:"Dragon",   key:"dragon",   hm:.85, ad:1,  ab:["breath","lifedrain"], boss:true, title:"Elder Dragon"},
+  {name:"Dragon",   key:"dragon",   hm:.75, ad:0,  ab:["breath","lifedrain"], boss:true, title:"Elder Dragon"},
 ];
 
 // ---------- tutorial (non-blocking tips, shown the first time something happens) ----------
@@ -823,7 +823,7 @@ class Game {
   newEnemy() {
     const st=this.stage, T=ENEMIES[st%ENEMIES.length], boss=!!T.boss;
     const max=Math.round((20+14*st)*T.hm*(boss?1.5:1));
-    this.e={name:boss?T.title:T.name, key:T.key, boss, lv:st+1, max, hp:max, atk:Math.max(1,Math.round(1+.75*st+T.ad)), frozen:false, shield:0, regen:!!T.regen, bonus:0,
+    this.e={name:boss?T.title:T.name, key:T.key, boss, lv:st+1, max, hp:max, atk:Math.max(1,Math.round(1+.68*st+T.ad)), frozen:false, shield:0, regen:!!T.regen, bonus:0,
       abil:T.ab.map(id=>({id,cd:ABIL[id].cd}))};
   }
   startBattle(){
@@ -1055,15 +1055,17 @@ class Game {
     const rand=Math.max(.12,.42-.03*this.stage);
     while(n-->0){
       const ms=this.moves(); if(!ms.length) break;
-      const score=m=>m.m.cells.filter(([r,c])=>this.b[r][c].t===SKULL).length*3 + Math.max(...m.m.runs.map(x=>x.length))*2 + Math.random()*2;
-      ms.sort((x,y)=>score(y)-score(x));
+      // the AI values skulls and big matches, and goes out of its way for extra turns (4+ in a line, or 5+ in an L/T/+ shape)
+      for(const m of ms){ const runs=m.m.runs, extraTurn=runs.some(x=>x.length>=4)||this.groupSizes(runs).some(g=>g>=5);
+        m.score=m.m.cells.filter(([r,c])=>this.b[r][c].t===SKULL).length*3 + Math.max(...runs.map(x=>x.length))*2 + (extraTurn?14:0) + Math.random()*2; }
+      ms.sort((x,y)=>y.score-x.score);
       const pick = Math.random()<rand ? ms[rnd(ms.length)] : ms[0];
       this.sel=pick.a; await sleep(380); this.sel=pick.b; await sleep(300); this.sel=null;
       this.swapData(pick.a,pick.b); this.fixTargets(); await this.settle();
       const extra=await this.resolve("enemy");
       if(this.checkEnd()) return;
       await this.ensureMoves();
-      if(extra && Math.random()<0.7){ n++; this.log(e.name+" gets an extra turn!"); }
+      if(extra){ n++; this.log(e.name+" gets an extra turn!"); this.floatText(240,240,"EXTRA TURN!","#ff6b5a"); await sleep(500); }
     }
     await this.beginPlayerTurn();
   }
