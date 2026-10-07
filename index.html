@@ -1,0 +1,2054 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Gemhollow</title>
+<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+<style>
+  :root { --bg:#0e0a18; --panel:#2a1f45; --panel2:#1c1430; --edge:#6a52a8; --gold:#ffd36b; --txt:#f3ecff; --dim:#d6cdee; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html { background:#0e0a18; overscroll-behavior:none; }
+  body { margin:0; color:var(--txt); font-family:'Palatino Linotype','Book Antiqua',Georgia,serif;
+    background:radial-gradient(ellipse at 50% 0%,#3a2670 0%,#1a1030 45%,var(--bg) 100%) fixed;
+    display:flex; flex-direction:column; align-items:center; min-height:100vh; min-height:100dvh; padding:8px; padding-left:max(8px,env(safe-area-inset-left)); padding-right:max(8px,env(safe-area-inset-right)); padding-bottom:max(8px,env(safe-area-inset-bottom)); user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:none; }
+  h1 { font-size:26px; margin:2px 0 8px; letter-spacing:6px; font-weight:900;
+    background:linear-gradient(#fff3c4,#ffb82e 55%,#b86a00); -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 2px 0 #0008) drop-shadow(0 0 10px #ff9a2e66); }
+  #game { width:100%; max-width:520px; display:flex; flex-direction:column; gap:8px; }
+  .row { display:flex; gap:8px; }
+  .card { flex:1; background:linear-gradient(#34265a,var(--panel2)); border:2px solid var(--edge); border-radius:12px; padding:8px 10px;
+    position:relative; box-shadow:inset 0 1px 0 #fff2,0 4px 12px #0008; transition:border-color .3s, box-shadow .3s; }
+  .card.active { border-color:var(--gold); box-shadow:inset 0 1px 0 #fff3,0 0 18px #ffd36b88; }
+  .name { font-weight:700; font-size:14px; display:flex; justify-content:space-between; letter-spacing:1px; }
+  .name span:last-child { color:var(--gold); }
+  .portrait { display:flex; align-items:center; gap:8px; margin:4px 0; }
+  .face { width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px;
+    background:radial-gradient(circle at 35% 30%,#6c58b0,#241a40 70%); border:2px solid var(--gold); box-shadow:0 0 10px #ffd36b55, inset 0 -4px 8px #0007; }
+  .bars { flex:1; }
+  .bar { height:14px; background:#0009; border-radius:7px; overflow:hidden; margin-top:4px; position:relative; border:1px solid #000a; box-shadow:inset 0 2px 3px #000a; }
+  .bar > i { display:block; height:100%; transition:width .45s; border-radius:7px; position:relative; }
+  .bar > i::after { content:""; position:absolute; left:3px; right:3px; top:1px; height:35%; background:#fff4; border-radius:4px; }
+  .hp i { background:linear-gradient(#ff6b6b,#b3121f); }
+  .xp i { background:linear-gradient(#c9a3ff,#6a35c9); }
+  .xp { height:9px; }
+  .small { font-family:system-ui,sans-serif; font-size:11px; color:var(--dim); margin-top:3px; }
+  @keyframes hit { 0%,100%{filter:none} 30%{filter:brightness(2.2) saturate(0)} }
+  .hitflash .fig { animation:hit .3s; }
+  #mana { display:flex; gap:6px; }
+  .m { flex:1; text-align:center; border-radius:10px; padding:3px 0 0; font-size:12px; font-weight:700; background:#0007; border:1px solid #fff2; overflow:hidden; font-family:system-ui,sans-serif; }
+  .m .mb { height:5px; margin-top:3px; background:currentColor; transition:width .4s; box-shadow:0 0 8px currentColor; }
+  #spells { display:flex; gap:6px; flex-wrap:wrap; }
+  .spell { flex:1 1 45%; background:linear-gradient(#34265a,var(--panel2)); border:2px solid var(--edge); color:var(--txt); border-radius:10px;
+    padding:6px 8px; font-size:12px; cursor:pointer; text-align:left; font-family:system-ui,sans-serif; transition:transform .1s; }
+  .spell b { display:block; font-size:13px; font-family:'Palatino Linotype','Book Antiqua',Georgia,serif; letter-spacing:.5px; }
+  .spell:active:not([disabled]) { transform:scale(.97); }
+  .spell[disabled] { opacity:.45; cursor:not-allowed; }
+  @keyframes glow { 0%,100%{box-shadow:0 0 6px #7f78} 50%{box-shadow:0 0 16px #9f9c} }
+  .spell.ready { border-color:#8f8; animation:glow 1.6s infinite; }
+  .frame { padding:6px; border-radius:14px; background:linear-gradient(135deg,#ffe08a,#a86a14 50%,#ffd36b); box-shadow:0 6px 20px #000a; }
+  canvas { width:100%; aspect-ratio:1; background:#0b0814; border:3px solid #2a1c10; border-radius:9px; touch-action:none; display:block; }
+  #log { height:64px; overflow:hidden; font-family:system-ui,sans-serif; font-size:12px; color:var(--dim); background:#0006; border-radius:10px; padding:6px 8px; border:1px solid #fff1; }
+  #log div:first-child { color:var(--txt); }
+    button.big { background:linear-gradient(#ffe08a,#e0952b); color:#2a1604; border:0; border-radius:10px; padding:12px 30px; font:900 17px 'Palatino Linotype','Book Antiqua',Georgia,serif; letter-spacing:2px; cursor:pointer; box-shadow:0 4px 0 #8a4f0a,0 8px 18px #000a; }
+  button.big:active { transform:translateY(3px); box-shadow:0 1px 0 #8a4f0a; }
+  #topbar { position:relative; width:100%; max-width:1500px; text-align:center; }
+  #tools { position:absolute; right:0; top:2px; display:flex; gap:6px; }
+  #tools button { background:#2a1f45; color:var(--gold); border:2px solid var(--edge); border-radius:8px; width:36px; height:32px; font-size:16px; cursor:pointer; }
+  #tools button.off { opacity:.5; }
+  @media (min-width:560px) and (min-aspect-ratio:1/1) {
+    #game { max-width:1500px; display:grid; grid-template-columns:auto minmax(360px,1fr); grid-template-rows:auto auto auto 1fr; column-gap:16px;
+      grid-template-areas:"board cards" "board mana" "board spells" "board log"; align-items:start; }
+    .frame { grid-area:board; width:min(calc(100vh - 80px),58vw); width:min(calc(100dvh - 80px),58vw); }
+    #cards { grid-area:cards; } #mana { grid-area:mana; } #spells { grid-area:spells; } #log { grid-area:log; height:auto; min-height:64px; max-height:240px; }
+  }
+  @media (max-height:480px) { #log { display:none; } h1 { font-size:18px; margin:0 0 4px; } }
+  canvas.fig { width:100%; max-width:170px; aspect-ratio:1; margin:6px auto; display:block; border:2px solid var(--gold); border-radius:14px; box-shadow:0 0 14px #ffd36b44, inset 0 0 20px #0008; background:#0b0814; }
+  .name { font-size:16px !important; white-space:nowrap; gap:6px; }
+  .card { padding:10px 12px; } .bar { height:16px; } .xp { height:10px; } .small { font-size:12px; }
+  @media (min-width:560px) and (min-aspect-ratio:1/1) { canvas.fig { max-width:min(210px,19vh); max-width:min(210px,19dvh); } }
+  @media (min-width:601px) and (max-aspect-ratio:1/1) { canvas.fig { max-width:96px; } }
+  .ico { width:1.15em; height:1.15em; vertical-align:-.2em; }
+  .m .ico { width:15px; height:15px; margin-right:2px; }
+  #tools button { display:flex; align-items:center; justify-content:center; padding:0; }
+  #mute .slash { display:none; } #mute.off .slash { display:block; } #mute.off .wave { display:none; }
+  #tools button.off { opacity:1; color:#a99cc9; }
+  body { touch-action:manipulation; overflow-x:hidden; }
+  @media (max-width:600px) { canvas.fig { max-width:92px; } .card { padding:8px 9px; } h1 { font-size:22px; letter-spacing:4px; } .spell { padding:5px 7px; } }
+  @media (max-height:520px) and (min-aspect-ratio:1/1) {
+    canvas.fig { max-width:66px; margin:2px auto; } .card { padding:6px 8px; } .bar { height:11px; margin-top:2px; } .xp { height:7px; } .small { font-size:10px; margin-top:1px; }
+    .name { font-size:13px !important; } #spells { display:grid; grid-template-columns:1fr 1fr; gap:4px; } #spells .spell { padding:3px 6px; font-size:10px; } .spell b { font-size:11px; }
+    .frame { width:min(calc(100vh - 56px),58vw) !important; width:min(calc(100dvh - 56px),58vw) !important; padding:4px; } #topbar h1 { display:none; } #tools { top:0; } body { padding:4px; } #mana { gap:4px; }
+  }
+  #panel { position:fixed; inset:0; background:radial-gradient(#2a1a50ee,#05020bf2); display:none; align-items:center; justify-content:center; z-index:20; padding:12px; }
+  #panel.show { display:flex; }
+  #panelbox { width:min(520px,100%); max-height:100%; overflow:auto; text-align:center; background:linear-gradient(#34265a,#1c1430); border:2px solid var(--edge); border-radius:16px; padding:18px 18px 16px; box-shadow:0 10px 40px #000c; }
+  #panelbox h2 { font-size:32px; margin:0 0 8px; letter-spacing:4px; font-weight:900; background:linear-gradient(#fff3c4,#ffb82e 55%,#b86a00); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 2px 0 #000a); }
+  #panelbox p { font-family:system-ui,sans-serif; color:var(--txt); line-height:1.5; margin:6px 0; }
+  #panelbox .hint { color:var(--gold); } #panelbox small { color:var(--dim); }
+  #panelbox .coins { font-size:20px; font-weight:700; color:var(--gold); }
+  .btns { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; } .btns.col { flex-direction:column; align-items:stretch; }
+  #panelbox button { font:700 15px 'Palatino Linotype','Book Antiqua',Georgia,serif; color:var(--txt); background:#3a2c63; border:2px solid var(--edge); border-radius:10px; padding:10px 16px; cursor:pointer; }
+  #panelbox button.big { background:linear-gradient(#ffe08a,#e0952b); color:#2a1604; border:0; font-weight:900; letter-spacing:1px; box-shadow:0 4px 0 #8a4f0a; }
+  #panelbox button:disabled { opacity:.4; cursor:not-allowed; }
+  .list { text-align:left; max-height:min(52vh,420px); overflow:auto; font-family:system-ui,sans-serif; margin-top:6px; padding-right:4px; }
+  .list.txt p, .list.txt li { font-size:14px; } .list ul { padding-left:18px; margin:6px 0; } .list li { margin:4px 0; }
+  .row2 { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 4px; border-bottom:1px solid #fff2; } .row2 small { color:var(--dim); }
+  .row2 button { min-width:84px; padding:7px 10px !important; display:inline-flex; align-items:center; justify-content:center; gap:4px; }
+  .set label { display:block; margin:10px 0; font-size:14px; } .set input[type=range] { width:100%; margin-top:4px; } .set .chk { display:flex; align-items:center; gap:8px; } .set .chk input { width:20px; height:20px; }
+  #tip { position:fixed; z-index:10; left:8px; right:8px; bottom:8px; max-width:440px; margin:0 auto; background:#1c1430f2; border:2px solid var(--gold); border-radius:12px; padding:10px 12px; font:14px/1.4 system-ui,sans-serif; box-shadow:0 6px 24px #000c; display:flex; gap:10px; align-items:center; }
+  #tip[hidden] { display:none; } #tip button { background:var(--gold); color:#2a1604; border:0; border-radius:8px; padding:6px 12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+  @media (min-width:560px) and (min-aspect-ratio:1/1) { #tip { left:auto; right:12px; margin:0; width:min(400px,36vw); } }
+  @keyframes hlpulse { 0%,100%{ box-shadow:0 0 0 3px #ffd36b,0 0 14px #ffd36b88 } 50%{ box-shadow:0 0 0 3px #fff,0 0 26px #ffd36b } }
+  .hl { animation:hlpulse 1.2s infinite; border-radius:12px; } body.rm .hl { animation:none; box-shadow:0 0 0 3px #ffd36b; }
+  @keyframes bossdrop { 0%{ transform:translateY(-140%) scale(1.35) rotate(-4deg); opacity:0; filter:brightness(2.2) } 45%{ transform:translateY(0) scale(1.1); opacity:1; filter:brightness(1.7) } 58%{ transform:translateY(10px) scale(.98) } 100%{ transform:none; filter:none } }
+  .bossenter { animation:bossdrop 1s cubic-bezier(.2,.8,.3,1); position:relative; z-index:3; }
+  #ecard.boss { border-color:#ff4a3a; box-shadow:inset 0 1px 0 #fff3,0 0 22px #ff4a3a88; } #ecard.boss canvas.fig { border-color:#ff6b5a; }
+  .badge { background:#c0381e; color:#fff; border-radius:6px; padding:1px 6px; font:700 10px system-ui,sans-serif; letter-spacing:1px; vertical-align:middle; }
+  .warn { color:#ffd36b; font-weight:700; } .small em { font-style:normal; opacity:.85; }
+  #ecard.active { border-color:#ff6b6b; box-shadow:inset 0 1px 0 #fff3,0 0 18px #ff6b6b88; }
+  .fig.st-frozen { filter:saturate(.5) brightness(1.25) hue-rotate(150deg); box-shadow:0 0 20px #8ef; }
+  .fig.st-poison { box-shadow:0 0 18px #6f6; } .fig.st-shield { box-shadow:0 0 18px #e8b84a, inset 0 0 14px #e8b84a88; } .fig.st-stun { box-shadow:0 0 18px #ffe14a; }
+  @keyframes heal { 0%{ box-shadow:0 0 0 #6f6 } 40%{ box-shadow:0 0 34px #6f6, inset 0 0 20px #6f68 } 100%{ box-shadow:0 0 0 #6f6 } }
+  .healglow canvas.fig { animation:heal .9s; }
+  .spell i { font-style:normal; float:right; } .spell span { display:block; font-size:11px; color:var(--dim); } .spell.potion { flex:1 1 45%; }
+  #spells .spell { flex:1 1 45%; }
+  :focus-visible { outline:3px solid #fff; outline-offset:2px; }
+  body.hc .small, body.hc .spell span, body.hc #log, body.hc .m { color:#fff; font-size:14px; } body.hc .bar { border:2px solid #fff; } body.hc .card, body.hc .spell { border-color:#fff; }
+  body.rm * { animation-duration:.001s !important; transition-duration:.001s !important; }
+  @media (max-width:600px) { .spell span { font-size:10px; } .spell.potion span { display:none; } #topbar { text-align:left; padding-left:4px; } #topbar h1 { font-size:19px; letter-spacing:3px; } }
+  @media (max-height:520px) and (min-aspect-ratio:1/1) { .spell span { display:none; } #spells .spell, .spell.potion { padding:3px 6px; } .spell b { font-size:11px; } }
+  @media (max-width:600px) and (max-height:700px) and (max-aspect-ratio:1/1) { canvas.fig { max-width:60px; margin:2px auto; } .card { padding:6px 8px; } .bar { height:12px; } .xp { height:8px; } .small { font-size:11px; } .name { font-size:14px !important; } h1 { font-size:17px; margin:0 0 4px; } #mana { gap:4px; } }
+  #toast { position:fixed; z-index:40; left:50%; top:12px; transform:translate(-50%,-220%); opacity:0; background:#1c1430f2; border:2px solid var(--gold); border-radius:12px; padding:8px 14px; font:700 14px system-ui,sans-serif; display:flex; gap:8px; align-items:center; box-shadow:0 6px 24px #000c; transition:transform .35s cubic-bezier(.2,.8,.3,1),opacity .25s; pointer-events:none; max-width:92vw; }
+  #toast.show { transform:translate(-50%,0); opacity:1; } #toast .ico { width:22px; height:22px; flex:none; }
+  #panelbox button.ad { background:linear-gradient(#6bd48a,#2f9a55); color:#052a14; border:0; font-weight:900; }
+  #panelbox button.alt { background:#3a2c63; }
+  .row2.lock { opacity:.5; } .row2 .tick { color:#7f7; font-size:20px; font-weight:900; min-width:24px; text-align:center; }
+  .pills { display:inline-flex; gap:4px; } #panelbox button.pill { padding:6px 12px; font-size:13px; border-radius:20px; background:#2a1f45; }
+  #panelbox button.pill.on { background:var(--gold); color:#2a1604; border-color:var(--gold); }
+  .homeopts { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
+  select { background:#2a1f45; color:var(--txt); border:2px solid var(--edge); border-radius:8px; padding:6px 8px; font:14px system-ui,sans-serif; }
+  .set select { display:block; width:100%; margin-top:4px; }
+</style>
+</head>
+<body>
+<div id="topbar"><h1>GEMHOLLOW</h1><div id="tools"><button id="hint" data-i18n-title="Hint (T)" title="Hint (T)" aria-label="Hint (T)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></button><button id="menu" data-i18n-title="Menu (Esc)" title="Menu (Esc)" aria-label="Menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><button id="mute" data-i18n-title="Sound on/off" title="Sound on/off" aria-label="Sound"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path class="wave" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="slash" d="M3 3l18 18" stroke="#ff6b6b"/></svg></button><button id="fs" data-i18n-title="Fullscreen" title="Fullscreen" aria-label="Fullscreen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
+<div id="game">
+  <div class="row" id="cards">
+    <div class="card" id="pcard">
+      <div class="name"><span id="pname">Wanderer</span><span id="plv"></span></div>
+      <canvas class="fig" id="pcv" width="240" height="240"></canvas>
+      <div class="bar hp"><i id="php"></i></div>
+      <div class="small" id="phptxt"></div>
+      <div class="bar xp"><i id="pxp"></i></div>
+      <div class="small" id="pgold"></div>
+    </div>
+    <div class="card" id="ecard">
+      <div class="name"><span id="ename"></span><span id="elv"></span></div>
+      <canvas class="fig" id="ecv" width="240" height="240"></canvas>
+      <div class="bar hp"><i id="ehp"></i></div>
+      <div class="small" id="ehptxt"></div>
+      <div class="small" id="estat"></div>
+    </div>
+  </div>
+  <div id="mana"></div>
+  <div class="frame"><canvas id="cv" width="960" height="960" aria-label="Game board. Use arrow keys to move, Space to grab a gem, then an arrow to swap."></canvas></div>
+  <div id="spells"></div>
+  <div id="log" role="log" aria-live="polite"></div>
+</div>
+<div id="panel" role="dialog" aria-modal="true"><div id="panelbox"></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="tip" hidden role="status"><span id="tiptext"></span> <button id="tipok" data-i18n="Got it">Got it</button></div>
+
+<script>
+"use strict";
+const N = 8, CELL = 60;
+const SKULL=0, RED=1, GREEN=2, BLUE=3, EARTH=4, STAR=5;
+const ICO = {'trophy': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v5a5 5 0 0 1-10 0V3z" fill="#ffd35a" stroke="#7a4a08" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 5H3.5c0 3 1.5 4.5 3.7 4.8M17 5h3.5c0 3-1.5 4.5-3.7 4.8M12 13v4M8 21h8M9.5 17h5v4h-5z" fill="none" stroke="#7a4a08" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>', 'fire': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5c.8 4.2 6.2 6 6.2 12.2a6.2 6.2 0 0 1-12.4 0c0-3.2 2-4.4 3.2-7.4 1 .9 1.4 1.9 1.6 3 1-1.9 1.4-4.6 1.4-7.8z" fill="#ff8a3a" stroke="#5a1208" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 22a3.3 3.3 0 0 1-3.3-3.4c0-2 1.6-2.8 2.2-4.6 1 .9 1.1 1.7 1.1 2.4.7-.5.9-1.4.9-2.2 1.3 1.2 2.4 2.4 2.4 4.4A3.3 3.3 0 0 1 12 22z" fill="#ffe08a"/></svg>', 'air': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke-linecap="round"><path d="M3 8.5h10.5a2.7 2.7 0 1 0-2.6-3.3M3 13h14.5a2.9 2.9 0 1 1-2.8 3.6M3 17.5h7a2.2 2.2 0 1 1-2.1 2.8" stroke="#0d4a36" stroke-width="4.2"/><path d="M3 8.5h10.5a2.7 2.7 0 1 0-2.6-3.3M3 13h14.5a2.9 2.9 0 1 1-2.8 3.6M3 17.5h7a2.2 2.2 0 1 1-2.1 2.8" stroke="#dcfff0" stroke-width="2.2"/></g></svg>', 'water': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8c3.2 5 7 8 7 12.2a7 7 0 0 1-14 0c0-4.2 3.8-7.2 7-12.2z" fill="#6bb4ff" stroke="#10306a" stroke-width="1.5" stroke-linejoin="round"/><path d="M8.5 14.5a3.6 3.6 0 0 0 2.6 3.6" fill="none" stroke="#e8f6ff" stroke-width="1.6" stroke-linecap="round"/></svg>', 'earth': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.8 20.5 9 6.8l4 7.2 3-4.2 6.2 10.7z" fill="#e8b84a" stroke="#4a3000" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 6.8 7.4 11l1.8-1 1.4 2z" fill="#fff0c8"/></svg>', 'coin': '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#ffd35a" stroke="#7a4a08" stroke-width="1.6"/><circle cx="12" cy="12" r="6.2" fill="none" stroke="#c88a1a" stroke-width="1.4"/><path d="M12 8v8M9.5 10.2h3.8a1.6 1.6 0 0 1 0 3.2H10" fill="none" stroke="#9a620c" stroke-width="1.4" stroke-linecap="round"/></svg>'};
+const GEMS = [
+  {name:"Skull", emoji:"💀", col:"#5a4a6a"},
+  {name:"Fire",  emoji:ICO.fire, col:"#d8402f"},
+  {name:"Air",   emoji:ICO.air, col:"#3fb98a"},
+  {name:"Water", emoji:ICO.water, col:"#3b82d8"},
+  {name:"Earth", emoji:ICO.earth, col:"#d9a621"},
+  {name:"Star",  emoji:"⭐", col:"#a45be0"},
+];
+const MANA_TYPES = [RED, GREEN, BLUE, EARTH];
+const MANA_MAX = 12;
+
+
+
+
+// ---------- audio (fully synthesized, no asset files) ----------
+const SCALES = {
+  major:[0,2,4,5,7,9,11], minor:[0,2,3,5,7,8,10], dorian:[0,2,3,5,7,9,10], phryg:[0,1,4,5,7,8,10],
+  mixo:[0,2,4,5,7,9,10], hminor:[0,2,3,5,7,8,11], lydian:[0,2,4,6,7,9,11]
+};
+const DRUMS = {  // 16-step grids: k=kick, s=snare/clap, g=ghost snare, h=hats (x=hit, o=open)
+  two:    {k:"x.........x.....", s:"....x.......x...", g:"..x.......x....x", h:"x.x.x.x.x.x.x.xo"},
+  jump:   {k:"x.....x...x.....", s:"....x.......x..x", g:"..x.............", h:"x.xxx.xxx.xxx.xo"},
+  bounce: {k:"x...x...x...x...", s:"....x.......x...", g:"..x.......x.....", h:"x.x.x.x.x.x.x.x."},
+  funk:   {k:"x..x..x...x.x...", s:"....x.......x..x", g:"..x...x.........", h:"x.xxx.xxx.xxx.xx"},
+  lite:   {k:"x.......x.......", s:"........x.......", g:"................", h:"x.x.x.x.x.x.x.x."},
+  techno: {k:"x...x...x...x...", s:"....x.......x...", g:".......x.......x", h:"..x...x...x...xo"},
+  technoB:{k:"x...x...x...x...", s:"....x.......x...", g:"..x...x...x...x.", h:"xxxxxxxxxxxxxxxx"},
+  house:  {k:"x...x...x...x...", s:"....x.......x...", g:"................", h:"xxxxxxxxxxxxxxxx"},
+  epic:   {k:"x..x..x.x..x..x.", s:"....x.......x...", g:"..............x.", h:"x.x.x.x.x.x.x.x."},
+  epicB:  {k:"x.xx.xx.x.xx.xx.", s:"....x.......x..x", g:"..x.............", h:"x.x.x.x.x.x.x.xx"},
+  trap:   {k:"x.....x...x.....", s:"........x.......", g:"..............x.", h:"xxxxxxxxxxxxxxxx"},
+  trapB:  {k:"x..x..x...x...x.", s:"........x.......", g:"......x.........", h:"x.xxx.xxxxx.xxxx"},
+  dub:    {k:"x.........x.....", s:"........x.......", g:"................", h:"x...x...x...x..."},
+  dubB:   {k:"x.....x...x.....", s:"........x.......", g:"..............x.", h:"x.x.x.x.x.x.x.x."},
+  stomp:  {k:"x...x...x...x...", s:"....x.......x...", g:"................", h:"x.x.x.x.x.x.x.x."},
+  stompB: {k:"x...x..xx...x...", s:"....x.......x...", g:"..x.......x.....", h:"xxxxxxxxxxxxxxxx"},
+  synth:  {k:"x.....x.x.......", s:"....x.......x...", g:"................", h:"x.x.x.x.x.x.x.x."},
+  synthB: {k:"x...x...x...x...", s:"....x.......x...", g:"..............x.", h:"x.x.x.x.x.x.xxxx"},
+  blast:  {k:"x.xxx.xxx.xxx.xx", s:"....x.......x...", g:".......x......x.", h:"x.x.x.x.x.x.x.x."},
+  blastB: {k:"xxxxxxxxxxxxxxxx", s:"....x.......x...", g:"..x.............", h:"..x...x...x...x."},
+};
+const RHYTHMS = ["x..x..x...x..x..","x.x...x.x.x...x.","x...x.x.x...x.x.","x..x.x..x..x.x.."];
+const RHY_BOUNCY = ["x.x.x...x.x.x...","x..xx..xx..xx.x.","x.xx.x.xx.xx.x.x","x.x...x.x.x.x..."];
+const RHY_SPARSE = ["x.......x.....x.","x.....x...x.....","x...x...x.x.....","x.......x...x..."];
+const RHY_FAST   = ["x.xx.xx.x.xx.xx.","xx.xx.xxx.xx.xxx","x.x.xxx.x.x.xxx.","x.xxx.x.x.xxx.x."];
+const ARPS_SLOW  = ["x...x...x...x...","x.x.x.x.x.x.x.x.","x.......x.......","x..x..x..x..x..x"];
+const STABS_SLOW = ["x.......x.......","..x.....x.......","x.....x.........","x.......x...x..."];
+// One track per enemy (index = enemy order); bosses are Orc (5th) and Dragon (10th).
+// kit: kick/snare/hat voicing, bt: bass type, lf: lead voice, ar/pd/st: arp, pad and stab voices (w=wave, c=[filter start,end], len in steps),
+// swing: shuffle on off-16ths, duck: kick sidechain depth (lower = deeper), toms: boss percussion, wob: wobble LFO per beat
+const TRACKS = [
+  {n:"Jelly Bounce",     bpm:128, root:55, sc:"major",  prog:[0,3,4,3], swing:.10, duck:.55, kit:{k:"house",s:"clap",h:"tight"}, dm:["bounce","funk","lite"], bt:"pluck", bass:"x..x..x..x..x.x.", lf:"chip", lead:"square", rhy:RHY_BOUNCY, ar:{w:"square",c:[5000,1500],len:.7,vol:.035}, pd:{w:"triangle",vol:.025}, st:{w:"square",vol:.04,len:.6,c:[4500,1500]}, seed:11},
+  {n:"Sneaky Business",  bpm:138, root:50, sc:"dorian", prog:[0,6,3,6], swing:.18, duck:.5,  kit:{k:"punch",s:"rim",h:"shaker"}, dm:["jump","funk","lite"], bt:"pluck", bass:"x.x...x.x.x...x.", lf:"harp", lead:"square", rhy:RHY_BOUNCY, ar:{w:"triangle",c:[3000,1000],len:.6,vol:.05}, pd:{w:"triangle",vol:.025}, st:{w:"square",vol:.04,len:.5,c:[3500,1200]}, seed:23},
+  {n:"Moonlit Hunt",     bpm:142, root:45, sc:"minor",  prog:[0,5,3,6], swing:0,   duck:.3,  kit:{k:"house",s:"snare",h:"tight"}, dm:["techno","technoB","lite"], bt:"acid", bass:"xxxxxxxxxxxxxxxx", lf:"saw", lead:"sawtooth", ar:{w:"sawtooth",c:[2800,600],len:.7,vol:.04}, pd:{w:"sawtooth",vol:.04,c:[600,1600],atk:.6}, st:{w:"sawtooth",vol:.05,len:1.2,c:[3500,900]}, seed:37},
+  {n:"Dusty Heist",      bpm:118, root:48, sc:"mixo",   prog:[0,3,0,4], swing:.28, duck:.5,  kit:{k:"punch",s:"clap",h:"shaker"}, dm:["house","funk","lite"], bt:"pluck", bass:"x..x..xx.x..x.x.", lf:"brass", lead:"sawtooth", rhy:RHY_BOUNCY, ar:{w:"square",c:[3000,900],len:.5,vol:.035}, pd:{w:"triangle",vol:.03}, st:{w:"sawtooth",vol:.06,len:.45,c:[3800,1000]}, seed:41},
+  {n:"Warlord's Wrath",  bpm:150, root:46, sc:"hminor", prog:[0,5,6,4], swing:0,   duck:.35, kit:{k:"stomp",s:"big",h:"metal"}, dm:["epic","epicB","epic"], bt:"power", bass:"x.xx.xx.x.xx.xx.", lf:"epic", lead:"sawtooth", boss:true, toms:true, ar:{w:"sawtooth",c:[2600,800],len:.7,vol:.045}, pd:{w:"sawtooth",vol:.05,c:[500,1500],atk:.8}, st:{w:"sawtooth",vol:.07,len:1.8,c:[500,3600],atk:.02}, seed:53},
+  {n:"Rattlebones",      gain:1.7, bpm:140, root:44, sc:"phryg",  prog:[0,1,0,6], swing:0,   duck:.35, kit:{k:"808",s:"clap",h:"tight"}, dm:["trap","trapB","lite"], bt:"sub", bass:"x.....x...x.....", lf:"bell", lead:"sine", rhy:RHY_SPARSE, ar:{w:"triangle",c:[5000,2500],len:.5,vol:.05}, pd:{w:"sawtooth",vol:.03,c:[400,900],atk:.9}, st:{w:"triangle",vol:.05,len:.7,c:[4000,1500]}, arps:ARPS_SLOW, stabs:STABS_SLOW, seed:67},
+  {n:"Mountain Stomp",   bpm:140, root:43, sc:"minor",  prog:[0,0,6,5], swing:0,   duck:.3,  kit:{k:"808",s:"big",h:"tight"}, dm:["dub","dubB","lite"], bt:"wobble", wob:1, bass:"x.........x.....", lf:"saw", lead:"sawtooth", rhy:RHY_SPARSE, ar:{w:"square",c:[2400,700],len:.8,vol:.035}, pd:{w:"sawtooth",vol:.035,c:[500,1200],atk:.7}, st:{w:"sawtooth",vol:.06,len:1.6,c:[3000,800]}, arps:ARPS_SLOW, stabs:STABS_SLOW, seed:79},
+  {n:"Iron Foundry",     bpm:110, root:41, sc:"phryg",  prog:[0,0,1,0], swing:0,   duck:.4,  kit:{k:"stomp",s:"gate",h:"metal"}, dm:["stomp","stompB","lite"], bt:"stomp", bass:"x.xx.xx.x.xx.xx.", lf:"metal", lead:"square", rhy:RHY_SPARSE, ar:{w:"square",c:[3200,1200],len:.5,vol:.035}, pd:{w:"sawtooth",vol:.03,c:[500,1000],atk:.8}, st:{w:"square",vol:.05,len:.7,c:[2500,900]}, arps:ARPS_SLOW, stabs:STABS_SLOW, seed:83},
+  {n:"Hollow Veil",      gain:1.3, bpm:100, root:45, sc:"minor",  prog:[0,5,2,6], swing:0,   duck:.6,  kit:{k:"house",s:"gate",h:"shaker"}, dm:["synth","synthB","lite"], bt:"saw", bass:"x.......x.......", lf:"eerie", lead:"sine", rhy:RHY_SPARSE, ar:{w:"triangle",c:[4000,1500],len:1.2,vol:.045}, pd:{w:"sawtooth",vol:.06,c:[500,1400],atk:1}, st:{w:"triangle",vol:.04,len:1.8,c:[2500,900]}, arps:ARPS_SLOW, stabs:STABS_SLOW, seed:97},
+  {n:"Elder Wyrm",       bpm:172, root:45, sc:"phryg",  prog:[0,1,0,6], swing:0,   duck:.35, kit:{k:"double",s:"big",h:"metal"}, dm:["blast","blastB","epic"], bt:"power", bass:"x.xx.xx.x.xx.xx.", lf:"epic", lead:"sawtooth", rhy:RHY_FAST, boss:true, toms:true, ar:{w:"sawtooth",c:[3200,900],len:.6,vol:.045}, pd:{w:"sawtooth",vol:.055,c:[500,1600],atk:.6}, st:{w:"sawtooth",vol:.07,len:1.4,c:[600,3800],atk:.015}, seed:101},
+];
+function rng(seed){ return ()=>{ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+// ---- song structure: 12 sections x 8 bars = 96 bars (~2+ minutes at 174 BPM) before the loop repeats ----
+const POOL_MIN=[[0,5,2,6],[0,3,4,5],[5,6,0,2],[0,6,5,4],[2,5,6,0]], POOL_MAJ=[[0,4,5,3],[0,5,3,4],[3,4,0,5],[0,2,3,4],[5,3,0,4]];
+const ARPS=["xxxxxxxxxxxxxxxx","x.xx.xx.x.xx.xx.","x.x.x.x.x.x.x.x.","x..x..x..x..x..x"];
+const STABS=["..x.....x.......","x.....x...x.....","..x...x.....x...","x.......x.x....."];
+const BASSV=["x.x.x.x.x.x.x.x.","x...x...x...x...","x..x..x.x..x..x.","x.xx.xx.x.xx.xx."];
+// pi: chord progression, mo: melody set, lead/arp/stab (stab -1 = none), bass ("t" = track default), dr: drum variant, tr: transpose (semitones), pad: pad level, lo: lead octave down
+const SECS=[
+  {n:"intro",  pi:0,mo:0,lead:0,arp:2,stab:-1,bass:"t",dr:0,tr:0},
+  {n:"verse",  pi:0,mo:0,lead:1,arp:1,stab:1, bass:"t",dr:0,tr:0},
+  {n:"build",  pi:1,mo:1,lead:1,arp:0,stab:1, bass:"t",dr:1,tr:0,build:1},
+  {n:"drop",   pi:0,mo:2,lead:1,arp:1,stab:0, bass:"t",dr:0,tr:0},
+  {n:"verse2", pi:2,mo:3,lead:1,arp:2,stab:2, bass:"t",dr:2,tr:0},
+  {n:"bridge", pi:3,mo:4,lead:0,arp:0,stab:-1,bass:1,  dr:3,tr:0,pad:2},
+  {n:"build2", pi:2,mo:1,lead:1,arp:0,stab:3, bass:"t",dr:1,tr:0,build:1},
+  {n:"drop2",  pi:1,mo:5,lead:1,arp:3,stab:1, bass:"t",dr:0,tr:0},
+  {n:"verse3", pi:3,mo:6,lead:1,arp:1,stab:-1,bass:2,  dr:2,tr:2},
+  {n:"bridge2",pi:0,mo:7,lead:1,arp:2,stab:-1,bass:3,  dr:3,tr:2,lo:1,pad:2},
+  {n:"build3", pi:1,mo:2,lead:1,arp:0,stab:3, bass:"t",dr:1,tr:2,build:1},
+  {n:"drop3",  pi:0,mo:0,lead:1,arp:0,stab:1, bass:"t",dr:0,tr:0},
+];
+TRACKS.forEach((T,ti)=>{
+  const R=rng(T.seed), minor=SCALES[T.sc][2]===3, pool=(minor?POOL_MIN:POOL_MAJ).filter(x=>x.join()!==T.prog.join());
+  T.progs=[T.prog]; while(T.progs.length<4){ const c=pool.splice(Math.floor(R()*pool.length),1)[0]; T.progs.push(c); }
+  T.drs=[T.dm[0],T.dm[1],T.dm[0],T.dm[2]];                        // section drum variants: main, busy, main, light
+  T.kit=Object.assign({k:"punch",s:"snare",h:"tight"},T.kit||{});
+  // bass variants for sparse sections, derived from the track's own bass pattern
+  const hits=[...T.bass].map((c,i)=>c==="x"?i:-1).filter(i=>i>=0), mk=f=>Array.from({length:16},(_,i)=>f(i)?"x":".").join("");
+  T.bv=[mk(i=>hits.includes(i)&&i%4===0)||"x...............", mk(i=>hits.filter((_,k)=>k%2===0).includes(i)), mk(i=>hits.includes((i+14)%16)), "x.......x......."];
+  // 8 melody sets; each is 8 bars (A A' A B A A' A C): chord-tone anchors on strong beats, stepwise motion between
+  const rh=T.rhy||RHYTHMS;
+  T.sets=Array.from({length:8},(_,mo)=>{
+    const Rm=rng(T.seed*31+mo*97+7), mask=rh[(ti+mo)%rh.length];
+    const gen=()=>{ let p=0; return Array.from({length:16},(_,i)=>{ if(mask[i]!=="x") return null;
+      if(i%4===0) p=[0,2,4,7,4,2][Math.floor(Rm()*6)]; else p=Math.max(-2,Math.min(9,p+[-2,-1,1,1,2][Math.floor(Rm()*5)])); return p; }); };
+    const A=gen(), vary=(from)=>{ const x=A.slice(); for(let i=from;i<16;i++) if(mask[i]==="x") x[i]=[0,2,4,5,7][Math.floor(Rm()*5)]; return x; };
+    return [A,vary(14),A,vary(10),A,vary(14),A,vary(6)];
+  });
+});
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+
+const Snd = {
+  ctx:null, master:null, sfxG:null, musG:null, drumG:null, noiseBuf:null, muted:false, forced:false, away:false,
+  track:0, pending:null, nextT:0, step:0, bar:0, tr0:0, timer:null,
+  load(){ try{ this.muted=localStorage.getItem("gh_muted")==="1"; }catch(e){} },
+  init(){
+    try{
+      if(!this.ctx){ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+        const c=this.ctx=new AC(); this.master=c.createGain(); const comp=c.createDynamicsCompressor(); comp.threshold.value=-16; comp.ratio.value=6; comp.attack.value=.003; comp.release.value=.15; this.master.connect(comp); comp.connect(c.destination);
+        this.sfxG=c.createGain(); this.sfxG.gain.value=.8; this.sfxG.connect(this.master);
+        this.musG=c.createGain(); this.musG.gain.value=.45; this.musG.connect(this.master);
+        const n=c.sampleRate*2; this.noiseBuf=c.createBuffer(1,n,c.sampleRate); const d=this.noiseBuf.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1;
+        this.pumpG=c.createGain(); this.pumpG.connect(this.musG);
+        this.delay=c.createDelay(1); this.delay.delayTime.value=60/TRACKS[this.track].bpm*.75; const fb=c.createGain(); fb.gain.value=.38; const dm=c.createGain(); dm.gain.value=.4;
+        this.delay.connect(fb); fb.connect(this.delay); this.delay.connect(dm); dm.connect(this.musG); this.dsend=c.createGain(); this.dsend.gain.value=.5; this.dsend.connect(this.delay);
+        this.apply(); this.nextT=c.currentTime+.1; this.step=0; this.bar=0; this.tr0=0;
+        this.timer=setInterval(()=>this.sched(),25); }
+      if(this.ctx.state==="suspended") this.ctx.resume();
+    }catch(e){}
+  },
+  silent(){ return this.muted||this.forced||this.away; },
+  apply(){ if(!this.master) return; this.master.gain.value=(this.muted||this.forced||this.away)?0:Settings.master; this.sfxG.gain.value=.8*Settings.sfx; this.musG.gain.cancelScheduledValues(0); this.musG.gain.value=.45*Settings.music*(TRACKS[this.track].gain||1); },
+  setMuted(m){ this.muted=m; try{ localStorage.setItem("gh_muted",m?"1":"0"); }catch(e){} this.apply(); },
+  force(f){ this.forced=f; this.apply(); },
+  setTrack(i){ i=((i%TRACKS.length)+TRACKS.length)%TRACKS.length; if(i!==this.track) this.pending=i; },
+  // ----- primitives -----
+  osc(at,f,d,type,v,dest,to){
+    const c=this.ctx, o=c.createOscillator(), g=c.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,at); if(to) o.frequency.exponentialRampToValueAtTime(to,at+d);
+    g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(Math.max(v,.0002),at+.008); g.gain.exponentialRampToValueAtTime(0.0001,at+d);
+    o.connect(g); g.connect(dest||this.sfxG); o.start(at); o.stop(at+d+.05);
+  },
+  nz(at,d,type,f0,f1,q,v,atk=.01,dest){
+    const c=this.ctx, s=c.createBufferSource(), fl=c.createBiquadFilter(), g=c.createGain();
+    s.buffer=this.noiseBuf; fl.type=type; fl.Q.value=q;
+    fl.frequency.setValueAtTime(f0,at); fl.frequency.exponentialRampToValueAtTime(Math.max(20,f1),at+d);
+    g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(Math.max(v,.0002),at+atk); g.gain.exponentialRampToValueAtTime(0.0001,at+d);
+    s.connect(fl); fl.connect(g); g.connect(dest||this.sfxG); s.start(at,Math.random()*1.2,d+.05);
+  },
+  tone(f,d,type="sine",v=.3,when=0,to=null){ if(this.ctx) this.osc(this.ctx.currentTime+when,f,d,type,v,null,to); },
+  // ----- sound effects -----
+  elem(kind,vol=1,big=false){
+    if(!this.ctx||this.silent()) return;
+    const t=this.ctx.currentTime, R=Math.random, v=vol;
+    switch(kind){
+      case "fire":
+        this.nz(t,.75,"bandpass",450,1700,.8,.75*v,.18); this.nz(t,.8,"lowpass",900,250,.6,.6*v,.12);
+        this.osc(t,95,.5,"sawtooth",.18*v,null,55);
+        for(let i=0;i<10;i++) this.nz(t+.03+R()*.6,.035,"highpass",3000+R()*3500,3000,1,.35*v,.002);
+        break;
+      case "splash":
+        this.nz(t,.5,"bandpass",3800,550,1.1,.8*v,.006); this.nz(t+.02,.4,"highpass",1800,6000,.7,.25*v,.02);
+        this.osc(t,230,.18,"sine",.4*v,null,70);
+        for(let i=0;i<7;i++){ const f=300+R()*600; this.osc(t+.05+R()*.4,f,.09,"sine",.16*v,null,f*1.9); }
+        break;
+      case "wind":
+        this.nz(t,.95,"bandpass",300,1200,2.6,.7*v,.4); this.nz(t+.3,.75,"bandpass",1300,350,3,.5*v,.2);
+        this.osc(t+.05,650,.8,"sine",.06*v,null,980);
+        break;
+      case "rocks":
+        for(let i=0;i<8;i++){ const w=t+i*.055+R()*.05;
+          this.osc(w,80+R()*70,.15,"sine",.5*v,null,42); this.nz(w,.13,"lowpass",800+R()*500,200,.7,.6*v,.002);
+          this.nz(w+.02,.045,"bandpass",1500+R()*1600,1000,3,.3*v,.001); }
+        this.osc(t+.46,62,.35,"sine",.8*v,null,32); this.nz(t+.46,.3,"lowpass",500,120,.6,.7*v,.003);
+        break;
+      case "slash": {
+        const n=big?2:1;
+        for(let i=0;i<n;i++){ const w=t+i*.15;
+          this.nz(w,.2,"bandpass",1400,9000,.9,.75*v,.012); this.nz(w+.1,.12,"highpass",5500,9000,1,.18*v,.002);
+          this.osc(w+.1,2600,.5,"triangle",.1*v); this.osc(w+.1,3950,.4,"sine",.08*v); this.osc(w+.1,1700,.35,"triangle",.06*v); }
+        break; }
+      case "sparkle":
+        [1318,1568,1976,2637].forEach((f,i)=>this.osc(t+i*.06,f,.25,"sine",.14*v)); break;
+    }
+  },
+  play(name,n=1){
+    if(!this.ctx||this.silent()) return;
+    switch(name){
+      case "swap": this.tone(380,.08,"triangle",.25,0,520); break;
+      case "bad": this.tone(200,.15,"square",.15,0,120); break;
+      case "match": { const base=[392,440,494,523,587,659,698][Math.min(n-1,6)]; this.tone(base*2,.22,"triangle",.14); this.tone(base*3,.22,"sine",.07,.05); break; }
+      case "hit": this.nz(this.ctx.currentTime,.14,"lowpass",900,200,.7,.5,.003); this.tone(150,.15,"sine",.35,0,55); break;
+      case "hurt": this.nz(this.ctx.currentTime,.25,"lowpass",600,120,.7,.6,.003); this.tone(110,.25,"square",.2,0,50); break;
+      case "heal": [523,659,784].forEach((f,i)=>this.tone(f,.25,"sine",.25,i*.07)); break;
+      case "spell": this.tone(300,.4,"sawtooth",.18,0,900); this.tone(600,.4,"sine",.2,.05,1400); break;
+      case "level": [523,659,784,1046,1318].forEach((f,i)=>this.tone(f,.3,"triangle",.3,i*.09)); break;
+      case "win": [523,659,784,659,784,1046].forEach((f,i)=>this.tone(f,.3,"triangle",.3,i*.12)); break;
+      case "lose": [330,294,262,196].forEach((f,i)=>this.tone(f,.45,"sawtooth",.2,i*.25)); break;
+      case "click": this.tone(600,.05,"square",.12); break;
+      case "ability": this.tone(140,.5,"sawtooth",.3,0,70); this.tone(210,.5,"square",.15,.05,105); this.nz(this.ctx.currentTime,.4,"bandpass",300,1200,2,.4,.2); break;
+      case "potion": this.nz(this.ctx.currentTime,.25,"bandpass",800,2400,2,.4,.05); [660,880].forEach((f,i)=>this.tone(f,.15,"sine",.2,i*.08)); break;
+      case "buy": [880,1318].forEach((f,i)=>this.tone(f,.12,"triangle",.25,i*.07)); break;
+      case "boss_orc": { const c=this.ctx.currentTime, w=.45;
+        this.nz(c,.5,"bandpass",200,3000,2,.5,.45); this.tone(60,.5,"sawtooth",.2,0,160);
+        this.osc(c+w,85,1.1,"sine",1,this.sfxG,28); this.nz(c+w,.8,"lowpass",1500,80,.7,.9,.002); this.nz(c+w,1.1,"highpass",4000,4000,.7,.3,.002);
+        [110,165,220,330].forEach(f=>this.osc(c+w,f,.9,"sawtooth",.12,this.sfxG)); for(let k=0;k<7;k++) this.nz(c+w+.05+k*.07,.1,"bandpass",300+k*50,200,2,.4,.001); break; }
+      case "boss_dragon": { const c=this.ctx.currentTime, w=.45;
+        this.nz(c,.5,"bandpass",300,2500,2,.5,.4);
+        this.nz(c+.1,1.3,"bandpass",900,220,1.5,.8,.15); this.osc(c+.1,340,1.3,"sawtooth",.2,this.sfxG,55); this.osc(c+.1,520,1.3,"square",.1,this.sfxG,110);
+        this.osc(c+w,80,1.1,"sine",1,this.sfxG,26); this.nz(c+w,.8,"lowpass",1800,80,.7,.9,.002); [98,147,196,294].forEach(f=>this.osc(c+w,f,1,"sawtooth",.12,this.sfxG));
+        for(let k=0;k<16;k++) this.nz(c+w+Math.random()*1.1,.04,"highpass",2500+Math.random()*4000,3000,1,.35,.002); break; }
+      case "spell_frost": [2093,2637,3136,2637].forEach((f,i)=>this.tone(f,.25,"sine",.12,i*.05)); this.nz(this.ctx.currentTime,.5,"highpass",5000,9000,.8,.2,.05); break;
+      case "spell_meteor": this.nz(this.ctx.currentTime+.5,.9,"lowpass",900,60,.7,.9,.01); this.tone(70,.8,"sine",.9,.5,28); this.tone(900,.5,"sawtooth",.15,0,200); break;
+      case "spell_fireball": this.tone(200,.5,"sawtooth",.15,0,700); break;
+      case "spell_smite": for(let i=0;i<4;i++) this.nz(this.ctx.currentTime+i*.06,.2,"highpass",2500,6000,.8,.4,.002); break;
+    }
+  },
+  // ----- music sequencer (lookahead scheduler, 16th-note grid) -----
+  noteIdx(T,idx){ const S=SCALES[T.sc], o=Math.floor(idx/7), k=((idx%7)+7)%7; return T.root+S[k]+12*o; },
+  sched(){
+    const c=this.ctx; if(!c) return;
+    if(this.nextT<c.currentTime-.05) this.nextT=c.currentTime+.05;   // fell behind (stall/background): resync instead of bursting
+    while(this.nextT<c.currentTime+.6){
+      const T=TRACKS[this.track], sp=60/T.bpm/4;
+      if(!this.silent()) this.playStep(T,this.step,this.bar,this.nextT,sp);
+      this.nextT+=sp; this.step++;
+      if(this.step===16){ this.step=0; this.bar++;
+        if(this.pending!==null){ this.track=this.pending; this.pending=null; this.bar=0; this.tr0=0; this.delay.delayTime.setValueAtTime(60/TRACKS[this.track].bpm*.75,this.nextT); } }
+    }
+  },
+  // ----- electronic voices (kit-aware) -----
+  pump(t,depth=.3){ const g=this.pumpG.gain; g.cancelScheduledValues(t); g.setValueAtTime(depth,t); g.linearRampToValueAtTime(1,t+.2); },
+  kick(t,type="punch",depth=.3){
+    const dg=this.musG;
+    switch(type){
+      case "808": this.osc(t,115,.6,"sine",.95,dg,38); this.nz(t,.015,"highpass",2500,2500,.8,.2,.001,dg); break;
+      case "house": this.osc(t,140,.2,"sine",.9,dg,45); this.osc(t,60,.3,"sine",.5,dg,38); this.nz(t,.02,"highpass",3000,3000,.8,.25,.001,dg); break;
+      case "stomp": this.osc(t,95,.3,"sine",1,dg,35); this.nz(t,.08,"lowpass",900,200,.7,.5,.001,dg); this.osc(t,170,.06,"square",.2,dg,60); break;
+      case "double": this.osc(t,150,.1,"sine",.85,dg,50); this.nz(t,.012,"highpass",3500,3500,.8,.3,.001,dg); break;
+      default: this.osc(t,170,.18,"sine",.95,dg,42); this.osc(t,55,.32,"sine",.6,dg,38); this.nz(t,.02,"highpass",3000,3000,.8,.3,.001,dg);
+    }
+    this.pump(t,depth);
+  },
+  snare(t,v=1,type="snare"){
+    const dg=this.musG;
+    switch(type){
+      case "clap": [0,.011,.022].forEach(o=>this.nz(t+o,.05,"bandpass",1500,1100,1.2,.4*v,.001,dg)); this.nz(t+.03,.16,"bandpass",1300,900,1,.25*v,.002,dg); break;
+      case "rim": this.osc(t,1700,.04,"square",.16*v,dg); this.nz(t,.03,"highpass",4000,4000,.8,.3*v,.001,dg); this.osc(t,420,.05,"triangle",.2*v,dg); break;
+      case "gate": this.nz(t,.2,"bandpass",1600,1000,.9,.5*v,.002,dg); this.osc(t,200,.1,"triangle",.3*v,dg,130); break;
+      case "big": this.nz(t,.28,"bandpass",2000,1200,.8,.65*v,.002,dg); this.nz(t,.2,"highpass",5500,3500,.8,.25*v,.001,dg); this.osc(t,190,.16,"triangle",.5*v,dg,100); this.osc(t,90,.25,"sine",.4*v,dg,55); break;
+      default: this.nz(t,.14,"bandpass",2400,1500,.9,.65*v,.002,dg); this.nz(t,.1,"highpass",6500,4500,.8,.22*v,.001,dg); this.osc(t,230,.1,"triangle",.4*v,dg,140);
+    }
+  },
+  hat(t,v,open,type="tight"){
+    const dg=this.musG;
+    if(type==="shaker") this.nz(t,open?.1:.045,"bandpass",7000,7000,1.5,.14*v,.002,dg);
+    else if(type==="metal"){ this.nz(t,open?.12:.04,"highpass",9500,9500,.7,.16*v,.001,dg); this.osc(t,6200,.03,"square",.03*v,dg); }
+    else this.nz(t,open?.14:.04,"highpass",8500,8500,.7,.2*v,.001,dg);
+  },
+  tomHit(t,f,v=.6){ this.osc(t,f*1.6,.3,"sine",v,this.musG,f*.7); this.nz(t,.05,"lowpass",900,300,.8,.15,.001,this.musG); },
+  lp(at,f,d,type,v,dest,c0,c1,atk=.008,send=false,q=4){
+    const c=this.ctx, o=c.createOscillator(), fl=c.createBiquadFilter(), g=c.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,at); fl.type="lowpass"; fl.Q.value=q;
+    fl.frequency.setValueAtTime(c0,at); fl.frequency.exponentialRampToValueAtTime(c1,at+d);
+    g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(Math.max(v,.0002),at+atk); g.gain.setValueAtTime(Math.max(v,.0002),at+Math.max(atk,d-.03)); g.gain.exponentialRampToValueAtTime(0.0001,at+d);
+    o.connect(fl); fl.connect(g); g.connect(dest); if(send) g.connect(this.dsend); o.start(at); o.stop(at+d+.05);
+  },
+  fm(t,f,d,v,ratio,index){   // bell / metallic FM voice
+    const c=this.ctx, car=c.createOscillator(), mod=c.createOscillator(), mg=c.createGain(), g=c.createGain();
+    car.frequency.value=f; mod.frequency.value=f*ratio; mg.gain.setValueAtTime(f*index,t); mg.gain.exponentialRampToValueAtTime(f*.05,t+d);
+    mod.connect(mg); mg.connect(car.frequency);
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(v,t+.004); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    car.connect(g); g.connect(this.pumpG); g.connect(this.dsend); car.start(t); mod.start(t); car.stop(t+d+.05); mod.stop(t+d+.05);
+  },
+  vib(t,f,d,v){      // slow-attack sine with vibrato (ghostly lead)
+    const c=this.ctx, o=c.createOscillator(), l=c.createOscillator(), lg=c.createGain(), g=c.createGain();
+    o.type="sine"; o.frequency.value=f; l.frequency.value=5.5; lg.gain.value=f*.012; l.connect(lg); lg.connect(o.frequency);
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(v,t+.18); g.gain.setValueAtTime(v,t+Math.max(.2,d-.15)); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g); g.connect(this.pumpG); g.connect(this.dsend); o.start(t); l.start(t); o.stop(t+d+.05); l.stop(t+d+.05);
+  },
+  leadNote(T,t,f,sp){
+    const pg=this.pumpG;
+    switch(T.lf){
+      case "chip": this.lp(t,f,sp*1.1,"square",.08,pg,6000,2500,.003,true); break;
+      case "harp": this.lp(t,f,sp*.9,"square",.07,pg,4500,1200,.002,true); this.lp(t,f*2,sp*.5,"triangle",.03,pg,5000,2000,.002,true); break;
+      case "bell": this.fm(t,f,sp*3,.07,3.5,2.2); break;
+      case "metal": this.fm(t,f,sp*2.2,.07,1.414,4); break;
+      case "brass": this.lp(t,f,sp*1.6,"sawtooth",.07,pg,500,3800,.03,true); this.lp(t,f*1.006,sp*1.6,"sawtooth",.06,pg,500,3800,.03,true); break;
+      case "epic": this.lp(t,f,sp*2.4,"sawtooth",.07,pg,500,4200,.035,true); this.lp(t,f*1.007,sp*2.4,"sawtooth",.06,pg,500,4200,.035,true); this.lp(t,f/2,sp*2.4,"sawtooth",.05,pg,500,2400,.04,false); break;
+      case "eerie": this.vib(t,f,sp*4,.05); break;
+      default: this.lp(t,f,sp*2.2,T.lead,.085,pg,4200,1800,.006,true);
+    }
+  },
+  bassNote(T,t,f,d,sp){
+    const c=this.ctx, dg=this.musG, bt=T.bt;
+    if(bt==="sub"){ this.osc(t,f,Math.max(d,.35),"sine",.75,dg); this.osc(t,f*2,.12,"sine",.1,dg); return; }
+    if(bt==="pluck"){ this.osc(t,f,Math.min(d,.25),"sine",.45,dg); this.lp(t,f*2,Math.min(d,.2),"square",.2,dg,2600,350); return; }
+    if(bt==="acid"){ this.osc(t,f,Math.min(d,.18),"sine",.35,dg); this.lp(t,f*2,Math.min(d,.18),"sawtooth",.2,dg,2800,300,.004,false,14); return; }
+    if(bt==="stomp"){ this.osc(t,f,d,"sine",.5,dg); this.lp(t,f*2,d,"square",.18,dg,900,500); return; }
+    if(bt==="saw"){ this.osc(t,f,d,"sine",.5,dg); this.lp(t,f*2,d,"sawtooth",.14,dg,900,600,.02); return; }
+    if(bt==="power"){ this.osc(t,f,d,"sine",.5,dg); this.lp(t,f*2,d,"sawtooth",.13,dg,1400,700); this.lp(t,f*3,d,"sawtooth",.1,dg,1400,700); return; }
+    this.osc(t,f,d,"sine",.5,dg);                                   // sub layer for reese / wobble
+    if(bt==="wobble"){
+      const o=c.createOscillator(), o2=c.createOscillator(), fl=c.createBiquadFilter(), g=c.createGain(), lfo=c.createOscillator(), lg=c.createGain();
+      o.type="sawtooth"; o2.type="square"; o.frequency.value=f*2; o2.frequency.value=f*2.005; fl.type="lowpass"; fl.Q.value=7; fl.frequency.value=380;
+      lfo.type="sine"; lfo.frequency.value=T.bpm/60*(T.wob||2); lg.gain.value=650; lfo.connect(lg); lg.connect(fl.frequency);
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(.16,t+.01); g.gain.setValueAtTime(.16,t+Math.max(.01,d-.03)); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+      o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(dg); [o,o2,lfo].forEach(x=>{x.start(t); x.stop(t+d+.05);});
+    } else { this.lp(t,f*2*1.007,d,"sawtooth",.16,dg,500,1500); this.lp(t,f*2*.993,d,"sawtooth",.16,dg,500,1500); }
+  },
+  playStep(T,i,bar,t,sp){
+    const si=Math.floor(bar/8)%SECS.length, bi=bar%8, S=SECS[si], tr=S.tr, last=bi===7, K=T.kit;
+    t+=(i%2)*(T.swing||0)*sp;                                       // shuffle
+    const D=DRUMS[T.drs[S.dr]], dg=this.musG, pg=this.pumpG, ch=T.progs[S.pi][bi%4], on=(m)=>m[i]==="x";
+    const bassMask=S.bass==="t"?T.bass:T.bv[S.bass], F=(idx)=>mtof(this.noteIdx(T,idx)+tr);
+    // drums: never drop out; fills and risers only add energy
+    if(on(D.k)) this.kick(t,K.k,T.duck);
+    if(on(D.s)) this.snare(t,1,K.s); else if(D.g[i]==="x") this.snare(t,.28,K.s);
+    if(last&&i>=(S.build?12:14)) this.snare(t,.25+i/40,K.s);
+    if(D.h[i]!=="."&&!(S.pad===2&&i%4===1)) this.hat(t,(i%4===2?1:.55),D.h[i]==="o",K.h);
+    if(bi===0&&bar>0&&i===0){ this.nz(t,1.2,"highpass",6000,6000,.7,.3,.002,dg); }
+    if(S.build&&last&&i===0) this.nz(t,sp*16,"bandpass",400,8000,2,.22,sp*15,dg);
+    if(T.toms){ if(i===0&&bi%2===0) this.tomHit(t,62,.7); if(last&&i>=8&&i%2===0) this.tomHit(t,170-(i-8)*12,.5); }   // boss percussion
+    // bass
+    if(on(bassMask)){
+      let n=1; while(i+n<16&&bassMask[i+n]!=="x") n++;
+      const idx=ch-7+(i%8===6?4:0)+(i===11?7:0);
+      this.bassNote(T,t,F(idx),Math.min(n,6)*sp*.95,sp);
+    }
+    // pad (long, ducked by the kick)
+    const PD=T.pd||{};
+    if(i===0&&bar%2===0){ const pv=(S.pad===2?1.7:1)*(PD.vol||.035), c=PD.c||[700,1800]; [0,2,4].forEach(k=>this.lp(t,F(ch+k+7),sp*32,PD.w||"sawtooth",pv,pg,c[0],c[1],PD.atk||.5)); }
+    // plucky arpeggio
+    const AR=T.ar||{}, am=(T.arps||ARPS)[S.arp];
+    if(on(am)){ const tones=[0,2,4,7], c=AR.c||[3600,900]; this.lp(t,F(ch+tones[i%4]+14),sp*(AR.len||.8),AR.w||"square",(S.pad===2?1.25:1)*(AR.vol||.04),pg,c[0],c[1]); }
+    // chord stabs
+    const ST=T.st;
+    if(ST&&S.stab>=0&&on((T.stabs||STABS)[S.stab])){ const c=ST.c||[3500,1000]; [0,2,4].forEach(k=>this.lp(t,F(ch+k+7),sp*(ST.len||1.4),ST.w||"sawtooth",ST.vol||.045,pg,c[0],c[1],ST.atk||.004,true)); }
+    // lead melody
+    if(S.lead){ const m=T.sets[S.mo][bi][i]; if(m!==null&&m!==undefined) this.leadNote(T,t,F(ch+m+(S.lo?7:14)),sp); }
+  },
+  // ----- track switching / ducking -----
+  setTrackNow(i){
+    i=((i%TRACKS.length)+TRACKS.length)%TRACKS.length; this.track=i; this.pending=null; this.bar=0; this.step=0;
+    if(!this.ctx) return;
+    const c=this.ctx, n=c.currentTime, g=this.musG.gain; this.nextT=n+.08;
+    this.delay.delayTime.setValueAtTime(60/TRACKS[i].bpm*.75,n);
+    g.cancelScheduledValues(n); g.setValueAtTime(g.value,n); g.linearRampToValueAtTime(.0001,n+.03); g.setValueAtTime(.0001,n+.08); g.linearRampToValueAtTime(.45*Settings.music*(TRACKS[i].gain||1),n+.14);
+    this.pumpG.gain.cancelScheduledValues(n); this.pumpG.gain.setValueAtTime(1,n);
+  },
+  duck(){ if(!this.ctx) return; const g=this.musG.gain, n=this.ctx.currentTime; g.cancelScheduledValues(n); g.setValueAtTime(g.value,n); g.linearRampToValueAtTime(.0001,n+.3); },
+};
+Snd.load();
+
+document.addEventListener("pointerdown",()=>Snd.init());
+document.addEventListener("keydown",()=>Snd.init());
+
+
+// ---------- CrazyGames SDK wrapper (safe when SDK is absent) ----------
+const CG = {
+  ready:false, playing:false, adActive:false,
+  sdk(){ return window.CrazyGames&&window.CrazyGames.SDK; },
+  async init(){ try{ const k=this.sdk(); if(!k) return; await k.init(); this.ready=true; try{ k.game.loadingStart(); }catch(e){} if(this.playing){ try{ k.game.gameplayStart(); }catch(e){} } }catch(e){} },
+  loaded(){ try{ if(this.ready) this.sdk().game.loadingStop(); }catch(e){} },
+  dataGet(k){ try{ return this.ready?this.sdk().data.getItem(k):null; }catch(e){ return null; } },
+  dataSet(k,v){ try{ if(this.ready) this.sdk().data.setItem(k,v); }catch(e){} },
+  start(){ if(this.playing) return; this.playing=true; try{ if(this.ready) this.sdk().game.gameplayStart(); }catch(e){} },
+  stop(){ if(!this.playing) return; this.playing=false; try{ if(this.ready) this.sdk().game.gameplayStop(); }catch(e){} },
+  happy(){ try{ if(this.ready) this.sdk().game.happytime(); }catch(e){} },
+  ad(done){
+    let called=false; const fin=()=>{ if(called) return; called=true; this.adActive=false; Snd.force(false); done(); };
+    if(!this.ready) return fin();
+    this.adActive=true;
+    try{ this.sdk().ad.requestAd("midgame",{ adStarted:()=>Snd.force(true), adFinished:fin, adError:fin }); setTimeout(fin,60000); }catch(e){ fin(); }
+  },
+  rewarded(ok,fail){   // opt-in ad: the reward is only granted if the ad finishes; errors / no fill call fail
+    let done=false; const end=g=>{ if(done) return; done=true; this.adActive=false; Snd.force(false); if(g) ok(); else if(fail) fail(); };
+    if(!this.ready) return end(false);
+    this.adActive=true;
+    try{ this.sdk().ad.requestAd("rewarded",{ adStarted:()=>Snd.force(true), adFinished:()=>end(true), adError:()=>end(false) }); setTimeout(()=>end(false),120000); }catch(e){ end(false); }
+  }
+};
+
+// ---------- character portraits (vector art, animated) ----------
+const Fig = (() => {
+  let c, T=0, bl=1;
+  const OL="#14091f";
+  const fl=(f,s,lw=3)=>{ if(f){ c.fillStyle=f; c.fill(); } if(s){ c.lineWidth=lw; c.strokeStyle=s; c.lineJoin="round"; c.stroke(); } };
+  const ell=(x,y,rx,ry,f,s=OL,lw=3,rot=0)=>{ c.beginPath(); c.ellipse(x,y,rx,ry,rot,0,6.2832); fl(f,s,lw); };
+  const poly=(pts,f,s=OL,lw=3)=>{ c.beginPath(); pts.forEach((p,i)=>c[i?"lineTo":"moveTo"](p[0],p[1])); c.closePath(); fl(f,s,lw); };
+  const lg=(x0,y0,x1,y1,...st)=>{ const g=c.createLinearGradient(x0,y0,x1,y1); st.forEach((s,i)=>g.addColorStop(i/(st.length-1),s)); return g; };
+  const rect=(x,y,w,h,f,s=OL,lw=3,r=3)=>{ c.beginPath(); c.roundRect(x,y,w,h,r); fl(f,s,lw); };
+  const eye=(x,y,rx,ry,iris,pup="#111")=>{ ell(x,y,rx,ry*bl+.5,"#fff8e0",OL,2); if(bl>.3){ ell(x,y,rx*.55,ry*.8,iris,null); ell(x,y,rx*.22,ry*.7,pup,null); } };
+  const glow=(col,b)=>{ c.shadowColor=col; c.shadowBlur=b; };
+  const ng=()=>{ c.shadowBlur=0; };
+  const D={};
+  D.hero1=()=>{
+    poly([[60,100],[140,100],[162,186],[38,186]],lg(0,100,0,186,"#d04a38","#6e1712"));
+    rect(78,158,18,28,lg(0,158,0,186,"#6a4a2a","#2e1c0e")); rect(104,158,18,28,lg(0,158,0,186,"#6a4a2a","#2e1c0e"));
+    poly([[70,98],[130,98],[136,162],[64,162]],lg(0,98,0,162,"#dfe7f1","#7788a0")); rect(66,146,68,10,"#8a5a22",OL,2);
+    ell(100,128,9,9,"#ffd35a",OL,2);
+    poly([[28,102],[72,102],[72,142],[50,168],[28,142]],lg(0,102,0,168,"#4a7de0","#1c3a7a")); ell(50,128,9,9,"#ffd35a",OL,2); ell(50,128,4,4,"#e0431f",null);
+    poly([[146,30],[154,22],[162,30],[160,118],[148,118]],lg(140,0,170,0,"#fff","#9fb0c8")); rect(136,116,32,8,"#e0b030"); rect(148,122,8,22,"#5a3a1a",OL,2);
+    ell(142,128,11,9,lg(0,118,0,140,"#cfd8e3","#7788a0"),OL,2);
+    ell(100,72,27,29,"#f1c9a0"); c.beginPath(); c.ellipse(100,68,30,29,0,Math.PI,0); c.closePath(); fl(lg(0,40,0,70,"#e8eef7","#8a9ab4"),OL,3);
+    rect(96,60,8,30,lg(80,0,120,0,"#aab6c8","#e8eef7"),OL,2,2);
+    poly([[100,42],[122,24],[138,38],[116,46]],lg(100,0,140,0,"#ff6b4a","#a82a1a"),OL,2);
+    eye(86,76,6,5,"#3a74d8"); eye(114,76,6,5,"#3a74d8");
+  };
+  D.hero0=()=>{   // Wanderer: hooded traveller with a wooden shield
+    poly([[54,98],[146,98],[160,186],[40,186]],lg(0,98,0,186,"#5f7a3a","#26361a"));
+    rect(78,158,18,28,lg(0,158,0,186,"#6a4a2a","#2e1c0e")); rect(104,158,18,28,lg(0,158,0,186,"#6a4a2a","#2e1c0e"));
+    poly([[70,98],[130,98],[136,162],[64,162]],lg(0,98,0,162,"#d2b078","#7a5a32")); rect(64,146,72,9,"#6a4a22",OL,2);
+    rect(95,145,10,11,"#d9b24a",OL,2,2);
+    ell(50,130,21,21,lg(20,110,80,150,"#a8793c","#5e3c18"),OL,3); ell(50,130,6,6,"#8a8f99",OL,2);
+    c.lineWidth=2; c.strokeStyle="#4a2e12"; c.beginPath(); c.moveTo(50,110); c.lineTo(50,150); c.moveTo(30,130); c.lineTo(70,130); c.stroke();
+    poly([[148,56],[154,48],[160,56],[158,122],[150,122]],lg(140,0,170,0,"#f2f4f8","#98a4b8")); rect(140,120,28,7,"#7a5a22",OL,2); rect(150,125,8,20,"#5a3a1a",OL,2);
+    ell(142,130,10,8,"#e8c49a",OL,2);
+    ell(100,72,26,28,"#f1c9a0"); c.beginPath(); c.ellipse(100,68,31,31,0,Math.PI,0); c.closePath(); fl(lg(0,36,0,70,"#6e8c40","#2e4420"),OL,3);
+    poly([[70,70],[84,52],[100,66],[116,52],[130,70],[120,64],[100,74],[80,64]],lg(0,52,0,74,"#c68a4a","#7a4a22"),null);
+    rect(76,92,48,10,"#c8402c",OL,2,4);
+    eye(87,78,5.5,5,"#3a74d8"); eye(113,78,5.5,5,"#3a74d8");
+    c.lineWidth=3; c.strokeStyle="#5a3a1a"; c.beginPath(); c.moveTo(92,92); c.quadraticCurveTo(100,96,108,92); c.stroke();
+  };
+  D.hero2=()=>{   // Warrior: pauldrons, plumed helm, round emblem shield
+    poly([[54,98],[146,98],[164,186],[36,186]],lg(0,98,0,186,"#d04a38","#5e100e"));
+    rect(78,158,18,28,lg(0,158,0,186,"#55657e","#222a38")); rect(104,158,18,28,lg(0,158,0,186,"#55657e","#222a38"));
+    poly([[68,98],[132,98],[138,164],[62,164]],lg(0,98,0,164,"#e4ebf4","#6a7d98")); rect(62,148,76,11,"#b8892a",OL,2);
+    ell(100,128,10,10,"#ffd35a",OL,2);
+    ell(68,104,19,13,lg(0,92,0,116,"#e4ebf4","#7a8cab"),OL,3); ell(132,104,19,13,lg(0,92,0,116,"#e4ebf4","#7a8cab"),OL,3);
+    ell(48,134,26,26,lg(0,108,0,160,"#4a7de0","#1a3676"),OL,3); ell(48,134,20,20,null,"#ffd35a",3);
+    poly([[48,120],[54,134],[48,148],[42,134]],"#ffd35a",OL,2);
+    poly([[146,26],[154,16],[162,26],[160,120],[148,120]],lg(140,0,170,0,"#fff","#9fb0c8")); rect(134,118,36,9,"#e0b030"); rect(148,125,8,22,"#5a3a1a",OL,2);
+    ell(142,132,11,9,lg(0,122,0,142,"#cfd8e3","#7788a0"),OL,2);
+    ell(100,74,26,28,"#f1c9a0");
+    c.beginPath(); c.ellipse(100,68,31,30,0,Math.PI,0); c.lineTo(131,84); c.lineTo(69,84); c.closePath(); fl(lg(0,38,0,84,"#e8eef7","#7384a0"),OL,3);
+    rect(95,60,10,34,lg(80,0,120,0,"#aab6c8","#e8eef7"),OL,2,2);
+    poly([[100,40],[118,14],[136,26],[128,48],[110,48]],lg(100,0,140,0,"#ff5a3a","#9a1a12"),OL,2);
+    eye(86,80,6,4.5,"#3a74d8"); eye(114,80,6,4.5,"#3a74d8");
+  };
+  D.hero3=()=>{   // Knight: polished plate, great helm, kite shield, cape
+    poly([[50,98],[150,98],[170,186],[30,186]],lg(0,98,0,186,"#f4f6fa","#8a9ab4"));
+    rect(76,156,20,30,lg(0,156,0,186,"#d0d8e4","#58698a")); rect(104,156,20,30,lg(0,156,0,186,"#d0d8e4","#58698a"));
+    poly([[66,98],[134,98],[140,164],[60,164]],lg(0,98,0,164,"#f2f6fb","#7a8cab")); rect(60,148,80,11,"#2f5fc4",OL,2);
+    poly([[100,104],[108,128],[100,146],[92,128]],"#ffd35a",OL,2);
+    ell(66,104,21,15,lg(0,90,0,118,"#f6f9fd","#8294b4"),OL,3); ell(134,104,21,15,lg(0,90,0,118,"#f6f9fd","#8294b4"),OL,3);
+    poly([[24,102],[74,102],[74,146],[49,182],[24,146]],lg(0,102,0,182,"#3a6ad8","#142e72"));
+    rect(46,108,6,64,"#f4d070",null); rect(30,124,38,6,"#f4d070",null);
+    poly([[24,102],[74,102],[74,146],[49,182],[24,146]],null,"#d0d8e4",3);
+    poly([[146,16],[154,6],[162,16],[160,122],[148,122]],lg(140,0,170,0,"#fff","#a5b4cc")); rect(132,120,40,9,"#e0b030"); rect(148,127,8,24,"#2a3a7a",OL,2);
+    ell(142,134,11,9,lg(0,124,0,144,"#e4ebf4","#7788a0"),OL,2);
+    ell(100,76,31,33,lg(0,44,0,110,"#f4f7fb","#7384a0"));
+    rect(72,70,56,12,"#14182a",OL,2,3); c.fillStyle="#2a3050"; for(let i=0;i<5;i++) c.fillRect(77+i*10,84,4,14);
+    glow("#9cf",8); ell(88,76,4,2.5*bl+.3,"#bfe0ff",null); ell(112,76,4,2.5*bl+.3,"#bfe0ff",null); ng();
+    poly([[100,46],[94,10],[120,2],[132,24],[114,42]],lg(80,0,140,0,"#4a7de0","#1a3a8a"),OL,2);
+  };
+  D.hero4=()=>{   // Mythic Knight: gilded violet armour, winged helm, glowing blade, aura
+    const pulse=.6+.4*Math.sin(T/380);
+    const au=c.createRadialGradient(100,110,10,100,110,98); au.addColorStop(0,`rgba(255,215,110,${.35*pulse})`); au.addColorStop(1,"rgba(160,90,255,0)"); c.fillStyle=au; c.fillRect(0,0,200,200);
+    poly([[46,98],[154,98],[176,186],[24,186]],lg(0,98,0,186,"#8a4ae0","#2a0e5a"));
+    ell(100,150,5,5,"#ffe08a",null);
+    rect(76,156,20,30,lg(0,156,0,186,"#e8c050","#6a4a10")); rect(104,156,20,30,lg(0,156,0,186,"#e8c050","#6a4a10"));
+    poly([[64,98],[136,98],[142,164],[58,164]],lg(0,98,0,164,"#ffe9a0","#a87a1a")); rect(58,148,84,12,"#6a2ac0",OL,2);
+    glow("#ffd860",14); ell(100,126,11,11,"#fff0b0",OL,2); ng(); ell(100,126,5,5,"#9a4ae8",null);
+    poly([[52,100],[40,70],[66,86],[74,104]],lg(0,70,0,104,"#ffe9a0","#a87a1a"),OL,2); poly([[148,100],[160,70],[134,86],[126,104]],lg(0,70,0,104,"#ffe9a0","#a87a1a"),OL,2);
+    ell(66,106,21,15,lg(0,92,0,120,"#fff0b8","#b8861e"),OL,3); ell(134,106,21,15,lg(0,92,0,120,"#fff0b8","#b8861e"),OL,3);
+    poly([[22,102],[74,102],[74,146],[48,184],[22,146]],lg(0,102,0,184,"#a860f0","#34127a")); poly([[22,102],[74,102],[74,146],[48,184],[22,146]],null,"#ffd860",3);
+    glow("#ffe08a",12); poly([[48,116],[54,134],[48,152],[42,134]],"#fff4c0",null); ng();
+    glow("#9fe8ff",18*pulse+4); poly([[146,6],[154,-4],[162,6],[160,120],[148,120]],lg(140,0,170,0,"#ffffff","#7fd8ff"),null); ng();
+    rect(132,118,40,10,"#ffd860"); rect(148,126,8,24,"#5a2ab0",OL,2); ell(152,122,5,5,"#c07aff",null);
+    ell(142,136,11,9,lg(0,126,0,146,"#fff0b8","#b8861e"),OL,2);
+    poly([[70,70],[40,40],[48,66],[30,64],[56,86]],lg(0,40,0,86,"#fff4c8","#c8962a"),OL,2); poly([[130,70],[160,40],[152,66],[170,64],[144,86]],lg(0,40,0,86,"#fff4c8","#c8962a"),OL,2);
+    ell(100,76,31,33,lg(0,44,0,110,"#ffeaa8","#a87a1a"));
+    rect(72,70,56,12,"#1a0e3a",OL,2,3); c.fillStyle="#3a1e70"; for(let i=0;i<5;i++) c.fillRect(77+i*10,84,4,14);
+    glow("#ffd860",10); ell(88,76,4.5,2.6*bl+.3,"#fff0a0",null); ell(112,76,4.5,2.6*bl+.3,"#fff0a0",null); ng();
+    poly([[100,48],[92,12],[100,-2],[108,12]],lg(0,0,0,48,"#ff9aff","#8a2ad8"),OL,2);
+  };
+  D.goblin=()=>{
+    poly([[72,128],[128,128],[140,186],[60,186]],lg(0,128,0,186,"#7a5632","#3e2a14"));
+    poly([[44,80],[8,56],[50,100]],"#6fb83f"); poly([[156,80],[192,56],[150,100]],"#6fb83f");
+    poly([[40,78],[18,64],[46,92]],"#e59a9a",null); poly([[160,78],[182,64],[154,92]],"#e59a9a",null);
+    ell(100,86,46,42,lg(0,44,0,128,"#92d95a","#3f8a2a"));
+    ell(80,76,13,11,"#fff3a0"); ell(120,76,13,11,"#fff3a0"); ell(81,77,5,8*bl+.5,"#c01818"); ell(119,77,5,8*bl+.5,"#c01818",OL,2);
+    c.lineWidth=5; c.strokeStyle=OL; c.beginPath(); c.moveTo(62,60); c.lineTo(94,70); c.moveTo(138,60); c.lineTo(106,70); c.stroke();
+    poly([[100,84],[92,102],[108,102]],"#6fb83f"); ell(100,114,26,11,"#3a0e12");
+    poly([[84,108],[90,122],[96,108]],"#fff",OL,2); poly([[104,108],[110,122],[116,108]],"#fff",OL,2);
+    ell(70,98,3,3,"#4a7a24",null); ell(132,92,3,3,"#4a7a24",null);
+    poly([[148,126],[162,96],[168,124]],lg(0,96,0,126,"#e8eef7","#7788a0")); ell(152,132,10,8,"#7ec850");
+  };
+  D.wolf=()=>{
+    ell(100,160,62,36,lg(0,124,0,196,"#7c818c","#40444e"));
+    poly([[58,76],[52,22],[92,56]],"#6a6f7a"); poly([[142,76],[148,22],[108,56]],"#6a6f7a");
+    poly([[62,66],[58,36],[84,56]],"#e8a0a8",null); poly([[138,66],[142,36],[116,56]],"#e8a0a8",null);
+    ell(100,90,46,42,lg(0,48,0,132,"#9097a4","#5a5f6c"));
+    ell(100,114,28,24,lg(0,92,0,138,"#d6dae2","#9aa0ac"));
+    poly([[78,118],[100,148],[122,118],[100,124]],"#4a0e14");
+    for(let i=0;i<4;i++){ poly([[84+i*11,121],[88+i*11,134],[92+i*11,121]],"#fff",OL,1.5); }
+    ell(100,103,10,7,"#111",OL,2);
+    eye(78,86,9,7,"#ffcf3a"); eye(122,86,9,7,"#ffcf3a");
+    c.lineWidth=5; c.strokeStyle=OL; c.beginPath(); c.moveTo(62,72); c.lineTo(92,82); c.moveTo(138,72); c.lineTo(108,82); c.stroke();
+    c.lineWidth=2; c.strokeStyle="#5a1a1a"; c.beginPath(); c.moveTo(118,66); c.lineTo(126,82); c.stroke();
+  };
+  D.bandit=()=>{
+    poly([[36,186],[54,92],[146,92],[164,186]],lg(0,92,0,186,"#3a4050","#14161e"));
+    ell(100,82,44,46,lg(0,36,0,128,"#2e3342","#12141c"));
+    ell(100,88,28,26,"#07080c",null);
+    poly([[74,98],[126,98],[120,124],[80,124]],lg(0,98,0,124,"#b53a3a","#6e1a1a"));
+    glow("#ffd860",10); ell(88,84,6,3.5*bl+.5,"#ffe08a",null); ell(112,84,6,3.5*bl+.5,"#ffe08a",null); ng();
+    c.lineWidth=4; c.strokeStyle=OL; c.beginPath(); c.moveTo(78,74); c.lineTo(96,80); c.moveTo(122,74); c.lineTo(104,80); c.stroke();
+    rect(66,146,68,10,"#5a3a1a",OL,2); rect(94,144,12,14,"#d9a621",OL,2);
+    poly([[44,140],[34,104],[54,132]],lg(0,104,0,140,"#f1f5fa","#8a98ad")); ell(50,142,10,8,"#2e3342");
+    poly([[150,150],[166,122],[170,150]],lg(0,122,0,150,"#f1f5fa","#8a98ad")); ell(152,154,10,8,"#2e3342");
+  };
+  D.orc=()=>{
+    ell(100,150,66,44,lg(0,108,0,196,"#6a8f46","#364f22"));
+    ell(48,116,26,20,lg(0,96,0,136,"#8a8a96","#4a4a56")); ell(152,116,26,20,lg(0,96,0,136,"#8a8a96","#4a4a56"));
+    poly([[34,104],[28,82],[44,98]],"#c8c8d2"); poly([[166,104],[172,82],[156,98]],"#c8c8d2");
+    ell(100,82,42,40,lg(0,42,0,124,"#8cb85e","#4a6e2e"));
+    poly([[58,70],[100,80],[142,70],[142,60],[100,66],[58,60]],"#3a4a24");
+    ell(82,82,7,5*bl+.5,"#e83a2a"); ell(118,82,7,5*bl+.5,"#e83a2a");
+    ell(100,112,32,15,lg(0,98,0,128,"#6a8f46","#3a5524"));
+    poly([[78,112],[72,88],[90,106]],"#f4ecd0",OL,2); poly([[122,112],[128,88],[110,106]],"#f4ecd0",OL,2);
+    ell(100,96,8,6,"#496a2a",OL,2);
+    rect(150,48,7,126,"#8a5a2a",OL,2);
+    poly([[157,54],[192,40],[194,96],[157,90]],lg(150,0,196,0,"#e8eef7","#7788a0"));
+  };
+  D.skeleton=()=>{
+    c.strokeStyle="#e8e0cc"; c.lineWidth=7; c.lineCap="round";
+    c.beginPath(); c.moveTo(100,92); c.lineTo(100,160); c.stroke();
+    for(let i=0;i<5;i++){ c.lineWidth=5; c.beginPath(); c.moveTo(100,104+i*11); c.quadraticCurveTo(66-i*0,98+i*11,64+i*3,116+i*11); c.moveTo(100,104+i*11); c.quadraticCurveTo(134,98+i*11,136-i*3,116+i*11); c.stroke(); }
+    c.strokeStyle=OL; c.lineWidth=1.5; ell(100,170,26,12,"#e8e0cc",OL,2);
+    c.strokeStyle="#e8e0cc"; c.lineWidth=7; c.beginPath(); c.moveTo(66,106); c.lineTo(44,140); c.moveTo(134,106); c.lineTo(152,124); c.stroke();
+    poly([[150,118],[158,30],[166,118]],lg(0,30,0,118,"#c9a27a","#7a4a2a")); rect(140,116,36,8,"#5a3a1a");
+    ell(100,62,34,32,lg(0,30,0,94,"#fff8e8","#cfc6ae")); rect(80,84,40,18,"#e8e0cc",OL,3,4);
+    c.lineWidth=2; c.strokeStyle=OL; c.beginPath(); for(let i=0;i<4;i++){ c.moveTo(88+i*8,86); c.lineTo(88+i*8,100); } c.stroke();
+    ell(86,62,10,11,"#0a0610",null); ell(114,62,10,11,"#0a0610",null);
+    glow("#3ad8ff",14); ell(86,63,4,5*bl+.3,"#7af0ff",null); ell(114,63,4,5*bl+.3,"#7af0ff",null); ng();
+    poly([[100,72],[94,84],[106,84]],"#0a0610",null);
+    ell(100,62,34,32,null,OL,3);
+  };
+  D.troll=()=>{
+    ell(100,150,72,48,lg(0,104,0,198,"#8a7a58","#4a3e28")); ell(100,158,40,30,"#a69a78",null);
+    ell(48,128,22,28,"#7a6a4a"); ell(152,128,22,28,"#7a6a4a");
+    ell(62,112,12,7,"#5f8a3a",null); ell(140,150,14,8,"#5f8a3a",null);
+    poly([[148,172],[166,50],[192,56],[180,176]],lg(140,0,196,0,"#8a5a2a","#4a2e14"));
+    for(const [x,y] of [[160,70],[170,98],[178,128]]) poly([[x,y],[x+16,y-6],[x+6,y+8]],"#c8c8d2",OL,2);
+    poly([[66,60],[48,50],[70,78]],"#7a6a4a"); poly([[134,60],[152,50],[130,78]],"#7a6a4a");
+    ell(100,72,34,30,lg(0,42,0,102,"#9a8a68","#6a5a3c"));
+    ell(100,82,13,11,"#b4977a"); ell(84,64,5,4*bl+.5,"#ffe14a"); ell(116,64,5,4*bl+.5,"#ffe14a");
+    c.lineWidth=5; c.strokeStyle=OL; c.beginPath(); c.moveTo(72,54); c.lineTo(92,62); c.moveTo(128,54); c.lineTo(108,62); c.stroke();
+    ell(100,100,24,9,"#2a0e0e"); poly([[80,98],[76,84],[90,96]],"#f4ecd0",OL,2); poly([[120,98],[124,84],[110,96]],"#f4ecd0",OL,2);
+  };
+  D.wraith=()=>{
+    c.globalAlpha=.9;
+    poly([[58,60],[100,14],[142,60],[160,132],[150,190],[132,170],[116,194],[100,172],[84,194],[68,170],[50,190],[40,132]],lg(0,14,0,194,"#6a58a8","#150f30"),"#0a0618",3);
+    ell(100,74,25,28,"#05030c",null);
+    glow("#6af0ff",16); ell(90,74,5,8*bl+.5,"#aaf8ff",null); ell(110,74,5,8*bl+.5,"#aaf8ff",null); ng();
+    c.strokeStyle="#cfc6e8"; c.lineWidth=5; c.lineCap="round"; c.beginPath(); c.moveTo(48,130); c.lineTo(40,150); c.moveTo(46,134); c.lineTo(52,152); c.moveTo(152,130); c.lineTo(160,150); c.stroke();
+    c.strokeStyle="#7a5a3a"; c.lineWidth=5; c.beginPath(); c.moveTo(168,30); c.lineTo(160,190); c.stroke();
+    c.beginPath(); c.moveTo(168,30); c.quadraticCurveTo(120,20,104,62); c.quadraticCurveTo(138,40,166,46); c.closePath(); c.fillStyle="#cfd8e8"; c.fill(); c.strokeStyle=OL; c.lineWidth=2; c.stroke();
+    c.globalAlpha=1;
+  };
+  D.dragon=()=>{
+    poly([[56,120],[6,56],[14,150],[52,150]],lg(0,56,0,150,"#7a1a1a","#3a0a0a")); poly([[144,120],[194,56],[186,150],[148,150]],lg(0,56,0,150,"#7a1a1a","#3a0a0a"));
+    ell(100,172,44,26,lg(0,146,0,198,"#c63a22","#701810"));
+    poly([[68,70],[44,18],[88,56]],"#efe6c4"); poly([[132,70],[156,18],[112,56]],"#efe6c4");
+    for(const x of [92,100,108]) poly([[x-5,56],[x,40],[x+5,56]],"#a82a18",OL,2);
+    ell(100,92,48,42,lg(0,50,0,136,"#e0502e","#8c1c12"));
+    ell(100,120,32,24,lg(0,98,0,144,"#ee6a42","#a82a18"));
+    ell(90,114,3.5,4,"#3a0a0a",null); ell(110,114,3.5,4,"#3a0a0a",null);
+    poly([[70,130],[100,150],[130,130],[100,136]],"#3a0808");
+    for(let i=0;i<5;i++) poly([[78+i*11,132],[83+i*11,144],[88+i*11,132]],"#fff",OL,1.5);
+    const f=8+Math.sin(T/90)*5; c.save(); c.globalCompositeOperation="lighter"; c.fillStyle="rgba(255,150,30,.7)"; c.beginPath(); c.moveTo(88,146); c.quadraticCurveTo(100,146+22+f,112,146); c.fill(); c.restore();
+    glow("#ffd24a",12); ell(78,84,11,8*bl+.5,"#ffd24a",OL,2); ell(122,84,11,8*bl+.5,"#ffd24a",OL,2); ng();
+    ell(78,84,2.5,7*bl,"#111",null); ell(122,84,2.5,7*bl,"#111",null);
+    c.lineWidth=6; c.strokeStyle=OL; c.beginPath(); c.moveTo(56,68); c.lineTo(90,80); c.moveTo(144,68); c.lineTo(110,80); c.stroke();
+  };
+  D.slime=()=>{
+    c.beginPath(); c.moveTo(30,184); c.bezierCurveTo(14,140,40,70,100,64); c.bezierCurveTo(160,70,186,140,170,184); c.closePath(); fl(lg(0,64,0,186,"#7ff0b0","#1f9a6a"),OL,3);
+    c.beginPath(); c.ellipse(70,100,18,9,-.6,0,6.2832); c.fillStyle="#ffffff66"; c.fill();
+    c.fillStyle="#2fc08a"; c.beginPath(); c.ellipse(44,184,14,6,0,0,6.2832); c.fill(); c.beginPath(); c.ellipse(160,182,12,5,0,0,6.2832); c.fill();
+    eye(78,120,13,15,"#222"); eye(122,120,13,15,"#222");
+    c.lineWidth=4; c.strokeStyle=OL; c.lineCap="round"; c.beginPath(); c.moveTo(82,150); c.quadraticCurveTo(100,166,118,150); c.stroke();
+    ell(100,48,7,9,"#7ff0b0",OL,2); poly([[94,52],[100,38],[106,52]],"#7ff0b0",null);
+  };
+  D.golem=()=>{
+    rect(52,96,96,78,lg(0,96,0,174,"#9a9aa6","#555563"),OL,3,8); rect(30,104,28,64,lg(0,104,0,168,"#8a8a96","#4a4a58"),OL,3,6); rect(142,104,28,64,lg(0,104,0,168,"#8a8a96","#4a4a58"),OL,3,6);
+    ell(44,172,18,14,"#7a7a88"); ell(156,172,18,14,"#7a7a88"); rect(66,170,26,20,"#6a6a78",OL,3,4); rect(108,170,26,20,"#6a6a78",OL,3,4);
+    c.strokeStyle="#2a2a36"; c.lineWidth=2.5; c.beginPath(); c.moveTo(78,96); c.lineTo(88,118); c.lineTo(80,140); c.moveTo(122,110); c.lineTo(112,130); c.lineTo(126,158); c.stroke();
+    ell(64,104,10,6,"#5f8a3a",null); ell(140,160,12,6,"#5f8a3a",null);
+    rect(66,40,68,58,lg(0,40,0,98,"#b0b0bc","#6a6a78"),OL,3,8);
+    glow("#ff9a2e",14); rect(78,60,16,10*bl+2,"#ffb347",null,0,3); rect(106,60,16,10*bl+2,"#ffb347",null,0,3); ng();
+    rect(84,82,32,7,"#3a3a46",OL,2,2);
+  };
+  const THEME={slime:"#2fc08a",golem:"#8a8a96",hero:"#3b6fd1",goblin:"#4f9a2a",wolf:"#6b7a99",bandit:"#8a3a3a",orc:"#5a7a3a",skeleton:"#3a7a9a",troll:"#7a6a3a",wraith:"#6a3aa0",dragon:"#c0381e"};
+  return {
+    tier:0,
+    draw(cv,name,t,shake=0,kick=0,still=false){
+      const S=cv.width; c=cv.getContext("2d"); T=t; bl=((t%3600)<130)?.1:1;
+      c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,S,S);
+      const th=THEME[name]||"#555", bg=c.createRadialGradient(S*.5,S*.45,S*.05,S*.5,S*.5,S*.75);
+      bg.addColorStop(0,th+"aa"); bg.addColorStop(.6,th+"33"); bg.addColorStop(1,"#0b0814");
+      c.fillStyle=bg; c.fillRect(0,0,S,S);
+      c.setTransform(S/200,0,0,S/200,0,0);
+      c.fillStyle="#0007"; c.beginPath(); c.ellipse(100,190,62,7,0,0,6.2832); c.fill();
+      const bob=still?0:Math.sin(t/420+(name==="wraith"?1:0))*(name==="wraith"?6:2.5), sx=(Math.random()-.5)*shake;
+      const br=still?0:Math.sin(t/420)*.012; c.translate(100+sx,185); c.scale(1+br+kick*.18,1-br+kick*.18); c.translate(-100,-185+bob+kick*10);
+      (name==="hero"?D["hero"+Fig.tier]:(D[name]||D.hero1))();
+    }
+  };
+})();
+
+if(!CanvasRenderingContext2D.prototype.roundRect) CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+  r=Math.min(Array.isArray(r)?r[0]:(r||0),w/2,h/2); this.moveTo(x+r,y); this.arcTo(x+w,y,x+w,y+h,r); this.arcTo(x+w,y+h,x,y+h,r); this.arcTo(x,y+h,x,y,r); this.arcTo(x,y,x+w,y,r); this.closePath(); };
+const cv = document.getElementById("cv"), mainCtx = cv.getContext("2d"); let ctx = mainCtx;
+const $ = id => document.getElementById(id);
+let FAST = /[?&]fast\b/.test(location.search);   // test hook: skip waits
+let PAUSED = false, waiters = [];
+const gate = () => PAUSED ? new Promise(r=>waiters.push(r)) : null;
+const setPaused = v => { PAUSED=v; if(!v) waiters.splice(0).forEach(r=>r()); };
+let GEN = 0;                                   // bumped on restart: abandons in-flight turn logic
+const dead = () => new Promise(()=>{});
+const sleep = async ms => { const g0=GEN; if(!FAST) await new Promise(r=>setTimeout(r,ms)); const g=gate(); if(g) await g; if(g0!==GEN) await dead(); };
+const frame = async () => { const g0=GEN; if(FAST) await Promise.resolve(); else await new Promise(r=>requestAnimationFrame(r)); const g=gate(); if(g) await g; if(g0!==GEN) await dead(); };
+const rnd = n => Math.floor(Math.random()*n);
+
+// ---------- localization (English source strings are the keys; missing translations fall back to English) ----------
+const LANGS=[["en","English"],["es","Español"],["pt","Português"],["fr","Français"],["de","Deutsch"],["ru","Русский"]];
+const TR=[ // [en, es, pt, fr, de, ru]
+ ["Menu (Esc)","Menú (Esc)","Menu (Esc)","Menu (Échap)","Menü (Esc)","Меню (Esc)"],
+ ["Sound on/off","Sonido sí/no","Som ligado/desligado","Son activé/désactivé","Ton an/aus","Звук вкл/выкл"],
+ ["Fullscreen","Pantalla completa","Tela cheia","Plein écran","Vollbild","Полный экран"],
+ ["Hint (T)","Pista (T)","Dica (T)","Indice (T)","Tipp (T)","Подсказка (T)"],
+ ["Got it","Entendido","Entendi","Compris","Verstanden","Понятно"],
+ ["Fighter","Luchador","Lutador","Combattant","Kämpfer","Боец"],
+ ["Warrior","Guerrero","Guerreiro","Guerrier","Krieger","Воин"],
+ ["Knight","Caballero","Cavaleiro","Chevalier","Ritter","Рыцарь"],
+ ["Mythic Knight","Caballero mítico","Cavaleiro mítico","Chevalier mythique","Mythischer Ritter","Мифический рыцарь"],
+ ["You evolved into a {name}!","¡Has evolucionado a {name}!","Você evoluiu para {name}!","Vous êtes devenu {name} !","Du bist zum {name} aufgestiegen!","Вы стали: {name}!"],
+ ["Spell Power","Poder mágico","Poder mágico","Puissance magique","Zauberkraft","Сила магии"],
+ ["+5% spell strength per level","+5% de fuerza de hechizo por nivel","+5% de força de feitiço por nível","+5 % de puissance des sorts par niveau","+5 % Zauberstärke pro Stufe","+5% к силе заклинаний за уровень"],
+ ["Wanderer","Errante","Andarilho","Vagabond","Wanderer","Странник"],
+ ["Lv {n}","Nv {n}","Nv {n}","Niv {n}","Stufe {n}","Ур. {n}"],
+ ["Stage {n}","Etapa {n}","Fase {n}","Étape {n}","Runde {n}","Этап {n}"],
+ ["Endless · Stage {n}","Infinito · Etapa {n}","Infinito · Fase {n}","Infini · Étape {n}","Endlos · Runde {n}","Бесконечный · Этап {n}"],
+ ["HP {a}/{b}","PV {a}/{b}","PV {a}/{b}","PV {a}/{b}","LP {a}/{b}","ОЗ {a}/{b}"],
+ ["Shield {n}","Escudo {n}","Escudo {n}","Bouclier {n}","Schild {n}","Щит {n}"],
+ ["Poison {n}","Veneno {n}","Veneno {n}","Poison {n}","Gift {n}","Яд {n}"],
+ ["Stunned","Aturdido","Atordoado","Étourdi","Betäubt","Оглушён"],
+ ["XP {a}/{b}","XP {a}/{b}","XP {a}/{b}","XP {a}/{b}","EP {a}/{b}","Опыт {a}/{b}"],
+ ["BOSS","JEFE","CHEFE","BOSS","BOSS","БОСС"],
+ ["Attack {n}","Ataque {n}","Ataque {n}","Attaque {n}","Angriff {n}","Атака {n}"],
+ ["Frozen","Congelado","Congelado","Gelé","Eingefroren","Заморожен"],
+ ["⚠ Next turn:","⚠ Próximo turno:","⚠ Próximo turno:","⚠ Prochain tour :","⚠ Nächster Zug:","⚠ Следующий ход:"],
+ ["Special:","Especial:","Especial:","Spécial :","Spezial:","Умение:"],
+ ["in {n}","en {n}","em {n}","dans {n}","in {n}","через {n}"],
+ ["Regenerates HP","Regenera PV","Regenera PV","Régénère ses PV","Regeneriert LP","Восстанавливает ОЗ"],
+ ["Health Potion ×{n}","Poción de salud ×{n}","Poção de vida ×{n}","Potion de soin ×{n}","Heiltrank ×{n}","Зелье здоровья ×{n}"],
+ ["Restore 50% HP","Restaura 50% PV","Restaura 50% PV","Rend 50 % PV","Stellt 50 % LP her","Восстанавливает 50% ОЗ"],
+ ["Mana Potion ×{n}","Poción de maná ×{n}","Poção de mana ×{n}","Potion de mana ×{n}","Manatrank ×{n}","Зелье маны ×{n}"],
+ ["+4 of each mana","+4 de cada maná","+4 de cada mana","+4 de chaque mana","+4 für jedes Mana","+4 каждой маны"],
+ ["{el} mana","Maná: {el}","Mana: {el}","Mana : {el}","Mana: {el}","Мана: {el}"],
+ ["Fire","Fuego","Fogo","Feu","Feuer","Огонь"],["Air","Aire","Ar","Air","Luft","Воздух"],["Water","Agua","Água","Eau","Wasser","Вода"],
+ ["Earth","Tierra","Terra","Terre","Erde","Земля"],["Skull","Calavera","Caveira","Crâne","Totenkopf","Череп"],["Star","Estrella","Estrela","Étoile","Stern","Звезда"],
+ ["+{n} {el}","+{n} {el}","+{n} {el}","+{n} {el}","+{n} {el}","+{n} {el}"],
+ ["Fireball","Bola de fuego","Bola de fogo","Boule de feu","Feuerball","Огненный шар"],["Heal","Curar","Curar","Soin","Heilen","Лечение"],
+ ["Frost","Escarcha","Gelo","Givre","Frost","Холод"],["Smite","Castigo","Punição","Châtiment","Strafe","Кара"],
+ ["Wildfire","Incendio","Incêndio","Brasier","Flächenbrand","Пожар"],["Cleanse","Purificar","Purificar","Purification","Läutern","Очищение"],
+ ["Stoneskin","Piel de piedra","Pele de pedra","Peau de pierre","Steinhaut","Каменная кожа"],["Meteor","Meteoro","Meteoro","Météore","Meteor","Метеор"],
+ ["{n} damage","{n} de daño","{n} de dano","{n} dégâts","{n} Schaden","{n} урона"],
+ ["Restore {n} HP","Restaura {n} PV","Restaura {n} PV","Rend {n} PV","Stellt {n} LP her","Восстанавливает {n} ОЗ"],
+ ["{n} dmg, freeze enemy 1 turn","{n} daño, congela al enemigo 1 turno","{n} dano, congela o inimigo por 1 turno","{n} dégâts, gèle l'ennemi 1 tour","{n} Schaden, friert den Gegner 1 Zug ein","{n} урона, замораживает врага на 1 ход"],
+ ["Destroy all skulls, {n} dmg each","Destruye todas las calaveras, {n} de daño c/u","Destrói todas as caveiras, {n} de dano cada","Détruit tous les crânes, {n} dégâts chacun","Zerstört alle Totenköpfe, je {n} Schaden","Уничтожает все черепа, по {n} урона"],
+ ["Burn a row and column, {n} dmg per gem","Quema una fila y una columna, {n} de daño por gema","Queima uma linha e uma coluna, {n} de dano por gema","Brûle une ligne et une colonne, {n} dégâts par gemme","Verbrennt eine Reihe und Spalte, {n} Schaden pro Stein","Сжигает ряд и столбец, {n} урона за камень"],
+ ["Cure poison & stun, heal {n}","Cura veneno y aturdimiento, sana {n}","Cura veneno e atordoamento, cura {n}","Soigne poison et étourdissement, rend {n}","Heilt Gift & Betäubung, heilt {n}","Снимает яд и оглушение, лечит {n}"],
+ ["Block the next {n} damage","Bloquea los próximos {n} de daño","Bloqueia os próximos {n} de dano","Bloque les {n} prochains dégâts","Blockt die nächsten {n} Schaden","Блокирует следующие {n} урона"],
+ ["{n} damage, jumbles the board","{n} de daño, revuelve el tablero","{n} de dano, embaralha o tabuleiro","{n} dégâts, mélange le plateau","{n} Schaden, mischt das Brett","{n} урона, перемешивает поле"],
+ ["(Lv {n})","(Nv {n})","(Nv {n})","(Niv {n})","(Stufe {n})","(Ур. {n})"],
+ ["+Shield","+Escudo","+Escudo","+Bouclier","+Schild","+Щит"],
+ ["The enemy is frozen!","¡El enemigo está congelado!","O inimigo está congelado!","L'ennemi est gelé !","Der Gegner ist eingefroren!","Враг заморожен!"],
+ ["Ailments cleansed.","Males purificados.","Males purificados.","Maux purifiés.","Leiden geläutert.","Недуги очищены."],
+ ["Pilfer","Hurtar","Furtar","Chaparder","Stehlen","Кража"],["Frenzy","Frenesí","Frenesi","Frénésie","Raserei","Неистовство"],
+ ["Mana Drain","Drenar maná","Drenar mana","Drain de mana","Manaentzug","Похищение маны"],["Stun","Aturdir","Atordoar","Étourdir","Betäuben","Оглушение"],
+ ["Poison","Veneno","Veneno","Poison","Gift","Яд"],["Harden","Endurecer","Endurecer","Durcir","Härten","Закалка"],
+ ["Life Drain","Drenar vida","Drenar vida","Drain de vie","Lebensentzug","Похищение жизни"],["Fire Breath","Aliento de fuego","Sopro de fogo","Souffle de feu","Feueratem","Огненное дыхание"],
+ ["steals coins","roba monedas","rouba moedas","vole des pièces","stiehlt Münzen","крадёт монеты"],
+ ["takes an extra move","hace un movimiento extra","faz um movimento extra","joue un coup de plus","macht einen Extrazug","делает лишний ход"],
+ ["steals mana","roba maná","rouba mana","vole du mana","stiehlt Mana","крадёт ману"],
+ ["you skip a turn","pierdes un turno","você perde um turno","vous passez un tour","du setzt einen Zug aus","вы пропускаете ход"],
+ ["poisons you for 3 turns","te envenena 3 turnos","envenena você por 3 turnos","vous empoisonne 3 tours","vergiftet dich für 3 Züge","отравляет вас на 3 хода"],
+ ["gains a shield","gana un escudo","ganha um escudo","gagne un bouclier","erhält einen Schild","получает щит"],
+ ["steals HP","roba PV","rouba PV","vole des PV","stiehlt LP","крадёт ОЗ"],
+ ["burns you and spawns skulls","te quema y crea calaveras","queima você e cria caveiras","vous brûle et crée des crânes","verbrennt dich und erzeugt Totenköpfe","жжёт вас и создаёт черепа"],
+ ["-{n} coins","-{n} monedas","-{n} moedas","-{n} pièces","-{n} Münzen","-{n} монет"],
+ ["Nothing to steal","Nada que robar","Nada para furtar","Rien à voler","Nichts zu stehlen","Нечего красть"],
+ ["No mana to drain","Sin maná que drenar","Sem mana para drenar","Pas de mana à drainer","Kein Mana zu entziehen","Нет маны для похищения"],
+ ["-{n} {el} mana","-{n} de maná de {el}","-{n} de mana de {el}","-{n} mana {el}","-{n} {el}-Mana","-{n} маны: {el}"],
+ ["Stunned!","¡Aturdido!","Atordoado!","Étourdi !","Betäubt!","Оглушён!"],["Poisoned!","¡Envenenado!","Envenenado!","Empoisonné !","Vergiftet!","Отравлен!"],
+ ["+{n} shield","+{n} escudo","+{n} escudo","+{n} bouclier","+{n} Schild","+{n} щит"],
+ ["Slime","Limo","Gosma","Gelée","Schleim","Слизень"],["Goblin","Goblin","Goblin","Gobelin","Goblin","Гоблин"],["Wolf","Lobo","Lobo","Loup","Wolf","Волк"],
+ ["Bandit","Bandido","Bandido","Bandit","Bandit","Бандит"],["Orc","Orco","Orc","Orc","Ork","Орк"],["Skeleton","Esqueleto","Esqueleto","Squelette","Skelett","Скелет"],
+ ["Troll","Troll","Troll","Troll","Troll","Тролль"],["Golem","Gólem","Golem","Golem","Golem","Голем"],["Wraith","Espectro","Espectro","Spectre","Geist","Призрак"],
+ ["Dragon","Dragón","Dragão","Dragon","Drache","Дракон"],["Orc Warlord","Señor de la Guerra Orco","Senhor da Guerra Orc","Chef de guerre orc","Ork-Kriegsherr","Орк-полководец"],
+ ["Elder Dragon","Dragón Ancestral","Dragão Ancião","Dragon ancestral","Uralter Drache","Древний дракон"],
+ ["Swap two neighboring gems to line up 3 or more of the same kind. Try it now!","Intercambia dos gemas vecinas para alinear 3 o más iguales. ¡Pruébalo ahora!","Troque duas gemas vizinhas para alinhar 3 ou mais iguais. Experimente agora!","Échangez deux gemmes voisines pour aligner 3 gemmes identiques ou plus. Essayez !","Tausche zwei benachbarte Steine, um 3 oder mehr gleiche in eine Reihe zu bringen. Probier es aus!","Поменяйте местами два соседних камня, чтобы собрать 3 и более одинаковых. Попробуйте!"],
+ ["Skulls hurt your enemy. Bigger matches and cascades hit harder.","Las calaveras dañan al enemigo. Las combinaciones grandes y las cascadas pegan más fuerte.","Caveiras ferem o inimigo. Combinações maiores e cascatas causam mais dano.","Les crânes blessent l'ennemi. Les grosses combinaisons et les cascades frappent plus fort.","Totenköpfe verletzen deinen Gegner. Größere Kombinationen und Kaskaden treffen härter.","Черепа ранят врага. Большие комбинации и каскады бьют сильнее."],
+ ["Fire, Air, Water and Earth gems fill your mana bars. Mana pays for spells.","Las gemas de Fuego, Aire, Agua y Tierra llenan tus barras de maná. El maná paga los hechizos.","Gemas de Fogo, Ar, Água e Terra enchem suas barras de mana. A mana paga os feitiços.","Les gemmes de Feu, d'Air, d'Eau et de Terre remplissent vos jauges de mana. Le mana paie les sorts.","Feuer-, Luft-, Wasser- und Erdsteine füllen deine Manaleisten. Mana bezahlt Zauber.","Камни Огня, Воздуха, Воды и Земли наполняют шкалы маны. Мана нужна для заклинаний."],
+ ["A spell is ready! Tap a glowing spell button (or press its number). Casting doesn't end your turn.","¡Un hechizo está listo! Toca un botón brillante (o pulsa su número). Lanzarlo no termina tu turno.","Um feitiço está pronto! Toque em um botão brilhante (ou pressione seu número). Lançar não encerra seu turno.","Un sort est prêt ! Touchez un bouton lumineux (ou appuyez sur son numéro). Lancer un sort ne termine pas votre tour.","Ein Zauber ist bereit! Tippe auf eine leuchtende Taste (oder drücke ihre Nummer). Zaubern beendet deinen Zug nicht.","Заклинание готово! Нажмите светящуюся кнопку (или её номер). Заклинание не завершает ход."],
+ ["Nice! Matching 4 or more gems in a line, or 5 in an L, T or + shape, earns an extra turn.","¡Bien! Combinar 4 o más gemas en línea, o 5 en forma de L, T o +, da un turno extra.","Legal! Combinar 4 ou mais gemas em linha, ou 5 em forma de L, T ou +, dá um turno extra.","Bien ! Aligner 4 gemmes ou plus, ou 5 en forme de L, T ou +, donne un tour supplémentaire.","Super! 4 oder mehr Steine in einer Reihe oder 5 in L-, T- oder +-Form bringen einen Extrazug.","Отлично! 4 и более камня в ряд или 5 в форме L, T или + дают дополнительный ход."],
+ ["Now the enemy plays on the same board. Its skull matches hurt you, so keep an eye on your HP.","Ahora el enemigo juega en el mismo tablero. Sus calaveras te hieren, así que vigila tus PV.","Agora o inimigo joga no mesmo tabuleiro. As caveiras dele ferem você, então fique de olho nos seus PV.","L'ennemi joue maintenant sur le même plateau. Ses crânes vous blessent, surveillez vos PV.","Jetzt spielt der Gegner auf demselben Brett. Seine Totenköpfe verletzen dich – behalte deine LP im Blick.","Теперь враг ходит на том же поле. Его черепа ранят вас, следите за своими ОЗ."],
+ ["Stuck? Tap the lightbulb for a hint.","¿Atascado? Toca la bombilla para ver una pista.","Travado? Toque na lâmpada para uma dica.","Bloqué ? Touchez l'ampoule pour un indice.","Nicht weiter? Tippe auf die Glühbirne für einen Tipp.","Не знаете, что делать? Нажмите на лампочку для подсказки."],
+ ["Boss Defeated!","¡Jefe derrotado!","Chefe derrotado!","Boss vaincu !","Boss besiegt!","Босс повержен!"],["Victory!","¡Victoria!","Vitória!","Victoire !","Sieg!","Победа!"],
+ ["{name} defeated.","{name} derrotado.","{name} derrotado.","{name} vaincu.","{name} besiegt.","{name} побеждён."],
+ ["+{n} XP","+{n} XP","+{n} XP","+{n} XP","+{n} EP","+{n} опыта"],
+ ["Spend your coins in the shop on potions and upgrades before the next battle.","Gasta tus monedas en la tienda en pociones y mejoras antes del próximo combate.","Gaste suas moedas na loja com poções e melhorias antes da próxima batalha.","Dépensez vos pièces à la boutique en potions et améliorations avant le prochain combat.","Gib deine Münzen im Shop für Tränke und Verbesserungen aus, bevor der nächste Kampf beginnt.","Потратьте монеты в магазине на зелья и улучшения перед следующим боем."],
+ ["Next Battle","Siguiente combate","Próxima batalha","Combat suivant","Nächster Kampf","Следующий бой"],
+ ["Shop ({n})","Tienda ({n})","Loja ({n})","Boutique ({n})","Shop ({n})","Магазин ({n})"],["Shop","Tienda","Loja","Boutique","Shop","Магазин"],
+ ["Defeated","Derrotado","Derrotado","Vaincu","Besiegt","Поражение"],
+ ["You fell to the {name}.","Te derrotó {name}.","{name} derrotou você.","{name} vous a vaincu.","{name} hat dich besiegt.","{name} победил вас."],
+ ["Consolation: +{xp} XP, +{c}","Consuelo: +{xp} XP, +{c}","Consolo: +{xp} XP, +{c}","Consolation : +{xp} XP, +{c}","Trostpreis: +{xp} EP, +{c}","Утешение: +{xp} опыта, +{c}"],
+ ["Stages cleared: {n}","Etapas superadas: {n}","Fases concluídas: {n}","Étapes terminées : {n}","Runden geschafft: {n}","Пройдено этапов: {n}"],
+ ["Retry Battle","Reintentar combate","Tentar novamente","Réessayer","Kampf wiederholen","Повторить бой"],
+ ["Back","Volver","Voltar","Retour","Zurück","Назад"],["Max","Máx","Máx","Max","Max","Макс"],
+ ["Health Potion","Poción de salud","Poção de vida","Potion de soin","Heiltrank","Зелье здоровья"],
+ ["Restore 50% HP any time on your turn","Restaura 50% de PV en tu turno","Restaura 50% dos PV no seu turno","Rend 50 % des PV pendant votre tour","Stellt in deinem Zug 50 % LP wieder her","Восстанавливает 50% ОЗ в ваш ход"],
+ ["Mana Potion","Poción de maná","Poção de mana","Potion de mana","Manatrank","Зелье маны"],
+ ["+4 of every mana color","+4 de cada color de maná","+4 de cada cor de mana","+4 de chaque couleur de mana","+4 für jede Manafarbe","+4 каждого цвета маны"],
+ ["Vitality","Vitalidad","Vitalidade","Vitalité","Vitalität","Живучесть"],["+10 max HP","+10 PV máx.","+10 PV máx.","+10 PV max","+10 max. LP","+10 макс. ОЗ"],
+ ["Whetstone","Piedra de afilar","Pedra de amolar","Pierre à aiguiser","Wetzstein","Точило"],
+ ["+1 damage per skull matched","+1 de daño por calavera","+1 de dano por caveira","+1 dégât par crâne","+1 Schaden pro Totenkopf","+1 урона за череп"],
+ ["{name} Lv {l}","{name} Nv {l}","{name} Nv {l}","{name} Niv {l}","{name} Stufe {l}","{name} ур. {l}"],
+ [" (max)"," (máx.)"," (máx.)"," (max)"," (max.)"," (макс.)"],
+ ["Paused","En pausa","Pausado","Pause","Pausiert","Пауза"],["Resume","Continuar","Continuar","Reprendre","Weiter","Продолжить"],
+ ["Restart Battle","Reiniciar combate","Reiniciar batalha","Recommencer le combat","Kampf neu starten","Перезапустить бой"],
+ ["How to Play","Cómo jugar","Como jogar","Comment jouer","Spielanleitung","Как играть"],["Settings","Ajustes","Configurações","Paramètres","Einstellungen","Настройки"],
+ ["New Game","Nueva partida","Novo jogo","Nouvelle partie","Neues Spiel","Новая игра"],["Achievements","Logros","Conquistas","Succès","Erfolge","Достижения"],
+ ["Master volume","Volumen general","Volume geral","Volume général","Gesamtlautstärke","Общая громкость"],
+ ["Music volume","Volumen de música","Volume da música","Volume de la musique","Musiklautstärke","Громкость музыки"],
+ ["Effects volume","Volumen de efectos","Volume dos efeitos","Volume des effets","Effektlautstärke","Громкость эффектов"],
+ ["Reduce motion & screen shake","Reducir movimiento y temblor de pantalla","Reduzir movimento e tremor de tela","Réduire les mouvements et les secousses","Bewegung & Bildschirmwackeln reduzieren","Меньше движения и тряски экрана"],
+ ["High-contrast HUD text","Texto de interfaz de alto contraste","Texto da interface em alto contraste","Texte d'interface à fort contraste","Kontrastreicher Interface-Text","Контрастный текст интерфейса"],
+ ["Mute all sound","Silenciar todo","Silenciar tudo","Couper tout le son","Alles stummschalten","Выключить весь звук"],
+ ["Replay tutorial","Repetir tutorial","Repetir tutorial","Rejouer le tutoriel","Tutorial wiederholen","Повторить обучение"],
+ ["Language","Idioma","Idioma","Langue","Sprache","Язык"],["Difficulty","Dificultad","Dificuldade","Difficulté","Schwierigkeit","Сложность"],
+ ["Easy","Fácil","Fácil","Facile","Leicht","Легко"],["Normal","Normal","Normal","Normal","Normal","Нормально"],["Hard","Difícil","Difícil","Difficile","Schwer","Сложно"],
+ ["Swap two neighboring gems to line up <b>3 or more</b>. Then the enemy takes its turn on the same board.","Intercambia dos gemas vecinas para alinear <b>3 o más</b>. Luego el enemigo juega su turno en el mismo tablero.","Troque duas gemas vizinhas para alinhar <b>3 ou mais</b>. Depois o inimigo joga no mesmo tabuleiro.","Échangez deux gemmes voisines pour aligner <b>3 ou plus</b>. L'ennemi joue ensuite sur le même plateau.","Tausche zwei benachbarte Steine, um <b>3 oder mehr</b> in eine Reihe zu bringen. Danach ist der Gegner auf demselben Brett dran.","Поменяйте два соседних камня, чтобы собрать <b>3 и более</b>. Затем враг ходит на том же поле."],
+ ["<b>Skulls</b> damage the foe. <b>Fire, Air, Water, Earth</b> gems fill mana for spells. <b>Stars</b> give XP. Earth gems also drop coins.","Las <b>calaveras</b> dañan al enemigo. Las gemas de <b>Fuego, Aire, Agua y Tierra</b> llenan el maná de los hechizos. Las <b>estrellas</b> dan XP. Las gemas de Tierra también sueltan monedas.","<b>Caveiras</b> ferem o inimigo. Gemas de <b>Fogo, Ar, Água e Terra</b> enchem a mana dos feitiços. <b>Estrelas</b> dão XP. Gemas de Terra também soltam moedas.","Les <b>crânes</b> blessent l'ennemi. Les gemmes de <b>Feu, d'Air, d'Eau et de Terre</b> remplissent le mana des sorts. Les <b>étoiles</b> donnent de l'XP. Les gemmes de Terre rapportent aussi des pièces.","<b>Totenköpfe</b> verletzen den Gegner. <b>Feuer-, Luft-, Wasser- und Erdsteine</b> füllen Mana für Zauber. <b>Sterne</b> geben EP. Erdsteine bringen auch Münzen.","<b>Черепа</b> ранят врага. Камни <b>Огня, Воздуха, Воды и Земли</b> наполняют ману для заклинаний. <b>Звёзды</b> дают опыт. Камни Земли также приносят монеты."],
+ ["Matching <b>4+</b> in a line, or <b>5+ in an L, T or + shape</b>, gives an <b>extra turn</b>; cascades hit harder.","Combinar <b>4+</b> en línea, o <b>5+ en forma de L, T o +</b>, da un <b>turno extra</b>; las cascadas pegan más fuerte.","Combinar <b>4+</b> em linha, ou <b>5+ em forma de L, T ou +</b>, dá um <b>turno extra</b>; cascatas causam mais dano.","Aligner <b>4+</b> gemmes, ou <b>5+ en forme de L, T ou +</b>, donne un <b>tour supplémentaire</b> ; les cascades frappent plus fort.","<b>4+</b> in einer Reihe oder <b>5+ in L-, T- oder +-Form</b> bringen einen <b>Extrazug</b>; Kaskaden treffen härter.","<b>4+</b> в ряд или <b>5+ в форме L, T или +</b> дают <b>дополнительный ход</b>; каскады бьют сильнее."],
+ ["Spend coins in the shop after each battle. Watch the enemy's warning for its next special move.","Gasta monedas en la tienda tras cada combate. Atiende el aviso del próximo movimiento especial del enemigo.","Gaste moedas na loja após cada batalha. Fique atento ao aviso do próximo golpe especial do inimigo.","Dépensez vos pièces à la boutique après chaque combat. Surveillez l'avertissement du prochain coup spécial de l'ennemi.","Gib nach jedem Kampf Münzen im Shop aus. Beachte die Warnung vor dem nächsten Spezialangriff des Gegners.","Тратьте монеты в магазине после каждого боя. Следите за предупреждением о следующем особом приёме врага."],
+ ["<b>Keys:</b> arrows move the cursor, Space/Enter grabs a gem, then an arrow swaps it. 1-8 cast spells, H health potion, M mana potion, T hint, Esc menu.","<b>Teclas:</b> las flechas mueven el cursor, Espacio/Intro agarra una gema y luego una flecha la intercambia. 1-8 lanzan hechizos, H poción de salud, M poción de maná, T pista, Esc menú.","<b>Teclas:</b> setas movem o cursor, Espaço/Enter pega uma gema e depois uma seta a troca. 1-8 lançam feitiços, H poção de vida, M poção de mana, T dica, Esc menu.","<b>Touches :</b> les flèches déplacent le curseur, Espace/Entrée saisit une gemme, puis une flèche l'échange. 1-8 lancent les sorts, H potion de soin, M potion de mana, T indice, Échap menu.","<b>Tasten:</b> Pfeile bewegen den Cursor, Leertaste/Enter greift einen Stein, dann tauscht ihn ein Pfeil. 1-8 wirken Zauber, H Heiltrank, M Manatrank, T Tipp, Esc Menü.","<b>Клавиши:</b> стрелки двигают курсор, Пробел/Enter берёт камень, затем стрелка меняет его местами. 1-8 — заклинания, H — зелье здоровья, M — зелье маны, T — подсказка, Esc — меню."],
+ ["Shards of the Ember Crown","Fragmentos de la Corona de Brasas","Fragmentos da Coroa de Brasas","Éclats de la Couronne de braise","Splitter der Glutkrone","Осколки Угольной короны"],
+ ["Match gems, smash skulls and channel mana to slay the denizens of the hollow.","Combina gemas, aplasta calaveras y canaliza maná para derrotar a los habitantes del hueco.","Combine gemas, esmague caveiras e canalize mana para derrotar os habitantes do vale.","Alignez des gemmes, brisez des crânes et canalisez le mana pour terrasser les habitants du val.","Verbinde Edelsteine, zerschmettere Totenköpfe und kanalisiere Mana, um die Bewohner der Senke zu besiegen.","Собирайте камни, разбивайте черепа и направляйте ману, чтобы одолеть обитателей Лощины."],
+ ["Saved game: level {l}, stage {s}","Partida guardada: nivel {l}, etapa {s}","Jogo salvo: nível {l}, fase {s}","Partie sauvegardée : niveau {l}, étape {s}","Spielstand: Stufe {l}, Runde {s}","Сохранение: уровень {l}, этап {s}"],
+ ["Best stage: {n}","Mejor etapa: {n}","Melhor fase: {n}","Meilleure étape : {n}","Beste Runde: {n}","Лучший этап: {n}"],
+ ["Continue","Continuar","Continuar","Continuer","Weiter","Продолжить"],["Begin Quest","Comenzar aventura","Começar aventura","Commencer la quête","Quest beginnen","Начать приключение"],
+ ["New Game?","¿Nueva partida?","Novo jogo?","Nouvelle partie ?","Neues Spiel?","Новая игра?"],
+ ["This erases your saved progress.","Esto borra tu progreso guardado.","Isso apaga seu progresso salvo.","Cela efface votre progression.","Das löscht deinen gespeicherten Fortschritt.","Это сотрёт ваш сохранённый прогресс."],
+ ["Erase & Restart","Borrar y reiniciar","Apagar e reiniciar","Effacer et recommencer","Löschen & neu starten","Стереть и начать заново"],
+ ["Cancel","Cancelar","Cancelar","Annuler","Abbrechen","Отмена"],
+ ["{name} appears!","¡{name} aparece!","{name} aparece!","{name} apparaît !","{name} erscheint!","Появляется {name}!"],
+ [" Boss battle!"," ¡Combate contra jefe!"," Batalha de chefe!"," Combat de boss !"," Bosskampf!"," Битва с боссом!"],
+ ["Now playing: {t}","Sonando: {t}","Tocando: {t}","En lecture : {t}","Spielt: {t}","Играет: {t}"],
+ ["BIG MATCH!","¡GRAN COMBINACIÓN!","GRANDE COMBINAÇÃO!","GROSSE COMBINAISON !","GROSSE KOMBO!","БОЛЬШАЯ КОМБИНАЦИЯ!"],
+ ["Cascade x{n}!","¡Cascada x{n}!","Cascata x{n}!","Cascade x{n} !","Kaskade x{n}!","Каскад x{n}!"],
+ ["No moves left — reshuffling!","¡Sin movimientos! Barajando…","Sem movimentos — embaralhando!","Plus de coups — on mélange !","Keine Züge mehr – es wird gemischt!","Ходов нет — перемешиваем!"],
+ ["Blocked {n}","Bloqueado {n}","Bloqueado {n}","Bloqué {n}","Geblockt {n}","Блок {n}"],
+ ["+{n} HP","+{n} PV","+{n} PV","+{n} PV","+{n} LP","+{n} ОЗ"],
+ ["LEVEL UP! You are now level {n}. HP restored.","¡SUBES DE NIVEL! Ahora eres nivel {n}. PV restaurados.","SUBIU DE NÍVEL! Agora você é nível {n}. PV restaurados.","NIVEAU SUPÉRIEUR ! Vous êtes niveau {n}. PV restaurés.","STUFENAUFSTIEG! Du bist jetzt Stufe {n}. LP aufgefüllt.","НОВЫЙ УРОВЕНЬ! Теперь у вас уровень {n}. ОЗ восстановлены."],
+ ["LEVEL UP!","¡SUBIDA!","SUBIU!","NIVEAU !","AUFSTIEG!","УРОВЕНЬ!"],
+ ["Extra turn!","¡Turno extra!","Turno extra!","Tour supplémentaire !","Extrazug!","Дополнительный ход!"],
+ ["EXTRA TURN!","¡TURNO EXTRA!","TURNO EXTRA!","TOUR SUPPLÉMENTAIRE !","EXTRAZUG!","ДОП. ХОД!"],
+ ["Poison burns you.","El veneno te quema.","O veneno queima você.","Le poison vous ronge.","Das Gift brennt dich.","Яд жжёт вас."],
+ ["You are stunned and lose your turn!","¡Estás aturdido y pierdes tu turno!","Você está atordoado e perde o turno!","Vous êtes étourdi et perdez votre tour !","Du bist betäubt und verlierst deinen Zug!","Вы оглушены и пропускаете ход!"],
+ ["STUNNED","ATURDIDO","ATORDOADO","ÉTOURDI","BETÄUBT","ОГЛУШЁН"],
+ ["{name} uses {a}!","¡{name} usa {a}!","{name} usa {a}!","{name} utilise {a} !","{name} setzt {a} ein!","{name} использует: {a}!"],
+ ["{name} is frozen and skips its turn.","{name} está congelado y pierde su turno.","{name} está congelado e perde o turno.","{name} est gelé et passe son tour.","{name} ist eingefroren und setzt aus.","{name} заморожен и пропускает ход."],
+ ["{name} gets an extra turn!","¡{name} obtiene un turno extra!","{name} ganha um turno extra!","{name} gagne un tour supplémentaire !","{name} erhält einen Extrazug!","{name} получает дополнительный ход!"],
+ ["You cast {n}!","¡Lanzas {n}!","Você lança {n}!","Vous lancez {n} !","Du wirkst {n}!","Вы читаете заклинание: {n}!"],
+ ["+4 mana each","+4 de maná c/u","+4 de mana cada","+4 de mana chacun","+4 Mana je","+4 маны каждой"],
+ ["BOSS BATTLE","COMBATE DE JEFE","BATALHA DE CHEFE","COMBAT DE BOSS","BOSSKAMPF","БИТВА С БОССОМ"],
+ ["Achievement unlocked","Logro desbloqueado","Conquista desbloqueada","Succès débloqué","Erfolg freigeschaltet","Достижение получено"],
+ // --- new features ---
+ ["Revive with 50% HP (watch ad)","Revivir con 50% de PV (ver anuncio)","Reviver com 50% dos PV (ver anúncio)","Ressusciter avec 50 % PV (voir une pub)","Mit 50 % LP wiederbeleben (Werbung ansehen)","Воскреснуть с 50% ОЗ (смотреть рекламу)"],
+ ["Double coins (watch ad)","Monedas dobles (ver anuncio)","Moedas em dobro (ver anúncio)","Pièces doublées (voir une pub)","Münzen verdoppeln (Werbung ansehen)","Удвоить монеты (смотреть рекламу)"],
+ ["Ad unavailable","Anuncio no disponible","Anúncio indisponível","Publicité indisponible","Werbung nicht verfügbar","Реклама недоступна"],
+ ["Revived!","¡Revivido!","Revivido!","Ressuscité !","Wiederbelebt!","Воскрешение!"],["Coins doubled!","¡Monedas duplicadas!","Moedas dobradas!","Pièces doublées !","Münzen verdoppelt!","Монеты удвоены!"],
+ ["Daily Reward","Recompensa diaria","Recompensa diária","Récompense quotidienne","Tägliche Belohnung","Ежедневная награда"],
+ ["Day {n}","Día {n}","Dia {n}","Jour {n}","Tag {n}","День {n}"],["Claim","Reclamar","Resgatar","Récupérer","Abholen","Забрать"],
+ ["Claim ×2 (watch ad)","Reclamar ×2 (ver anuncio)","Resgatar ×2 (ver anúncio)","Récupérer ×2 (voir une pub)","×2 abholen (Werbung ansehen)","Забрать ×2 (смотреть рекламу)"],
+ ["+{n} coins","+{n} monedas","+{n} moedas","+{n} pièces","+{n} Münzen","+{n} монет"],
+ ["+1 Health Potion","+1 Poción de salud","+1 Poção de vida","+1 Potion de soin","+1 Heiltrank","+1 Зелье здоровья"],["+1 Mana Potion","+1 Poción de maná","+1 Poção de mana","+1 Potion de mana","+1 Manatrank","+1 Зелье маны"],
+ ["Come back tomorrow for a bigger reward!","¡Vuelve mañana para una recompensa mayor!","Volte amanhã para uma recompensa maior!","Revenez demain pour une plus grosse récompense !","Komm morgen wieder für eine größere Belohnung!","Возвращайтесь завтра за наградой побольше!"],
+ ["Campaign complete!","¡Campaña completada!","Campanha concluída!","Campagne terminée !","Kampagne abgeschlossen!","Кампания пройдена!"],
+ ["You claimed the Ember Crown. Endless mode begins: stages keep getting tougher — how far can you go?","Has reclamado la Corona de Brasas. Comienza el modo infinito: las etapas son cada vez más duras. ¿Hasta dónde llegarás?","Você conquistou a Coroa de Brasas. O modo infinito começa: as fases ficam cada vez mais difíceis — até onde você chega?","Vous avez conquis la Couronne de braise. Le mode infini commence : les étapes se durcissent — jusqu'où irez-vous ?","Du hast die Glutkrone errungen. Der Endlosmodus beginnt: Die Runden werden immer härter – wie weit kommst du?","Вы завоевали Угольную корону. Начинается бесконечный режим: этапы становятся всё сложнее — как далеко вы зайдёте?"],
+ ["{a} of {b} unlocked","{a} de {b} desbloqueados","{a} de {b} desbloqueadas","{a} sur {b} débloqués","{a} von {b} freigeschaltet","Получено {a} из {b}"],
+ ["First Blood","Primera sangre","Primeiro sangue","Premier sang","Erstes Blut","Первая кровь"],["Win your first battle","Gana tu primer combate","Vença sua primeira batalha","Gagnez votre premier combat","Gewinne deinen ersten Kampf","Выиграйте первый бой"],
+ ["Chain Reaction","Reacción en cadena","Reação em cadeia","Réaction en chaîne","Kettenreaktion","Цепная реакция"],["Trigger a cascade of 4 or more in one move","Provoca una cascada de 4 o más en un movimiento","Provoque uma cascata de 4 ou mais em uma jogada","Déclenchez une cascade de 4 ou plus en un coup","Löse mit einem Zug eine Kaskade von 4 oder mehr aus","Вызовите каскад из 4 и более за один ход"],
+ ["Shape Shifter","Cambiaformas","Mudança de forma","Métamorphe","Formwandler","Меняющий форму"],["Match 5 gems in an L, T or + shape","Combina 5 gemas en forma de L, T o +","Combine 5 gemas em forma de L, T ou +","Alignez 5 gemmes en forme de L, T ou +","Verbinde 5 Steine in L-, T- oder +-Form","Соберите 5 камней в форме L, T или +"],
+ ["Turn Taker","Turno tras turno","Turno após turno","Tours à gogo","Zugfolger","Ход за ходом"],["Earn 10 extra turns","Consigue 10 turnos extra","Ganhe 10 turnos extras","Gagnez 10 tours supplémentaires","Erhalte 10 Extrazüge","Получите 10 дополнительных ходов"],
+ ["Archmage","Archimago","Arquimago","Archimage","Erzmagier","Архимаг"],["Cast all 8 spells","Lanza los 8 hechizos","Lance os 8 feitiços","Lancez les 8 sorts","Wirke alle 8 Zauber","Примените все 8 заклинаний"],
+ ["Warlord Down","Señor de la guerra caído","Senhor da guerra derrotado","Chef de guerre vaincu","Kriegsherr gefallen","Полководец повержен"],["Defeat the Orc Warlord","Derrota al Señor de la Guerra Orco","Derrote o Senhor da Guerra Orc","Vainquez le chef de guerre orc","Besiege den Ork-Kriegsherrn","Победите орка-полководца"],
+ ["Dragon Slayer","Cazadragones","Mata-dragões","Tueur de dragons","Drachentöter","Убийца драконов"],["Defeat the Elder Dragon","Derrota al Dragón Ancestral","Derrote o Dragão Ancião","Vainquez le dragon ancestral","Besiege den Uralten Drachen","Победите древнего дракона"],
+ ["Treasure Hunter","Cazatesoros","Caçador de tesouros","Chasseur de trésors","Schatzjäger","Охотник за сокровищами"],["Hold 500 coins at once","Ten 500 monedas a la vez","Tenha 500 moedas ao mesmo tempo","Possédez 500 pièces en même temps","Besitze 500 Münzen gleichzeitig","Накопите 500 монет"],
+ ["Prepared","Preparado","Preparado","Préparé","Vorbereitet","Подготовлен"],["Buy your first shop upgrade","Compra tu primera mejora en la tienda","Compre sua primeira melhoria na loja","Achetez votre première amélioration","Kaufe dein erstes Upgrade im Shop","Купите первое улучшение в магазине"],
+ ["Untouchable","Intocable","Intocável","Intouchable","Unberührbar","Неуязвимый"],["Win a battle without taking damage","Gana un combate sin recibir daño","Vença uma batalha sem sofrer dano","Gagnez un combat sans subir de dégâts","Gewinne einen Kampf ohne Schaden zu nehmen","Выиграйте бой, не получив урона"],
+ ["Close Call","Por los pelos","Por um triz","De justesse","Knapp davongekommen","На волоске"],["Win a battle with under 10% HP","Gana un combate con menos del 10% de PV","Vença uma batalha com menos de 10% dos PV","Gagnez un combat avec moins de 10 % de PV","Gewinne einen Kampf mit unter 10 % LP","Выиграйте бой, имея менее 10% ОЗ"],
+ ["Into the Endless","Hacia lo infinito","Rumo ao infinito","Vers l'infini","Ins Endlose","В бесконечность"],["Reach stage 15","Llega a la etapa 15","Chegue à fase 15","Atteignez l'étape 15","Erreiche Runde 15","Дойдите до этапа 15"],
+ ["Regular","Habitual","Frequentador","Habitué","Stammgast","Постоянный гость"],["Claim a daily reward 3 days in a row","Reclama la recompensa diaria 3 días seguidos","Resgate a recompensa diária 3 dias seguidos","Récupérez la récompense quotidienne 3 jours de suite","Hole die tägliche Belohnung 3 Tage in Folge ab","Заберите ежедневную награду 3 дня подряд"],
+];
+const DICT={es:{},pt:{},fr:{},de:{},ru:{}};
+TR.forEach(r=>["es","pt","fr","de","ru"].forEach((l,i)=>{ if(r[i+1]) DICT[l][r[0]]=r[i+1]; }));
+const T=(s,v)=>{ const d=DICT[Settings.lang]; let r=(d&&d[s])||s; return v?r.replace(/\{(\w+)\}/g,(m,k)=>v[k]!==undefined?v[k]:m):r; };
+function detectLang(){ const codes=[...(navigator.languages||[]),navigator.language||"en"].map(x=>String(x).slice(0,2).toLowerCase()); return codes.find(c=>LANGS.some(l=>l[0]===c))||"en"; }
+
+// ---------- settings & storage (all wrapped: storage can be blocked) ----------
+const Store = {
+  key:"gemhollow_save_v1", skey:"gemhollow_settings_v1",
+  get(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} },
+};
+const Settings = {
+  master:1, music:1, sfx:1, reduced:false, hc:false, lang:"en", langSet:false, diff:"normal",
+  load(){ try{ this.reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){}
+    const s=Store.get(Store.skey); if(s) for(const k of ["master","music","sfx","reduced","hc","lang","langSet","diff"]) if(k in s) this[k]=s[k];
+    if(!this.langSet) this.lang=detectLang(); if(!LANGS.some(l=>l[0]===this.lang)) this.lang="en"; if(!DIFF[this.diff]) this.diff="normal"; this.apply(); },
+  save(){ Store.set(Store.skey,{master:this.master,music:this.music,sfx:this.sfx,reduced:this.reduced,hc:this.hc,lang:this.lang,langSet:this.langSet,diff:this.diff}); },
+  apply(){ document.documentElement.lang=this.lang; document.body.classList.toggle("hc",this.hc); document.body.classList.toggle("rm",this.reduced); Snd.apply(); },
+};
+
+// ---------- progression data ----------
+const DIFF = {easy:{hp:.8,atk:.75,rand:.2}, normal:{hp:1,atk:1,rand:0}, hard:{hp:1.25,atk:1.25,rand:-.15}};   // enemy HP / attack multipliers, AI mistake chance offset
+let POWER=0;
+const mult = L => (1 + 0.3*(L-1))*(1+0.05*POWER);
+const CLASS_TIERS=["Wanderer","Fighter","Warrior","Knight","Mythic Knight"];   // warrior line: evolves every 5 levels (cosmetic)
+const SPELLS = [
+  {name:"Fireball", cost:{[RED]:6}, desc:L=>T("{n} damage",{n:Math.round(12*mult(L))}),
+    async run(g,L){ g.spawnFx("fireball"); await sleep(520); await g.hurtEnemy(Math.round(12*mult(L))); }},
+  {name:"Heal", cost:{[GREEN]:5}, desc:(L,g)=>T("Restore {n} HP",{n:Math.round((8+.2*g.p.max)*mult(L))}),
+    async run(g,L){ g.spawnFx("ring",0,{col:"#6bff9a",up:true}); g.glow("pcard","healglow"); await sleep(250); g.healPlayer(Math.round((8+.2*g.p.max)*mult(L))); }},
+  {name:"Frost", cost:{[BLUE]:6}, desc:L=>T("{n} dmg, freeze enemy 1 turn",{n:Math.round(5*mult(L))}),
+    async run(g,L){ g.spawnFx("frost"); await sleep(380); await g.hurtEnemy(Math.round(5*mult(L))); g.e.frozen=true; g.log(T("The enemy is frozen!")); }},
+  {name:"Smite", cost:{[EARTH]:6,[RED]:2}, desc:L=>T("Destroy all skulls, {n} dmg each",{n:Math.round(3*mult(L))}),
+    async run(g,L){ const cells=[]; for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(g.b[r][c]&&g.b[r][c].t===SKULL) cells.push([r,c]);
+      g.spawnFx("bolt",0,{cells}); await sleep(450); g.after={cells,per:Math.round(3*mult(L))}; }},
+  {name:"Wildfire", cost:{[RED]:5,[GREEN]:3}, desc:L=>T("Burn a row and column, {n} dmg per gem",{n:Math.round(2*mult(L))}),
+    async run(g,L){ const row=rnd(N), col=rnd(N), cells=[]; for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(r===row||c===col) cells.push([r,c]);
+      g.spawnFx("burn",0,{row,col}); g.spawnFx(RED,100); await sleep(500); g.after={cells,per:Math.round(2*mult(L))}; }},
+  {name:"Cleanse", cost:{[BLUE]:3,[GREEN]:3}, desc:L=>T("Cure poison & stun, heal {n}",{n:Math.round(8*mult(L))}),
+    async run(g,L){ g.spawnFx("ring",0,{col:"#7ff0ff",up:true}); g.glow("pcard","healglow"); await sleep(250); g.p.poison=0; g.p.stunned=false; g.healPlayer(Math.round(8*mult(L))); g.log(T("Ailments cleansed.")); }},
+  {name:"Stoneskin", cost:{[EARTH]:5}, desc:L=>T("Block the next {n} damage",{n:Math.round(14*mult(L))}),
+    async run(g,L){ g.spawnFx("ring",0,{col:"#e8b84a"}); g.spawnFx(EARTH); await sleep(300); g.p.shield+=Math.round(14*mult(L)); g.floatText(240,240,T("+Shield"),"#e8b84a"); }},
+  {name:"Meteor", cost:{[RED]:5,[EARTH]:6}, desc:L=>T("{n} damage, jumbles the board",{n:Math.round(26*mult(L))}),
+    async run(g,L){ g.spawnFx("meteor"); await sleep(560); await g.hurtEnemy(Math.round(26*mult(L))); if(!g.checkEnd()) await g.jumble(); }},
+];
+
+const ABIL = {
+  pilfer:{name:"Pilfer", cd:5, info:"steals coins", async run(g){ const n=Math.min(g.p.gold,5+2*g.stage); g.p.gold-=n; g.floatText(240,240,n?T("-{n} coins",{n}):T("Nothing to steal"),"#ffd36b"); }},
+  frenzy:{name:"Frenzy", cd:4, info:"takes an extra move", async run(g){ g.e.bonus=1; }},
+  drain:{name:"Mana Drain", cd:4, info:"steals mana", async run(g){
+    const t=MANA_TYPES.filter(x=>g.p.mana[x]>0).sort((a,b)=>g.p.mana[b]-g.p.mana[a])[0];
+    if(t===undefined){ g.floatText(240,240,T("No mana to drain"),"#aaa"); return; }
+    const n=Math.min(4,g.p.mana[t]); g.p.mana[t]-=n; g.floatText(240,240,T("-{n} {el} mana",{n,el:T(GEMS[t].name)}),GEMS[t].col); }},
+  stun:{name:"Stun", cd:6, info:"you skip a turn", async run(g){ g.p.stunned=true; g.floatText(240,240,T("Stunned!"),"#ffe14a"); }},
+  poison:{name:"Poison", cd:4, info:"poisons you for 3 turns", async run(g){ g.p.poison=3; g.p.poisonDmg=1+Math.floor(g.stage/3); g.floatText(240,240,T("Poisoned!"),"#7f7"); }},
+  harden:{name:"Harden", cd:5, info:"gains a shield", async run(g){ const s=Math.round(g.e.max*.15); g.e.shield+=s; g.floatText(240,40,T("+{n} shield",{n:s}),"#ccd"); }},
+  lifedrain:{name:"Life Drain", cd:4, info:"steals HP", async run(g){ const d=g.e.atk*3; await g.hurtPlayer(d); g.e.hp=Math.min(g.e.max,g.e.hp+d); g.floatText(240,40,"+"+d,"#6f6"); }},
+  breath:{name:"Fire Breath", cd:3, info:"burns you and spawns skulls", async run(g){
+    g.spawnFx(RED); await g.hurtPlayer(g.e.atk*2); let n=0;
+    for(let k=0;k<60&&n<5;k++){ const r=rnd(N), c=rnd(N), gm=g.b[r][c]; if(!gm||gm.t===SKULL) continue; const old=gm.t; gm.t=SKULL;
+      if(g.findMatches().cells.length) gm.t=old; else { n++; g.burst(c*60+30,r*60+30,"#ff8a3a",8); } } }},
+};
+
+const ENEMIES = [   // hm: HP multiplier, ad: attack offset (see Game.newEnemy)
+  {name:"Slime",    key:"slime",    hm:1.1,  ad:0,  ab:[]},
+  {name:"Goblin",   key:"goblin",   hm:.9,  ad:0,  ab:["pilfer"]},
+  {name:"Wolf",     key:"wolf",     hm:1,   ad:.5, ab:["frenzy"]},
+  {name:"Bandit",   key:"bandit",   hm:1,   ad:0,  ab:["drain"]},
+  {name:"Orc",      key:"orc",      hm:1,   ad:1,  ab:["stun","frenzy"], boss:true, title:"Orc Warlord"},
+  {name:"Skeleton", key:"skeleton", hm:1,   ad:.5, ab:["poison"]},
+  {name:"Troll",    key:"troll",    hm:1.2, ad:1,  ab:[], regen:true},
+  {name:"Golem",    key:"golem",    hm:1.3, ad:1,  ab:["harden"]},
+  {name:"Wraith",   key:"wraith",   hm:1,   ad:.5, ab:["lifedrain"]},
+  {name:"Dragon",   key:"dragon",   hm:.75, ad:0,  ab:["breath","lifedrain"], boss:true, title:"Elder Dragon"},
+];
+
+// ---------- tutorial (non-blocking tips, shown the first time something happens) ----------
+const Tut = {
+  done:false, shown:{}, queue:[], cur:null, timer:null,
+  T:{ start:{hl:"cv",text:"Swap two neighboring gems to line up 3 or more of the same kind. Try it now!"},
+      skull:{hl:"ecard",text:"Skulls hurt your enemy. Bigger matches and cascades hit harder."},
+      mana:{hl:"mana",text:"Fire, Air, Water and Earth gems fill your mana bars. Mana pays for spells."},
+      spell:{hl:"spells",text:"A spell is ready! Tap a glowing spell button (or press its number). Casting doesn't end your turn."},
+      extra:{hl:"cv",text:"Nice! Matching 4 or more gems in a line, or 5 in an L, T or + shape, earns an extra turn."},
+      enemy:{hl:"pcard",text:"Now the enemy plays on the same board. Its skull matches hurt you, so keep an eye on your HP."},
+      hint:{hl:"hint",text:"Stuck? Tap the lightbulb for a hint."} },
+  reset(){ this.done=false; this.shown={}; this.queue=[]; this.hide(); },
+  event(id){ if(this.done||this.shown[id]||!this.T[id]) return; this.shown[id]=true; this.queue.push(id); if(!this.cur) this.next(); },
+  next(){ const id=this.queue.shift(); if(!id){ this.cur=null; return; } this.cur=id; const t=this.T[id];
+    $("tiptext").textContent=T(t.text); $("tip").hidden=false; document.querySelectorAll(".hl").forEach(e=>e.classList.remove("hl")); const h=$(t.hl); if(h) (h.closest(".frame")||h).classList.add("hl");
+    clearTimeout(this.timer); this.timer=setTimeout(()=>this.dismiss(id),id==="start"?20000:11000); },
+  dismiss(id){ if(id&&this.cur!==id) return; this.hide(); setTimeout(()=>this.next(),400); },
+  hide(){ clearTimeout(this.timer); $("tip").hidden=true; this.cur=null; document.querySelectorAll(".hl").forEach(e=>e.classList.remove("hl")); },
+};
+
+// ---------- panels (menu, shop, settings, results) ----------
+const panelEl = () => $("panel");
+let panelPaused = false;
+function openPanel(html, pause=false){
+  $("panelbox").innerHTML = html; panelEl().classList.add("show");
+  if(pause && !panelPaused){ panelPaused=true; setPaused(true); CG.stop(); }
+  const b=$("panelbox").querySelector("button:not([disabled])"); if(b) b.focus();
+}
+function closePanel(){
+  panelEl().classList.remove("show"); $("panelbox").innerHTML="";
+  if(panelPaused){ panelPaused=false; setPaused(false); if(game.started&&!game.over) CG.start(); }
+}
+const panelOpen = () => panelEl().classList.contains("show");
+const ACH=[
+  {id:"first",n:"First Blood",d:"Win your first battle"}, {id:"combo",n:"Chain Reaction",d:"Trigger a cascade of 4 or more in one move"},
+  {id:"shape",n:"Shape Shifter",d:"Match 5 gems in an L, T or + shape"}, {id:"extra",n:"Turn Taker",d:"Earn 10 extra turns"},
+  {id:"casters",n:"Archmage",d:"Cast all 8 spells"}, {id:"orc",n:"Warlord Down",d:"Defeat the Orc Warlord"},
+  {id:"dragon",n:"Dragon Slayer",d:"Defeat the Elder Dragon"}, {id:"rich",n:"Treasure Hunter",d:"Hold 500 coins at once"},
+  {id:"shop",n:"Prepared",d:"Buy your first shop upgrade"}, {id:"flawless",n:"Untouchable",d:"Win a battle without taking damage"},
+  {id:"clutch",n:"Close Call",d:"Win a battle with under 10% HP"}, {id:"endless",n:"Into the Endless",d:"Reach stage 15"},
+  {id:"daily",n:"Regular",d:"Claim a daily reward 3 days in a row"},
+];
+const costIcons = c => Object.entries(c).map(([t,n])=>`${n} ${GEMS[t].emoji}`).join(" ");
+
+class Game {
+  constructor() {
+    this.p = {lv:1, xp:0, hp:50, max:50, gold:0, hpUp:0, blade:0, power:0, spellLv:SPELLS.map(()=>1), potions:{hp:1,mana:0},
+      mana:{[RED]:0,[GREEN]:0,[BLUE]:0,[EARTH]:0}, shield:0, poison:0, poisonDmg:0, stunned:false};
+    this.stage=0; this.best=0; this.busy=true; this.turn="player"; this.over=false; this.started=false; this.moveCount=0;
+    this.floats=[]; this.parts=[]; this.fx=[]; this.hurtT={p:0,e:0}; this.shakeT=0; this.lastAct=0; this.sel=null; this.hint=null;
+    this.scale=1; this.qcap=2; this.sprites={}; this.layers={}; this.dirty=3; this.ema=16; this.lastQ=0; this.lastPortrait=0; this.ach={}; this.stats={extra:0,spells:0}; this.daily={last:"",streak:0}; this.campaign=false; this.tookDamage=false; this.revived=false; this.hintHold=false; this.cursor=null; this.kb=false; this.grab=false; this.flash=null; this.lunge=0; this.after=null; this.ctx="";
+    const s=Store.get(Store.key); this.hasSave=!!s; if(s) this.applySave(s);
+    this.buildUI(); this.startBattle(); this.resizeCanvas();
+    try{ new ResizeObserver(()=>this.resizeCanvas()).observe(cv); }catch(e){ addEventListener("resize",()=>this.resizeCanvas()); }
+    requestAnimationFrame(t=>this.loop(t));
+  }
+  // ----- save / load -----
+  tier(){ return Math.min(CLASS_TIERS.length-1,Math.floor(this.p.lv/5)); }
+  recalc(){ const p=this.p; POWER=p.power||0; p.max=50+10*(p.lv-1)+10*p.hpUp; p.hp=Math.min(p.hp,p.max); }
+  toSave(){ const p=this.p; return {v:1,lv:p.lv,xp:p.xp,gold:p.gold,stage:this.stage,best:this.best,hpUp:p.hpUp,blade:p.blade,power:p.power,spellLv:p.spellLv,potions:p.potions,tut:Tut.done,ach:this.ach,stats:this.stats,daily:this.daily,campaign:this.campaign,savedAt:Date.now()}; }
+  applySave(s){
+    const p=this.p, num=(v,d)=>Number.isFinite(v)?v:d;
+    p.lv=Math.max(1,num(s.lv,1)); p.xp=Math.max(0,num(s.xp,0)); p.gold=Math.max(0,num(s.gold,0)); this.stage=Math.max(0,num(s.stage,0)); this.best=num(s.best,this.stage);
+    p.hpUp=num(s.hpUp,0); p.blade=num(s.blade,0); p.power=Math.max(0,num(s.power,0));
+    if(Array.isArray(s.spellLv)) p.spellLv=SPELLS.map((_,i)=>Math.min(5,Math.max(1,num(s.spellLv[i],1))));
+    if(s.potions) p.potions={hp:num(s.potions.hp,0),mana:num(s.potions.mana,0)};
+    this.ach=(s.ach&&typeof s.ach==="object")?s.ach:{}; this.stats=Object.assign({extra:0,spells:0},s.stats&&typeof s.stats==="object"?s.stats:{});
+    this.daily=(s.daily&&typeof s.daily.last==="string")?{last:s.daily.last,streak:num(s.daily.streak,0)}:{last:"",streak:0}; this.campaign=!!s.campaign;
+    Tut.done=!!s.tut; this.recalc(); p.hp=p.max;
+  }
+  saveGame(){ if(!this.daily.last) this.daily.last=this.dayStr(); const d=this.toSave(); Store.set(Store.key,d); CG.dataSet(Store.key,JSON.stringify(d)); this.hasSave=true; }
+  resetProgress(){ try{ localStorage.removeItem(Store.key); }catch(e){} CG.dataSet(Store.key,""); location.reload(); }
+  // ----- battle setup -----
+  newEnemy() {
+    const st=this.stage, T=ENEMIES[st%ENEMIES.length], boss=!!T.boss;
+    const df=DIFF[Settings.diff]||DIFF.normal, max=Math.round((20+14*st)*T.hm*(boss?1.5:1)*df.hp);
+    this.e={name:boss?T.title:T.name, key:T.key, boss, lv:st+1, max, hp:max, atk:Math.max(1,Math.round((1+.68*st+T.ad)*df.atk)), frozen:false, shield:0, regen:!!T.regen, bonus:0,
+      abil:T.ab.map(id=>({id,cd:ABIL[id].cd}))};
+  }
+  startBattle(){
+    const p=this.p; this.recalc(); this.newEnemy(); this.newBoard();
+    p.hp=p.max; for(const t of MANA_TYPES) p.mana[t]=0; p.shield=0; p.poison=0; p.stunned=false;
+    if(!Tut.done && this.stage===0) p.mana[RED]=6;
+    this.over=false; this.turn="player"; this.busy=false; this.sel=null; this.moveCount=0; this.fx=[]; this.after=null; this.tookDamage=false; this.revived=false; this.hintHold=false;
+    this.intro=null; this.updateUI(); this.log(T("{name} appears!",{name:T(this.e.name)})+(this.e.boss?T(" Boss battle!"):""));
+    const ti=this.stage%ENEMIES.length;                               // every enemy has its own music track
+    if(this.e.boss&&this.started) this.bossIntro(); else { Snd.setTrackNow(ti); this.log(T("Now playing: {t}",{t:TRACKS[ti].n})); }
+  }
+  // ----- board -----
+  mk(r,c,t){ return {t: t===undefined?this.rndType():t, x:c, y:r, tx:c, ty:r, s:1, dying:false, bad:0}; }
+  rndType(){ const w=[3,2,2,2,2,1.4], sum=w.reduce((a,b)=>a+b); let x=Math.random()*sum;
+    for(let i=0;i<w.length;i++){ if((x-=w[i])<0) return i; } return 0; }
+  newBoard() {
+    do {
+      this.b = Array.from({length:N},(_,r)=>Array.from({length:N},(_,c)=>this.mk(r,c)));
+    } while (this.findMatches().cells.length || !this.bestMove());
+  }
+  findMatches() {
+    const set = new Map(), runs = [];
+    const add = (cells)=>{ runs.push(cells); cells.forEach(([r,c])=>set.set(r*N+c,[r,c])); };
+    for (let r=0;r<N;r++) for (let c=0;c<N;) {
+      const g=this.b[r][c]; let k=c+1;
+      while (g && k<N && this.b[r][k] && this.b[r][k].t===g.t) k++;
+      if (g && k-c>=3) add(Array.from({length:k-c},(_,i)=>[r,c+i]));
+      c=k;
+    }
+    for (let c=0;c<N;c++) for (let r=0;r<N;) {
+      const g=this.b[r][c]; let k=r+1;
+      while (g && k<N && this.b[k][c] && this.b[k][c].t===g.t) k++;
+      if (g && k-r>=3) add(Array.from({length:k-r},(_,i)=>[r+i,c]));
+      r=k;
+    }
+    return {cells:[...set.values()], runs};
+  }
+  // sizes of connected same-type groups made of overlapping runs (L, T and + shapes join a row and a column)
+  groupSizes(runs){
+    const groups=[];
+    for(const run of runs){ const keys=new Set(run.map(([r,c])=>r*N+c)); const hit=[];
+      groups.forEach(g=>{ if([...keys].some(k=>g.has(k))) hit.push(g); });
+      const merged=new Set(keys); hit.forEach(g=>{ g.forEach(k=>merged.add(k)); groups.splice(groups.indexOf(g),1); }); groups.push(merged); }
+    return groups.map(g=>g.size);
+  }
+  // scramble every gem into a new spot (no ready-made matches, always leaves a move)
+  async jumble(){
+    const gems=this.b.flat().filter(Boolean); let ok=false;
+    for(let n=0;n<200&&!ok;n++){
+      for(let i=gems.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [gems[i],gems[j]]=[gems[j],gems[i]]; }
+      gems.forEach((g,i)=>{ this.b[Math.floor(i/N)][i%N]=g; });
+      ok=!this.findMatches().cells.length&&!!this.bestMove();
+    }
+    this.fixTargets(); this.dirty=3; Snd.play("swap"); await this.settle(); await sleep(150);
+  }
+  swapData(a,b){ const t=this.b[a[0]][a[1]]; this.b[a[0]][a[1]]=this.b[b[0]][b[1]]; this.b[b[0]][b[1]]=t; }
+  fixTargets(){ for(let r=0;r<N;r++)for(let c=0;c<N;c++){ const g=this.b[r][c]; if(g){g.tx=c;g.ty=r;} } }
+  moves() {
+    const out=[];
+    for (let r=0;r<N;r++) for (let c=0;c<N;c++) for (const [dr,dc] of [[0,1],[1,0]]) {
+      const r2=r+dr,c2=c+dc; if(r2>=N||c2>=N) continue;
+      this.swapData([r,c],[r2,c2]);
+      const m=this.findMatches(); this.swapData([r,c],[r2,c2]);
+      if (m.cells.length) out.push({a:[r,c],b:[r2,c2],m});
+    }
+    return out;
+  }
+  bestMove(){
+    const ms=this.moves(); if(!ms.length) return null;
+    return ms;
+  }
+  async settle(){
+    for(let i=0;i<300;i++){
+      let moving=false;
+      for(const row of this.b) for(const g of row) if(g){
+        const dx=g.tx-g.x, dy=g.ty-g.y;
+        if (Math.abs(dx)>0.01||Math.abs(dy)>0.01){ moving=true;
+          g.x += Math.sign(dx)*Math.min(Math.abs(dx), Math.max(0.12,Math.abs(dx)*0.3));
+          g.y += Math.sign(dy)*Math.min(Math.abs(dy), Math.max(0.15,Math.abs(dy)*0.3));
+        } else { g.x=g.tx; g.y=g.ty; }
+      }
+      if(!moving) return;
+      await frame();
+    }
+  }
+  async trySwap(a,b,who){
+    Snd.play("swap"); const ga=this.b[a[0]][a[1]], gb=this.b[b[0]][b[1]];
+    this.swapData(a,b); this.fixTargets(); await this.settle();
+    const m=this.findMatches();
+    if(!m.cells.length){ Snd.play("bad"); ga.bad=gb.bad=performance.now(); this.swapData(a,b); this.fixTargets(); await this.settle(); return false; }
+    return true;
+  }
+  // resolve cascades; returns true if extra turn earned
+  async resolve(who, forced) {
+    let extra=false, chain=0;
+    while(true){
+      let m;
+      if (forced) { m={cells:forced, runs:[]}; forced=null; }
+      else m=this.findMatches();
+      if(!m.cells.length) break;
+      chain++; if(who==="player"&&chain>=4) this.award("combo");
+      if (m.runs.some(r=>r.length>=4)) extra=true;
+      if (this.groupSizes(m.runs).some(n=>n>=5)) { if(!extra&&chain===1) this.floatText(240,300,T("BIG MATCH!"),"#ffd36b"); if(who==="player"&&!m.runs.some(r=>r.length>=5)) this.award("shape"); extra=true; }   // 5+ gems in an L, T or + shape
+      const cnt={}; for(const [r,c] of m.cells){ const g=this.b[r][c]; cnt[g.t]=(cnt[g.t]||0)+1; g.dying=true; this.burst(c*60+30,r*60+30,GEMS[g.t].col); }
+      { const order=Object.keys(cnt).map(Number).sort((a,b)=>cnt[b]-cnt[a]);
+        order.slice(0,chain===1?3:1).forEach((ty,k)=>{
+          const kind={[SKULL]:"slash",[RED]:"fire",[GREEN]:"wind",[BLUE]:"splash",[EARTH]:"rocks",[STAR]:"sparkle"}[ty];
+          setTimeout(()=>Snd.elem(kind,chain===1?1:.45,cnt[ty]>=4),k*140);
+          if(chain===1) this.spawnFx(ty,k*140); });
+        Snd.play("match",chain); }
+      const bonus = chain>1 ? 1+0.25*(chain-1) : 1;
+      if(chain>1) this.floatText(240,30,T("Cascade x{n}!",{n:chain}),"#ffd36b");
+      // effects
+      const cx=m.cells.reduce((s,[r,c])=>s+c,0)/m.cells.length*CELL+30, cy=m.cells.reduce((s,[r,c])=>s+r,0)/m.cells.length*CELL+30;
+      for(const t in cnt){ const n=cnt[t], ti=+t;
+        if(ti===SKULL){
+          const dmg=Math.round(n*(who==="player"?this.skullDmg():this.enemyAtk())*bonus);
+          if(who==="player") await this.hurtEnemy(dmg,cx,cy); else await this.hurtPlayer(dmg,cx,cy);
+        } else if(who==="player"){
+          if(MANA_TYPES.includes(ti)){ this.p.mana[ti]=Math.min(MANA_MAX,this.p.mana[ti]+Math.round(n*bonus)); this.floatText(cx,cy,T("+{n} {el}",{n,el:T(GEMS[ti].name)}),GEMS[ti].col); }
+          else if(ti===STAR){ const x=n*3; this.floatText(cx,cy,T("+{n} XP",{n:x}),"#c9f"); await this.addXp(x); }
+        }
+      }
+      if(who==="player" && cnt[EARTH]) { const g=cnt[EARTH]*2; this.p.gold+=g; }
+      if(who==="player"&&chain===1){ if(cnt[SKULL]) Tut.event("skull"); if(MANA_TYPES.some(t=>cnt[t])) Tut.event("mana"); }
+      this.updateUI();
+      await sleep(40);
+      for(let i=0;i<8;i++){ for(const [r,c] of m.cells) this.b[r][c].s*=0.7; await frame(); }
+      for(const [r,c] of m.cells) this.b[r][c]=null;
+      if(this.over||this.e.hp<=0||this.p.hp<=0) { return extra; }
+      this.gravity();
+      await this.settle();
+    }
+    return extra;
+  }
+  gravity(){
+    for(let c=0;c<N;c++){
+      let w=N-1;
+      for(let r=N-1;r>=0;r--) if(this.b[r][c]){ this.b[w][c]=this.b[r][c]; if(w!==r) this.b[r][c]=null; w--; }
+      let k=0;
+      for(let r=w;r>=0;r--){ k++; this.b[r][c]=this.mk(r,c); this.b[r][c].y=-k; }
+    }
+    this.fixTargets();
+  }
+  async ensureMoves(){
+    if(this.moves().length) return;
+    this.log(T("No moves left — reshuffling!"));
+    do { for(let r=0;r<N;r++)for(let c=0;c<N;c++){ this.b[r][c]=this.mk(r,c); this.b[r][c].y=r-N; } }
+    while(this.findMatches().cells.length || !this.moves().length);
+    await this.settle();
+  }
+  // ---------- combat ----------
+  skullDmg(){ return 2+Math.floor((this.p.lv-1)/2)+this.p.blade; }
+  enemyAtk(){ const e=this.e; return Math.round(e.atk*(e.boss&&e.hp<e.max*.5?1.5:1)); }
+  glow(id,cls){ const el=$(id); el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),900); }
+  async hurtEnemy(d,x=240,y=60){
+    const e=this.e; Snd.play("hit");
+    if(e.shield>0){ const a=Math.min(d,e.shield); e.shield-=a; d-=a; this.floatText(x,y+26,T("Blocked {n}",{n:a}),"#ccd"); }
+    if(d>0){ e.hp=Math.max(0,e.hp-d); this.floatText(x,y,"-"+d,"#ff7b6b"); }
+    this.shake("ecard"); this.updateUI(); await sleep(150);
+  }
+  async hurtPlayer(d,x=240,y=420){
+    const p=this.p; Snd.play("hurt");
+    if(p.shield>0){ const a=Math.min(d,p.shield); p.shield-=a; d-=a; this.floatText(x,y+26,T("Blocked {n}",{n:a}),"#e8b84a"); }
+    if(d>0){ p.hp=Math.max(0,p.hp-d); this.floatText(x,y,"-"+d,"#ff4d4d"); this.tookDamage=true; this.flash={col:"255,40,40",t0:performance.now(),dur:380}; }
+    this.shake("pcard"); this.updateUI(); await sleep(150);
+  }
+  healPlayer(h){ Snd.play("heal"); const a=Math.min(h,this.p.max-this.p.hp); this.p.hp+=a; this.floatText(240,240,T("+{n} HP",{n:a}),"#6f6"); this.updateUI(); }
+  need(){ return 30+(this.p.lv-1)*20; }
+  async addXp(x){
+    const p=this.p; p.xp+=x;
+    while(p.xp>=this.need()){ p.xp-=this.need(); p.lv++; this.recalc(); p.hp=p.max; Snd.play("level");
+      this.log(T("LEVEL UP! You are now level {n}. HP restored.",{n:p.lv})); this.floatText(240,240,T("LEVEL UP!"),"#ffd36b"); CG.happy();
+      if(p.lv%5===0&&this.tier()<CLASS_TIERS.length&&p.lv/5<CLASS_TIERS.length){ const nm=T(CLASS_TIERS[this.tier()]); this.log(T("You evolved into a {name}!",{name:nm})); this.toast(T("You evolved into a {name}!",{name:nm}),ICO.trophy); } }
+    this.updateUI();
+  }
+  checkEnd(){
+    if(this.over) return true;
+    if(this.e.hp<=0){ this.winBattle(); return true; }
+    if(this.p.hp<=0){ this.lose(); return true; }
+    return false;
+  }
+  async winBattle(){
+    this.over=true; this.busy=true; CG.stop(); Snd.play("win");
+    const boss=this.e.boss, key=this.e.key, low=this.p.hp<this.p.max*.1, xp=Math.round((15+8*this.stage)*(boss?1.5:1)), coins=Math.round((20+10*this.stage)*(boss?2:1));
+    this.p.gold+=coins; this.rewards={xp,coins,name:this.e.name,boss,campaign:false,doubled:false};
+    await this.addXp(xp); this.stage++; this.best=Math.max(this.best,this.stage);
+    if(this.stage===ENEMIES.length&&!this.campaign){ this.campaign=true; this.rewards.campaign=true; }   // first Elder Dragon kill: campaign complete, endless mode continues
+    const first=!Tut.done; Tut.done=true; Tut.hide();
+    this.award("first"); if(boss&&key==="orc") this.award("orc"); if(boss&&key==="dragon") this.award("dragon");
+    if(!this.tookDamage) this.award("flawless"); if(low) this.award("clutch"); if(this.p.gold>=500) this.award("rich"); if(this.stage>=14) this.award("endless");
+    if(boss) CG.happy();
+    this.saveGame(); this.ctx="victory"; this.victoryPanel(first);
+  }
+  victoryPanel(first){
+    const r=this.rewards;
+    openPanel(`<h2>${r.boss?T("Boss Defeated!"):T("Victory!")}</h2><p>${T("{name} defeated.",{name:T(r.name)})}<br>${T("+{n} XP",{n:r.xp})} &nbsp; +${r.coins} ${ICO.coin}</p>
+      ${r.campaign?`<p class="hint"><b>${T("Campaign complete!")}</b><br>${T("You claimed the Ember Crown. Endless mode begins: stages keep getting tougher — how far can you go?")}</p>`:""}
+      ${first?`<p class="hint">${T("Spend your coins in the shop on potions and upgrades before the next battle.")}</p>`:""}
+      <div class="btns"><button class="big" data-act="next">${T("Next Battle")}</button><button class="alt" data-act="shop">${T("Shop ({n})",{n:this.p.gold+" "+ICO.coin})}</button></div>
+      ${CG.ready&&!r.doubled?`<div class="btns"><button class="ad" data-act="double">${T("Double coins (watch ad)")}</button></div>`:""}`);
+  }
+  async lose(){
+    this.over=true; this.busy=true; CG.stop(); Snd.play("lose"); this.ctx="defeat"; Tut.hide();
+    const xp=Math.round((15+8*this.stage)*.35), coins=Math.round((20+10*this.stage)*.35);   // consolation so retries still make progress
+    this.p.gold+=coins; this.consol={xp,coins}; await this.addXp(xp); this.saveGame(); this.defeatPanel();
+  }
+  defeatPanel(){
+    const c=this.consol||{xp:0,coins:0};
+    openPanel(`<h2>${T("Defeated")}</h2><p>${T("You fell to the {name}.",{name:T(this.e.name)})}<br>${T("Consolation: +{xp} XP, +{c}",{xp:c.xp,c:c.coins+" "+ICO.coin})}<br><small>${T("Stages cleared: {n}",{n:this.stage})}${this.best?" · "+T("Best stage: {n}",{n:this.best}):""}</small></p>
+      <div class="btns"><button class="big" data-act="retry">${T("Retry Battle")}</button><button class="alt" data-act="shop">${T("Shop ({n})",{n:this.p.gold+" "+ICO.coin})}</button></div>
+      ${CG.ready&&!this.revived?`<div class="btns"><button class="ad" data-act="revive">${T("Revive with 50% HP (watch ad)")}</button></div>`:""}`);
+  }
+  async playerMove(a,b){
+    if(this.busy||this.over||this.turn!=="player") return;
+    this.busy=true; this.sel=null; this.hint=null; this.hintHold=false; this.grab=false;
+    if(!(await this.trySwap(a,b,"player"))){ this.busy=false; return; }
+    this.moveCount++; Tut.dismiss("start");
+    const extra=await this.resolve("player");
+    if(extra){ Tut.event("extra"); this.stats.extra++; if(this.stats.extra>=10) this.award("extra"); }
+    await this.afterAction(extra);
+  }
+  async afterAction(extra){
+    if(this.checkEnd()) return;
+    await this.ensureMoves();
+    if(extra){ this.log(T("Extra turn!")); this.floatText(240,240,T("EXTRA TURN!"),"#ffd36b"); this.busy=false; this.updateUI(); return; }
+    await this.enemyTurn();
+  }
+  async beginPlayerTurn(){
+    const p=this.p; this.turn="player"; this.hintHold=false;
+    if(p.poison>0){ p.poison--; this.log(T("Poison burns you.")); await this.hurtPlayer(p.poisonDmg); if(this.checkEnd()) return; }
+    if(p.stunned){ p.stunned=false; this.log(T("You are stunned and lose your turn!")); this.floatText(240,240,T("STUNNED"),"#ffe14a"); this.updateUI(); await sleep(800); return this.enemyTurn(); }
+    this.busy=false; this.updateUI();
+    if(this.moveCount>0 && SPELLS.some((s,i)=>Object.keys(s.cost).every(t=>p.mana[t]>=s.cost[t]))) Tut.event("spell");
+  }
+  async telegraph(name){
+    this.log(T("{name} uses {a}!",{name:T(this.e.name),a:T(name)})); this.lunge=performance.now(); this.flash={col:"170,60,255",t0:performance.now(),dur:500};
+    Snd.play("ability"); this.floatText(240,200,T(name)+"!","#ffe08a"); await sleep(650);
+  }
+  async enemyTurn(){
+    this.turn="enemy"; this.busy=true; this.updateUI(); Tut.event("enemy"); const e=this.e;
+    await sleep(350);
+    if(e.regen&&e.hp<e.max){ const h=Math.round(e.max*.05); e.hp=Math.min(e.max,e.hp+h); this.floatText(240,40,"+"+h,"#6f6"); this.updateUI(); }
+    if(e.frozen){ e.frozen=false; this.log(T("{name} is frozen and skips its turn.",{name:T(e.name)})); this.updateUI(); await sleep(700); return this.beginPlayerTurn(); }
+    for(const a of e.abil){ a.cd--; if(a.cd<=0){ a.cd=ABIL[a.id].cd; await this.telegraph(ABIL[a.id].name); await ABIL[a.id].run(this); this.updateUI(); if(this.checkEnd()) return; break; } }
+    this.updateUI();
+    let n=1+e.bonus; e.bonus=0;
+    const rand=Math.max(.05,Math.min(.6,Math.max(.12,.42-.03*this.stage)+(DIFF[Settings.diff]||DIFF.normal).rand));
+    while(n-->0){
+      const ms=this.moves(); if(!ms.length) break;
+      for(const m of ms) m.score=this.moveScore(m,"enemy");   // skulls, big matches and extra-turn moves
+      ms.sort((x,y)=>y.score-x.score);
+      const pick = Math.random()<rand ? ms[rnd(ms.length)] : ms[0];
+      this.sel=pick.a; await sleep(380); this.sel=pick.b; await sleep(300); this.sel=null;
+      this.swapData(pick.a,pick.b); this.fixTargets(); await this.settle();
+      const extra=await this.resolve("enemy");
+      if(this.checkEnd()) return;
+      await this.ensureMoves();
+      if(extra){ n++; this.log(T("{name} gets an extra turn!",{name:T(e.name)})); this.floatText(240,240,T("EXTRA TURN!"),"#ff6b5a"); await sleep(500); }
+    }
+    await this.beginPlayerTurn();
+  }
+  canCast(i){ const s=SPELLS[i]; return !this.busy&&!this.over&&this.turn==="player"&&Object.keys(s.cost).every(t=>this.p.mana[t]>=s.cost[t]); }
+  async cast(i){
+    if(!this.canCast(i)) return;
+    const s=SPELLS[i], L=this.p.spellLv[i]; this.busy=true; Tut.dismiss("spell"); this.stats.spells|=1<<i; if(this.stats.spells===255) this.award("casters");
+    for(const t in s.cost) this.p.mana[t]-=s.cost[t];
+    this.log(T("You cast {n}!",{n:T(s.name)})); Snd.play("spell"); Snd.play("spell_"+s.name.toLowerCase());
+    this.floatText(240,130,T(s.name).toLocaleUpperCase()+"!","#fff"); this.after=null;
+    await s.run(this,L); this.updateUI();
+    if(this.after){
+      const {cells,per}=this.after; this.after=null;
+      if(cells.length){ await this.hurtEnemy(cells.length*per); if(!this.checkEnd()) await this.resolve("player",cells); }
+    }
+    if(this.checkEnd()) return;
+    await this.ensureMoves();
+    this.busy=false; this.updateUI();  // spells don't end the turn
+  }
+  usePotion(kind){
+    const p=this.p; if(this.busy||this.over||this.turn!=="player"||p.potions[kind]<=0) return;
+    if(kind==="hp"){ if(p.hp>=p.max) return; p.potions.hp--; this.healPlayer(Math.round(p.max*.5)); }
+    else { p.potions.mana--; for(const t of MANA_TYPES) p.mana[t]=Math.min(MANA_MAX,p.mana[t]+4); this.floatText(240,240,T("+4 mana each"),"#9cf"); Snd.play("potion"); }
+    Snd.play("potion"); this.saveGame(); this.updateUI();
+  }
+  // ----- keyboard -----
+  kbMove(dr,dc){
+    if(!this.cursor) this.cursor=[3,3]; else {
+      const [r,c]=this.cursor, r2=r+dr, c2=c+dc; if(r2<0||r2>=N||c2<0||c2>=N) return;
+      if(this.grab){ const a=this.cursor; this.cursor=[r2,c2]; this.grab=false; this.sel=null; this.playerMove(a,[r2,c2]); return; }
+      this.cursor=[r2,c2]; }
+  }
+  kbSelect(){ if(!this.cursor) this.cursor=[3,3]; this.grab=!this.grab; this.sel=this.grab?this.cursor:null; }
+  // ----- shop -----
+  items(){
+    const sink=(n,cap,base,step,top)=>n<cap?base+step*n:Math.round(top*Math.pow(1.17,n-cap));   // linear to the old cap, then endless exponential
+    const p=this.p, out=[];
+    out.push({id:"pot_hp", name:T("Health Potion"), desc:T("Restore 50% HP any time on your turn"), cost:30, ok:p.potions.hp<9});
+    out.push({id:"pot_mana", name:T("Mana Potion"), desc:T("+4 of every mana color"), cost:40, ok:p.potions.mana<9});
+    out.push({id:"hp", name:T("Vitality"), desc:T("+10 max HP"), cost:sink(p.hpUp,8,40,30,280), ok:true});
+    out.push({id:"blade", name:T("Whetstone"), desc:T("+1 damage per skull matched"), cost:sink(p.blade,5,70,60,420), ok:true});
+    out.push({id:"power", name:T("Spell Power"), desc:T("+5% spell strength per level"), cost:sink(p.power,0,0,0,200), ok:true});
+    SPELLS.forEach((s,i)=>{ const L=p.spellLv[i]; out.push({id:"sp"+i, name:T("{name} Lv {l}",{name:T(s.name),l:L})+(L<5?" → "+(L+1):T(" (max)")), desc:s.desc(Math.min(5,L+1),this), cost:60*L, ok:L<5}); });
+    return out;
+  }
+  shopPanel(){
+    const rows=this.items().map(it=>`<div class="row2"><div><b>${it.name}</b><br><small>${it.desc}</small></div>
+      <button data-act="buy" data-id="${it.id}" ${(!it.ok||this.p.gold<it.cost)?"disabled":""}>${it.ok?`${it.cost} ${ICO.coin}`:T("Max")}</button></div>`).join("");
+    openPanel(`<h2>${T("Shop")}</h2><p class="coins">${ICO.coin} ${this.p.gold}</p><div class="list">${rows}</div>
+      <div class="btns"><button class="big" data-act="shopback">${T("Back")}</button></div>`, this.ctx==="menu");
+    const l=$("panelbox").querySelector(".list"); if(l&&this.shopScroll) l.scrollTop=this.shopScroll;
+  }
+  buy(id){
+    const it=this.items().find(x=>x.id===id), p=this.p; if(!it||!it.ok||p.gold<it.cost) return;
+    p.gold-=it.cost; Snd.play("buy");
+    if(id==="pot_hp") p.potions.hp++; else if(id==="pot_mana") p.potions.mana++;
+    else if(id==="hp"){ p.hpUp++; this.recalc(); p.hp=Math.min(p.max,p.hp+10); }
+    else if(id==="blade") p.blade++;
+    else if(id==="power"){ p.power++; this.recalc(); }
+    else p.spellLv[+id.slice(2)]++;
+    this.award("shop"); this.saveGame(); this.updateUI();
+    const l=$("panelbox").querySelector(".list"); this.shopScroll=l?l.scrollTop:0; this.shopPanel();
+  }
+  // ----- achievements, toasts, daily reward -----
+  award(id){
+    if(this.ach[id]) return; this.ach[id]=Date.now(); const a=ACH.find(x=>x.id===id);
+    this.toast(T("Achievement unlocked")+": "+T(a.n),ICO.trophy); Snd.play("level"); CG.happy(); this.saveGame();
+  }
+  toast(text,icon=""){ this.toastQ=this.toastQ||[]; this.toastQ.push({text,icon}); if(!this.toastBusy) this.nextToast(); }
+  nextToast(){
+    const t=(this.toastQ||[]).shift(), el=$("toast"); if(!t){ this.toastBusy=false; el.classList.remove("show"); return; }
+    this.toastBusy=true; el.innerHTML=`${t.icon}<span>${t.text}</span>`; el.classList.add("show");
+    setTimeout(()=>{ el.classList.remove("show"); setTimeout(()=>this.nextToast(),350); },3000);
+  }
+  achPanel(){
+    const got=ACH.filter(a=>this.ach[a.id]).length;
+    const rows=ACH.map(a=>`<div class="row2 ${this.ach[a.id]?"":"lock"}"><div><b>${T(a.n)}</b><br><small>${T(a.d)}</small></div><span class="tick">${this.ach[a.id]?"✓":""}</span></div>`).join("");
+    openPanel(`<h2>${T("Achievements")}</h2><p class="coins">${T("{a} of {b} unlocked",{a:got,b:ACH.length})}</p><div class="list">${rows}</div><div class="btns"><button class="big" data-act="back">${T("Back")}</button></div>`, this.ctx==="menu");
+  }
+  dayStr(off=0){ const d=new Date(); d.setDate(d.getDate()+off); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  dailyAvailable(){ return this.hasSave && this.daily.last!=="" && this.daily.last!==this.dayStr(); }
+  dailyInfo(){ const streak=this.daily.last===this.dayStr(-1)?this.daily.streak+1:1; return {streak,coins:40+20*Math.min(streak,7),potion:streak%7===0?"mana":(streak%3===0?"hp":null)}; }
+  dailyPanel(){
+    const i=this.dailyInfo(); this.ctx="daily";
+    openPanel(`<h2>${T("Daily Reward")}</h2><p>${T("Day {n}",{n:i.streak})}</p>
+      <p class="coins">${T("+{n} coins",{n:i.coins})} ${ICO.coin}</p>${i.potion?`<p class="hint">${i.potion==="hp"?T("+1 Health Potion"):T("+1 Mana Potion")}</p>`:""}
+      <p><small>${T("Come back tomorrow for a bigger reward!")}</small></p>
+      <div class="btns"><button class="big" data-act="claim">${T("Claim")}</button>${CG.ready?`<button class="ad" data-act="claim2">${T("Claim ×2 (watch ad)")}</button>`:""}</div>`);
+  }
+  claimDaily(m){
+    const i=this.dailyInfo(), p=this.p; p.gold+=i.coins*m; if(i.potion) p.potions[i.potion]=Math.min(9,p.potions[i.potion]+m);
+    this.daily={last:this.dayStr(),streak:i.streak}; if(i.streak>=3) this.award("daily"); if(p.gold>=500) this.award("rich");
+    this.saveGame(); CG.happy(); Snd.play("buy"); this.beginPlay();
+  }
+  // ----- hint -----
+  moveScore(m,who){
+    const runs=m.m.runs, extraTurn=runs.some(x=>x.length>=4)||this.groupSizes(runs).some(g=>g>=5);
+    let s=m.m.cells.filter(([r,c])=>this.b[r][c].t===SKULL).length*3 + Math.max(...runs.map(x=>x.length))*2 + (extraTurn?14:0) + Math.random()*2;
+    if(who==="player") s+=m.m.cells.filter(([r,c])=>MANA_TYPES.includes(this.b[r][c].t)).length*.6;
+    return s;
+  }
+  showHint(){
+    if(!this.started||this.busy||this.over||this.turn!=="player"||panelOpen()) return;
+    const ms=this.moves(); if(!ms.length) return; for(const m of ms) m.score=this.moveScore(m,"player"); ms.sort((a,b)=>b.score-a.score);
+    this.hint=[ms[0].a,ms[0].b]; this.hintHold=true; this.dirty=3; Snd.play("click"); Tut.dismiss("hint");
+  }
+  // ----- rewarded ads -----
+  async revive(){
+    const p=this.p; this.revived=true; closePanel(); this.over=false; this.busy=true; p.hp=Math.max(1,Math.round(p.max*.5)); p.poison=0; p.stunned=false;
+    if(this.b.some(row=>row.some(g=>!g))){ this.gravity(); await this.settle(); }       // a fatal cascade can leave empty cells
+    await this.ensureMoves(); this.turn="player"; this.busy=false; CG.start(); CG.happy(); Snd.play("heal"); this.floatText(240,240,T("Revived!"),"#6f6"); this.updateUI();
+  }
+  doubleCoins(){
+    const r=this.rewards; if(!r||r.doubled) return; this.p.gold+=r.coins; r.coins*=2; r.doubled=true; if(this.p.gold>=500) this.award("rich");
+    this.saveGame(); CG.happy(); Snd.play("buy"); this.toast(T("Coins doubled!"),ICO.coin); this.victoryPanel(false);
+  }
+  // ----- menus -----
+  menuHtml(){
+    return `<h2>${T("Paused")}</h2><div class="btns col">
+      <button class="big" data-act="resume">${T("Resume")}</button>
+      <button data-act="restartBattle">${T("Restart Battle")}</button>
+      <button data-act="achievements">${T("Achievements")}</button>
+      <button data-act="howto">${T("How to Play")}</button>
+      <button data-act="settings">${T("Settings")}</button>
+      <button data-act="newgame">${T("New Game")}</button></div>`;
+  }
+  openMenu(){ if(!this.started||panelOpen()) return; this.ctx="menu"; openPanel(this.menuHtml(), !this.over); }
+  openMenuFromPanel(){ this.ctx="menu"; openPanel(this.menuHtml(), !this.over); }
+  langSelect(){ return `<select data-set="lang" aria-label="${T("Language")}">${LANGS.map(([c,n])=>`<option value="${c}" ${Settings.lang===c?"selected":""}>${n}</option>`).join("")}</select>`; }
+  settingsPanel(){
+    const v=k=>Math.round(Settings[k]*100), opt=(k,l)=>`<option value="${k}" ${Settings.diff===k?"selected":""}>${T(l)}</option>`;
+    openPanel(`<h2>${T("Settings")}</h2><div class="list set">
+      <label>${T("Language")} ${this.langSelect()}</label>
+      <label>${T("Difficulty")} <select data-set="diff" aria-label="${T("Difficulty")}">${opt("easy","Easy")}${opt("normal","Normal")}${opt("hard","Hard")}</select></label>
+      <label>${T("Master volume")} <input type="range" min="0" max="100" value="${v("master")}" data-set="master" aria-label="${T("Master volume")}"></label>
+      <label>${T("Music volume")} <input type="range" min="0" max="100" value="${v("music")}" data-set="music" aria-label="${T("Music volume")}"></label>
+      <label>${T("Effects volume")} <input type="range" min="0" max="100" value="${v("sfx")}" data-set="sfx" aria-label="${T("Effects volume")}"></label>
+      <label class="chk"><input type="checkbox" data-set="reduced" ${Settings.reduced?"checked":""}> ${T("Reduce motion & screen shake")}</label>
+      <label class="chk"><input type="checkbox" data-set="hc" ${Settings.hc?"checked":""}> ${T("High-contrast HUD text")}</label>
+      <label class="chk"><input type="checkbox" data-set="mute" ${Snd.muted?"checked":""}> ${T("Mute all sound")}</label></div>
+      <div class="btns"><button data-act="replayTut">${T("Replay tutorial")}</button><button class="big" data-act="back">${T("Back")}</button></div>`, this.ctx==="menu");
+  }
+  howtoPanel(){
+    const spells=SPELLS.map((s,i)=>`<li><b>${T(s.name)}</b> (${costIcons(s.cost)}): ${s.desc(this.p.spellLv[i],this)}</li>`).join("");
+    openPanel(`<h2>${T("How to Play")}</h2><div class="list txt">
+      <p>${T("Swap two neighboring gems to line up <b>3 or more</b>. Then the enemy takes its turn on the same board.")}</p>
+      <p>${T("<b>Skulls</b> damage the foe. <b>Fire, Air, Water, Earth</b> gems fill mana for spells. <b>Stars</b> give XP. Earth gems also drop coins.")}</p>
+      <p>${T("Matching <b>4+</b> in a line, or <b>5+ in an L, T or + shape</b>, gives an <b>extra turn</b>; cascades hit harder.")}</p>
+      <p>${T("Spend coins in the shop after each battle. Watch the enemy's warning for its next special move.")}</p>
+      <p>${T("<b>Keys:</b> arrows move the cursor, Space/Enter grabs a gem, then an arrow swaps it. 1-8 cast spells, H health potion, M mana potion, T hint, Esc menu.")}</p>
+      <ul>${spells}</ul></div><div class="btns"><button class="big" data-act="back">${T("Back")}</button></div>`, this.ctx==="menu");
+  }
+  homePanel(){
+    this.ctx="home"; const pill=(k,l)=>`<button class="pill ${Settings.diff===k?"on":""}" data-act="diff" data-v="${k}" aria-pressed="${Settings.diff===k}">${T(l)}</button>`;
+    openPanel(`<h2>GEMHOLLOW</h2><p>${T("Shards of the Ember Crown")}<br><small>${T("Match gems, smash skulls and channel mana to slay the denizens of the hollow.")}</small></p>
+      ${this.hasSave?`<p class="hint">${T("Saved game: level {l}, stage {s}",{l:this.p.lv,s:this.stage+1})}${this.best?` · ${T("Best stage: {n}",{n:this.best})}`:""}</p>`:""}
+      <div class="btns col"><button class="big" data-act="play">${this.hasSave?T("Continue"):T("Begin Quest")}</button>
+      <button data-act="achievements">${T("Achievements")}</button><button data-act="howto">${T("How to Play")}</button><button data-act="settings">${T("Settings")}</button></div>
+      <div class="homeopts"><span class="pills" role="group" aria-label="${T("Difficulty")}">${pill("easy","Easy")}${pill("normal","Normal")}${pill("hard","Hard")}</span>${this.langSelect()}</div>`);
+  }
+  beginPlay(){
+    closePanel(); this.started=true; Snd.init(); Snd.play("click"); CG.start(); Tut.event("start"); this.updateUI();
+    if(this.e.boss) this.bossIntro(); else Snd.setTrackNow(this.stage%ENEMIES.length);
+  }
+  autoStart(){ this.started=true; CG.start(); Tut.event("start"); this.updateUI(); Snd.setTrackNow(0); }   // first visit: straight into the tutorial battle
+  applyLang(){
+    document.documentElement.lang=Settings.lang;
+    document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent=T(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-title]").forEach(el=>{ const t=T(el.dataset.i18nTitle); el.title=t; el.setAttribute("aria-label",t); });
+    this.buildUI(); this.updateUI();
+  }
+  act(a,d){
+    const back=()=>{ if(this.ctx==="victory") this.victoryPanel(false); else if(this.ctx==="defeat") this.defeatPanel(); else if(this.ctx==="home"||this.ctx==="daily"){ this.ctx="home"; this.homePanel(); } else this.openMenuFromPanel(); };
+    const noAd=()=>this.toast(T("Ad unavailable"));
+    switch(a){
+      case "play": if(this.dailyAvailable()) this.dailyPanel(); else this.beginPlay(); break;
+      case "claim": this.claimDaily(1); break;
+      case "claim2": CG.rewarded(()=>this.claimDaily(2),noAd); break;
+      case "next": case "retry": closePanel(); this.busy=true; CG.ad(()=>{ CG.start(); this.startBattle(); }); break;
+      case "revive": CG.rewarded(()=>this.revive(),noAd); break;
+      case "double": CG.rewarded(()=>this.doubleCoins(),noAd); break;
+      case "diff": Settings.diff=d.v; Settings.save(); this.homePanel(); break;
+      case "achievements": this.achPanel(); break;
+      case "shop": this.shopPanel(); break;
+      case "shopback": back(); break;
+      case "buy": this.buy(d.id); break;
+      case "resume": closePanel(); break;
+      case "restartBattle": GEN++; closePanel(); this.startBattle(); CG.start(); break;
+      case "howto": this.howtoPanel(); break;
+      case "settings": this.settingsPanel(); break;
+      case "back": back(); break;
+      case "replayTut": Tut.reset(); if(this.ctx!=="home"&&this.moveCount===0) Tut.event("start"); Snd.play("click"); break;
+      case "newgame": openPanel(`<h2>${T("New Game?")}</h2><p>${T("This erases your saved progress.")}</p><div class="btns"><button class="big" data-act="confirmNew">${T("Erase & Restart")}</button><button data-act="back">${T("Cancel")}</button></div>`, this.ctx==="menu"); break;
+      case "confirmNew": this.resetProgress(); break;
+    }
+  }
+  // ---------- UI ----------
+  buildUI(){
+    $("mana").innerHTML=MANA_TYPES.map(t=>`<div class="m" id="m${t}" style="color:${GEMS[t].col}" title="${T("{el} mana",{el:T(GEMS[t].name)})}">${GEMS[t].emoji} <span></span><div class="mb" id="mb${t}"></div></div>`).join("");
+    $("spells").innerHTML=SPELLS.map((s,i)=>`<button class="spell" id="sp${i}" aria-label="${T(s.name)}"><b>${i+1}. ${T(s.name)} <i>${costIcons(s.cost)}</i></b><span id="sd${i}"></span></button>`).join("")
+      +`<button class="spell potion" id="pothp"></button><button class="spell potion" id="potmana"></button>`;
+    SPELLS.forEach((_,i)=>$("sp"+i).onclick=()=>this.cast(i));
+    $("pothp").onclick=()=>this.usePotion("hp"); $("potmana").onclick=()=>this.usePotion("mana");
+  }
+  updateUI(){
+    const p=this.p,e=this.e; this.lastAct=performance.now(); if(!this.hintHold) this.hint=null; this.dirty=3;
+    $("pname").textContent=T(CLASS_TIERS[this.tier()]); $("plv").textContent=T("Lv {n}",{n:p.lv}); $("elv").textContent=e.lv>ENEMIES.length?T("Endless · Stage {n}",{n:e.lv}):T("Stage {n}",{n:e.lv});
+    $("php").style.width=100*p.hp/p.max+"%"; $("phptxt").textContent=T("HP {a}/{b}",{a:p.hp,b:p.max})+(p.shield?" · "+T("Shield {n}",{n:p.shield}):"")+(p.poison?" · "+T("Poison {n}",{n:p.poison}):"")+(p.stunned?" · "+T("Stunned"):"");
+    $("pxp").style.width=100*p.xp/this.need()+"%"; $("pgold").innerHTML=T("XP {a}/{b}",{a:p.xp,b:this.need()})+"  ·  "+ICO.coin+" "+p.gold;
+    $("ename").innerHTML=T(e.name)+(e.boss?` <span class="badge">${T("BOSS")}</span>`:"");
+    $("ehp").style.width=100*e.hp/e.max+"%"; $("ehptxt").textContent=T("HP {a}/{b}",{a:e.hp,b:e.max})+(e.shield?" · "+T("Shield {n}",{n:e.shield}):"");
+    const warn=e.abil.map(a=>({a,d:ABIL[a.id]})).sort((x,y)=>x.a.cd-y.a.cd)[0];
+    $("estat").innerHTML=T("Attack {n}",{n:this.enemyAtk()})+(e.frozen?" · "+T("Frozen"):"")+(warn?`<br><span class="${warn.a.cd<=1?"warn":""}">${warn.a.cd<=1?T("⚠ Next turn:")+" ":T("Special:")+" "}${T(warn.d.name)} <em>(${T(warn.d.info)})</em>${warn.a.cd>1?" "+T("in {n}",{n:warn.a.cd}):""}</span>`:(e.regen?"<br>"+T("Regenerates HP"):""));
+    $("ecard").classList.toggle("boss",!!e.boss);
+    $("pcard").classList.toggle("active",this.turn==="player"); $("ecard").classList.toggle("active",this.turn==="enemy");
+    const cl=(id,c,on)=>$(id).classList.toggle(c,!!on);
+    cl("ecv","st-frozen",e.frozen); cl("pcv","st-poison",p.poison>0); cl("pcv","st-shield",p.shield>0); cl("pcv","st-stun",p.stunned); cl("ecv","st-shield",e.shield>0);
+    for(const t of MANA_TYPES) { $("m"+t).querySelector("span").textContent=p.mana[t]+"/"+MANA_MAX; $("mb"+t).style.width=100*p.mana[t]/MANA_MAX+"%"; }
+    const can=this.turn==="player"&&!this.busy&&!this.over;
+    SPELLS.forEach((s,i)=>{
+      const ok=Object.keys(s.cost).every(t=>p.mana[t]>=s.cost[t]), b=$("sp"+i); b.disabled=!ok||!can; b.classList.toggle("ready",ok);
+      const d=s.desc(p.spellLv[i],this)+(p.spellLv[i]>1?" "+T("(Lv {n})",{n:p.spellLv[i]}):""); $("sd"+i).textContent=d; b.title=d;
+    });
+    $("pothp").innerHTML=`${T("Health Potion ×{n}",{n:p.potions.hp})} <span>${T("Restore 50% HP")}</span>`; $("pothp").disabled=!can||p.potions.hp<=0||p.hp>=p.max; $("pothp").setAttribute("aria-label",T("Health Potion"));
+    $("potmana").innerHTML=`${T("Mana Potion ×{n}",{n:p.potions.mana})} <span>${T("+4 of each mana")}</span>`; $("potmana").disabled=!can||p.potions.mana<=0;
+  }
+  log(t){ const d=$("log"); d.innerHTML=`<div>${t}</div>`+d.innerHTML; while(d.children.length>5) d.lastChild.remove(); }
+  shake(id){ const el=$(id); this.hurtT[id==="pcard"?"p":"e"]=performance.now()+250;
+    el.classList.remove("hitflash"); void el.offsetWidth; el.classList.add("hitflash");
+    if(Settings.reduced) return;
+    el.animate([{transform:"translateX(0)"},{transform:"translateX(-6px)"},{transform:"translateX(6px)"},{transform:"translateX(0)"}],{duration:250}); this.shakeT=id==="pcard"?12:8; }
+  floatText(x,y,text,color){ this.floats.push({x,y,text,color,life:60}); }
+  // ---------- boss entrance ----------
+  async bossIntro(){
+    const e=this.e, kind=e.key==="dragon"?"dragon":"orc", ti=this.stage%ENEMIES.length, IMP=450, g=GEN;
+    this.busy=true; Tut.hide(); this.updateUI();
+    this.intro={t0:performance.now(),dur:2700,impact:IMP,name:T(e.name).toLocaleUpperCase(),kind};
+    Snd.duck(); Snd.play("boss_"+kind);
+    const el=$("ecard"); el.classList.remove("bossenter"); void el.offsetWidth; el.classList.add("bossenter"); setTimeout(()=>el.classList.remove("bossenter"),1100);
+    this.spawnFx("boss",0,{kind});
+    setTimeout(()=>{ if(g!==GEN) return; Snd.setTrackNow(ti); this.log(T("Now playing: {t}",{t:TRACKS[ti].n}));
+      if(!Settings.reduced) this.shakeT=Math.max(this.shakeT,20);
+      this.flash={col:kind==="dragon"?"255,150,60":"255,255,255",t0:performance.now(),dur:450,a:.9}; this.lunge=performance.now(); this.dirty=3; },IMP);
+    await sleep(2700); if(g!==GEN) return;
+    this.intro=null; this.busy=false; this.updateUI();
+  }
+  fxBoss(p,t,rr,f){
+    const kind=f.o.kind, ox=470, oy=10, pi=450/2600, post=Math.max(0,(p-pi)/(1-pi));
+    ctx.fillStyle=`rgba(12,0,14,${p<pi?.6*(p/pi):.6*Math.pow(1-post,2)})`; ctx.fillRect(0,0,480,480);   // the board darkens as the boss approaches
+    if(p<pi){ ctx.globalCompositeOperation="lighter"; const g=ctx.createRadialGradient(ox,oy,0,ox,oy,300*(p/pi)); g.addColorStop(0,`rgba(255,60,30,${.5*(p/pi)})`); g.addColorStop(1,"rgba(255,60,30,0)"); ctx.fillStyle=g; ctx.fillRect(0,0,480,480); ctx.globalCompositeOperation="source-over"; return; }
+    ctx.globalCompositeOperation="lighter";
+    const e=(p-pi)/.14; if(e<1){ ctx.fillStyle=kind==="dragon"?`rgba(255,170,70,${.9*(1-e)})`:`rgba(255,255,255,${.95*(1-e)})`; ctx.fillRect(0,0,480,480); }
+    for(let k=0;k<3;k++){ const r=post*(380+k*160)-k*30; if(r<=0) continue; ctx.strokeStyle=`rgba(255,${kind==="dragon"?150:210},${kind==="dragon"?40:150},${Math.max(0,.9*(1-post))})`; ctx.lineWidth=16*(1-post)+2; ctx.beginPath(); ctx.arc(ox,oy,r,0,6.2832); ctx.stroke(); }
+    if(kind==="orc"){          // ground-slam: glowing cracks race across the board and rocks are flung out
+      ctx.lineCap="round"; ctx.lineJoin="round";
+      for(let k=0;k<11;k++){ const a=Math.PI*(.5+rr(k)*.5), L=Math.min(1,post*2.2)*(220+rr(k+20)*380);
+        ctx.strokeStyle=`rgba(255,${130+rr(k)*80},40,${Math.max(0,1-post*.9)})`; ctx.lineWidth=2+rr(k+9)*4*(1-post); ctx.beginPath(); ctx.moveTo(ox,oy);
+        for(let j=1;j<=7;j++){ const d=L*j/7, off=(rr(k*13+j)-.5)*26; ctx.lineTo(ox+Math.cos(a)*d-Math.sin(a)*off, oy+Math.sin(a)*d+Math.cos(a)*off); } ctx.stroke(); }
+      ctx.globalCompositeOperation="source-over";
+      if(post<.95) for(let k=0;k<16;k++){ const a=Math.PI*(.5+rr(k+40)*.55), v=260+rr(k+60)*360, tt=post, s=7+rr(k+80)*12,
+          x=ox+Math.cos(a)*v*tt, y=oy+Math.sin(a)*v*tt-(rr(k)*140)*Math.sin(Math.min(1,tt*2)*Math.PI)+tt*tt*220;
+        ctx.save(); ctx.translate(x,y); ctx.rotate(tt*(rr(k)*10-5)); ctx.fillStyle="#6a5230"; ctx.strokeStyle="#2c1f10"; ctx.lineWidth=2; ctx.beginPath();
+        for(let j=0;j<6;j++){ const aa=j*1.047, r=s*(.7+rr(k*7+j)*.3); ctx[j?"lineTo":"moveTo"](Math.cos(aa)*r,Math.sin(aa)*r); } ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); }
+    } else {                   // dragon: wings sweep across, then a wall of fire
+      ctx.globalCompositeOperation="source-over"; const wq=Math.min(1,post*1.6);
+      if(wq<1){ ctx.fillStyle=`rgba(30,0,8,${.85*(1-wq*.6)})`; ctx.strokeStyle=`rgba(160,30,10,${1-wq})`; ctx.lineWidth=4;
+        for(const s of [0,1]){ const bx=ox-wq*520-s*80, by=oy+s*40+wq*40; ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx-260,by+60+s*40); ctx.lineTo(bx-200,by+130); ctx.lineTo(bx-130,by+120); ctx.lineTo(bx-100,by+200); ctx.lineTo(bx-30,by+170); ctx.lineTo(bx,by+240); ctx.closePath(); ctx.fill(); ctx.stroke(); } }
+      this.fxFire(Math.min(1,.15+post*.85),t,rr);
+    }
+    ctx.globalCompositeOperation="source-over";
+  }
+  hop(cx,cy,t){          // gems jump in a wave away from the boss after the impact
+    const q=(t-this.intro.t0-this.intro.impact)/1000; if(q<0) return 0;
+    const ph=q-Math.hypot(cx-470,cy-10)/560*.7; if(ph<0||ph>.7) return 0;
+    return -Math.sin(ph/.7*Math.PI)*22*(1-ph/.7);
+  }
+  drawIntro(t){          // cinematic bars + boss name card
+    const I=this.intro, q=(t-I.t0)/I.dur; if(q<0||q>=1) return;
+    const ease=x=>1-Math.pow(1-Math.min(1,Math.max(0,x)),3), bar=64*ease(q/.1)*(q>.9?Math.max(0,1-(q-.9)/.1):1);
+    ctx.fillStyle="#000"; ctx.fillRect(-20,-20,520,bar+20); ctx.fillRect(-20,480-bar,520,bar+20);
+    const tq=(q-.26)/.12, fade=q>.88?Math.max(0,1-(q-.88)/.12):1; if(tq<=0) return;
+    ctx.save(); ctx.globalAlpha=Math.min(1,tq*2)*fade; ctx.translate(240,238); ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.font="900 58px 'Palatino Linotype',Georgia,serif"; const w=ctx.measureText(I.name).width, sc=Math.min((1+.8*(1-ease(tq)))*Math.min(1,440/w),470/w); ctx.scale(sc,sc);
+    if(!Settings.reduced&&tq<1) ctx.translate((Math.random()-.5)*6,(Math.random()-.5)*6);
+    ctx.shadowColor="#ff3b1f"; ctx.shadowBlur=26; ctx.lineWidth=8; ctx.strokeStyle="#1a0408"; ctx.lineJoin="round"; ctx.strokeText(I.name,0,0);
+    const g=ctx.createLinearGradient(0,-30,0,30); g.addColorStop(0,"#fff3c4"); g.addColorStop(.55,"#ffb82e"); g.addColorStop(1,"#c0381e"); ctx.fillStyle=g; ctx.fillText(I.name,0,0);
+    ctx.shadowBlur=0; ctx.font="700 20px 'Palatino Linotype',Georgia,serif"; ctx.fillStyle="#ff6b5a"; ctx.fillText("—  "+T("BOSS BATTLE")+"  —",0,-50*1.0); ctx.restore();
+  }
+
+  // ---------- match animations (full-board, initial match only) ----------
+  spawnFx(type,delay=0,o={}){
+    const dur={[SKULL]:700,[RED]:900,[GREEN]:900,[BLUE]:950,[EARTH]:1000,[STAR]:700,fireball:950,frost:1000,bolt:800,ring:900,meteor:1000,burn:900,boss:2600}[type]||800;
+    if(Settings.reduced||(Settings.lowFx&&typeof type==="number")){ if(typeof type==="string") this.flash={col:"255,255,255",t0:performance.now()+delay,dur:300,a:.25}; return; }   // reduced motion: no full-board effects
+    this.fx.push({type,born:performance.now()+delay,dur,seed:Math.random()*1000,o});
+    if(type===EARTH) setTimeout(()=>{ this.shakeT=Math.max(this.shakeT,7); },delay+dur*.4);
+    if(type==="meteor") setTimeout(()=>{ this.shakeT=Math.max(this.shakeT,14); },delay+dur*.5);
+  }
+  drawFx(t){
+    this.fx=this.fx.filter(f=>t-f.born<f.dur);
+    for(const f of this.fx){
+      const p=(t-f.born)/f.dur; if(p<0) continue;
+      const rr=i=>{ const x=Math.sin(f.seed+i*12.9898)*43758.5453; return x-Math.floor(x); };
+      ctx.save();
+      ({[RED]:this.fxFire,[BLUE]:this.fxWater,[GREEN]:this.fxWind,[EARTH]:this.fxRocks,[SKULL]:this.fxSlash,[STAR]:this.fxSpark,
+        fireball:this.fxFireball,frost:this.fxFrost,bolt:this.fxBolt,ring:this.fxRing,meteor:this.fxMeteor,burn:this.fxBurn,boss:this.fxBoss}[f.type]).call(this,p,t,rr,f);
+      ctx.restore();
+    }
+  }
+  fxFire(p,t,rr){
+    ctx.globalCompositeOperation="lighter";
+    ctx.fillStyle=`rgba(255,110,20,${.22*Math.sin(p*Math.PI)})`; ctx.fillRect(0,0,480,480);
+    const mkG=hot=>{ const g=ctx.createLinearGradient(0,.3,0,-1); g.addColorStop(0,"rgba(255,70,0,0)"); g.addColorStop(.35,hot?"rgba(255,240,160,.9)":"rgba(255,70,0,.85)"); g.addColorStop(.5,hot?"rgba(255,200,60,.8)":"rgba(255,160,20,.75)"); g.addColorStop(1,"rgba(255,230,120,0)"); return g; };
+    const gCold=mkG(false), gHot=mkG(true);
+    const flame=(x,y,w,h,wob,hot)=>{
+      ctx.save(); ctx.translate(x,y); ctx.scale(w,h); const o=wob/w;
+      ctx.fillStyle=hot?gHot:gCold; ctx.beginPath(); ctx.moveTo(-.5,.3);
+      ctx.bezierCurveTo(-.5,-.3,-.15+o,-.6,o,-1); ctx.bezierCurveTo(.15+o,-.6,.5,-.3,.5,.3); ctx.closePath(); ctx.fill(); ctx.restore(); };
+    [490,340,190].forEach((row,ri)=>{ for(let i=0;i<12;i++){
+      const x=(i+.5)*40, d=(x/480)*.4+ri*.1, q=(p-d)/.45; if(q<=0||q>=1) continue;
+      const h=(80+rr(i+ri*20)*100)*Math.sin(q*Math.PI), wob=Math.sin(t/60+i*1.7)*9;
+      flame(x,row,52,h,wob,false); flame(x,row,26,h*.6,wob*.6,true); } });
+  }
+  fxWater(p,t,rr){
+    const xf=p*(480+300)-150, hg=x=>{ const d=xf-x; return d>=0?190*Math.exp(-d/150)+6:Math.max(0,190*(1+d/50)); };
+    const a=Math.min(1,(1-p)*3);
+    ctx.globalAlpha=a; const g=ctx.createLinearGradient(0,150,0,480); g.addColorStop(0,"rgba(130,210,255,.75)"); g.addColorStop(1,"rgba(20,80,200,.6)");
+    ctx.fillStyle=g; ctx.beginPath(); ctx.moveTo(0,480);
+    for(let x=0;x<=480;x+=6) ctx.lineTo(x,480-hg(x)-Math.sin(x*.05+t/90)*5);
+    ctx.lineTo(480,480); ctx.closePath(); ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.8)";
+    for(let i=0;i<16;i++){ const x=xf-i*9-rr(i)*12; if(x<0||x>480) continue; ctx.beginPath(); ctx.arc(x,480-hg(x)-4-rr(i+9)*8,4+rr(i+3)*6,0,6.2832); ctx.fill(); }
+    for(let i=0;i<26;i++){ const x0=rr(i)*480, tau=p-(x0+150)/780; if(tau<=0||tau>.3) continue;
+      const y=480-hg(x0)-700*tau+2600*tau*tau; ctx.beginPath(); ctx.arc(x0+(rr(i+60)-.5)*60*tau*4,y,2+rr(i+30)*4,0,6.2832); ctx.fill(); }
+  }
+  fxWind(p,t,rr){
+    ctx.fillStyle=`rgba(120,255,190,${.08*Math.sin(p*Math.PI)})`; ctx.fillRect(0,0,480,480);
+    ctx.lineCap="round";
+    for(let i=0;i<26;i++){
+      const q=(p-rr(i+30)*.35)/.6; if(q<=0||q>=1) continue;
+      const y0=rr(i)*440+20, head=-60+q*(600), tail=head-(150+rr(i+60)*200), al=Math.sin(q*Math.PI);
+      ctx.strokeStyle=`rgba(215,255,238,${.75*al})`; ctx.lineWidth=2+rr(i+7)*3; ctx.beginPath();
+      let hy=y0; for(let x=tail;x<=head;x+=10){ hy=y0+Math.sin(x*.03+i+t/180)*12; ctx[x===tail?"moveTo":"lineTo"](x,hy); }
+      ctx.stroke(); ctx.beginPath(); ctx.arc(head,hy-9,9,Math.PI*.5,Math.PI*2.1); ctx.stroke();
+      if(i%4===0){ ctx.fillStyle=`rgba(90,200,120,${al})`; ctx.save(); ctx.translate(head+10,hy+4); ctx.rotate(t/120+i); ctx.beginPath(); ctx.ellipse(0,0,9,4,0,0,6.2832); ctx.fill(); ctx.restore(); }
+    }
+  }
+  fxRocks(p,t,rr){
+    ctx.globalAlpha=p>.85?(1-p)/.15:1;
+    for(let i=0;i<18;i++){
+      const d=rr(i+40)*.35, tau=(p-d)/.5; if(tau<=0) continue;
+      const size=14+rr(i)*22, x=rr(i+5)*450+15, floor=462-rr(i+80)*36, q=Math.min(1,tau);
+      const y=-50+q*q*(floor+50), rot=tau*(rr(i+9)*8-4);
+      if(tau>1){ const dq=tau-1; ctx.strokeStyle=`rgba(190,160,110,${Math.max(0,.4-dq*.5)})`; ctx.lineWidth=4; ctx.beginPath(); ctx.ellipse(x,floor+size*.6,size*.8+dq*60,6+dq*8,0,0,6.2832); ctx.stroke(); }
+      ctx.save(); ctx.translate(x,y); ctx.rotate(rot);
+      const g=ctx.createLinearGradient(-size,-size,size,size); g.addColorStop(0,"#b79a68"); g.addColorStop(1,"#5a4328");
+      ctx.fillStyle=g; ctx.strokeStyle="#2c1f10"; ctx.lineWidth=3; ctx.beginPath();
+      for(let k=0;k<7;k++){ const a=k*6.2832/7, r=size*(.7+rr(i*10+k)*.3); ctx[k?"lineTo":"moveTo"](Math.cos(a)*r,Math.sin(a)*r); }
+      ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+  }
+  fxSlash(p,t,rr){
+    ctx.globalCompositeOperation="lighter";
+    ctx.fillStyle=`rgba(255,255,255,${.18*Math.max(0,1-Math.abs(p-.3)*5)})`; ctx.fillRect(0,0,480,480);
+    const L=[[-30,60,510,380],[510,90,-30,420],[-30,430,510,110]];
+    L.forEach(([x0,y0,x1,y1],i)=>{
+      const q=(p-i*.16)/.55; if(q<=0||q>=1) return;
+      const head=Math.min(1,q*1.7), tail=Math.max(0,(q-.15)*1.2), al=1-Math.max(0,(q-.45)/.55);
+      const nx=-(y1-y0), ny=(x1-x0), nl=Math.hypot(nx,ny), ux=nx/nl, uy=ny/nl, pts=[], pts2=[];
+      for(let k=0;k<=14;k++){ const s=tail+(head-tail)*k/14, bow=Math.sin(s*Math.PI)*34, w=16*(k/14);
+        const bx=x0+(x1-x0)*s, by=y0+(y1-y0)*s; pts.push([bx+ux*(bow+w),by+uy*(bow+w)]); pts2.push([bx+ux*(bow-w*.25),by+uy*(bow-w*.25)]); }
+      ctx.shadowColor="#ff3b3b"; ctx.shadowBlur=18; ctx.fillStyle=`rgba(255,255,255,${.95*al})`;
+      ctx.beginPath(); pts.forEach((a,k)=>ctx[k?"lineTo":"moveTo"](a[0],a[1])); pts2.reverse().forEach(a=>ctx.lineTo(a[0],a[1])); ctx.closePath(); ctx.fill();
+      ctx.shadowBlur=0; ctx.strokeStyle=`rgba(255,120,120,${al})`; ctx.lineWidth=2;
+      const hp=pts[pts.length-1]; for(let k=0;k<6;k++){ const a=rr(i*10+k)*6.2832, l=10+rr(i*10+k+3)*22*q; ctx.beginPath(); ctx.moveTo(hp[0],hp[1]); ctx.lineTo(hp[0]+Math.cos(a)*l,hp[1]+Math.sin(a)*l); ctx.stroke(); }
+    });
+  }
+  fxSpark(p,t,rr){
+    ctx.globalCompositeOperation="lighter";
+    for(let i=0;i<16;i++){ const q=(p-rr(i+30)*.4)/.5; if(q<=0||q>=1) continue; const x=rr(i)*470+5, y=rr(i+9)*470+5, s=(6+rr(i+3)*12)*Math.sin(q*Math.PI);
+      ctx.fillStyle=`rgba(220,170,255,${Math.sin(q*Math.PI)})`; ctx.beginPath();
+      ctx.moveTo(x,y-s); ctx.lineTo(x+s*.25,y-s*.25); ctx.lineTo(x+s,y); ctx.lineTo(x+s*.25,y+s*.25); ctx.lineTo(x,y+s); ctx.lineTo(x-s*.25,y+s*.25); ctx.lineTo(x-s,y); ctx.lineTo(x-s*.25,y-s*.25); ctx.closePath(); ctx.fill(); }
+  }
+
+  // ---------- spell effects ----------
+  fxFireball(p,t,rr){
+    ctx.globalCompositeOperation="lighter";
+    const pos=q=>[70+330*q, 430-360*q-Math.sin(q*Math.PI)*70];
+    if(p<.55){ const q=p/.55;
+      for(let i=0;i<16;i++){ const qq=Math.max(0,q-i*.022), [x,y]=pos(qq), r=26-i*1.3; if(r<=0) continue;
+        const g=ctx.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,`rgba(255,200,80,${.7-i*.04})`); g.addColorStop(1,"rgba(255,60,0,0)"); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,6.2832); ctx.fill(); }
+      const [x,y]=pos(q), g=ctx.createRadialGradient(x,y,0,x,y,34); g.addColorStop(0,"#fff"); g.addColorStop(.35,"#ffd25a"); g.addColorStop(1,"rgba(255,80,0,0)"); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,34,0,6.2832); ctx.fill();
+    } else { const e=(p-.55)/.45, [x,y]=pos(1);
+      ctx.fillStyle=`rgba(255,160,60,${.35*(1-e)})`; ctx.fillRect(0,0,480,480);
+      for(let k=0;k<3;k++){ ctx.strokeStyle=`rgba(255,${150+k*40},50,${1-e})`; ctx.lineWidth=10*(1-e)+1; ctx.beginPath(); ctx.arc(x,y,e*(110+k*55),0,6.2832); ctx.stroke(); }
+      for(let i=0;i<14;i++){ const a=i*.449, l=e*(90+rr(i)*90); ctx.strokeStyle=`rgba(255,200,80,${1-e})`; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(x+Math.cos(a)*e*30,y+Math.sin(a)*e*30); ctx.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l); ctx.stroke(); } }
+  }
+  fxFrost(p,t,rr){
+    ctx.fillStyle=`rgba(150,215,255,${.38*Math.sin(p*Math.PI)})`; ctx.fillRect(0,0,480,480);
+    const grow=Math.min(1,p*2.2), fade=p>.6?1-(p-.6)/.4:1;
+    for(let i=0;i<24;i++){ const a=rr(i)*6.2832, len=(70+rr(i+3)*190)*grow, w=7+rr(i+9)*8, cx=240+Math.cos(a)*30, cy=240+Math.sin(a)*30, ex=240+Math.cos(a)*len, ey=240+Math.sin(a)*len, nx=-Math.sin(a)*w, ny=Math.cos(a)*w;
+      const g=ctx.createLinearGradient(cx,cy,ex,ey); g.addColorStop(0,`rgba(255,255,255,${.9*fade})`); g.addColorStop(1,`rgba(120,200,255,${.6*fade})`);
+      ctx.fillStyle=g; ctx.strokeStyle=`rgba(255,255,255,${fade})`; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(cx+nx,cy+ny); ctx.lineTo(ex,ey); ctx.lineTo(cx-nx,cy-ny); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle=`rgba(255,255,255,${.85*fade})`;
+    for(let i=0;i<34;i++){ const x=rr(i+40)*480, y=(rr(i+80)*480+p*220)%480; ctx.beginPath(); ctx.arc(x,y,1.5+rr(i+20)*3,0,6.2832); ctx.fill(); }
+  }
+  fxBolt(p,t,rr,f){
+    ctx.globalCompositeOperation="lighter"; const cells=f.o.cells||[];
+    ctx.fillStyle=`rgba(255,240,150,${.18*Math.max(0,1-Math.abs(p-.3)*4)})`; ctx.fillRect(0,0,480,480);
+    cells.forEach(([r,c],k)=>{ const q=(p-Math.min(.25,k*.025))/.4; if(q<=0||q>=1) return; const x=c*60+30, y=r*60+30;
+      const pts=[]; for(let i=0;i<=6;i++) pts.push([x+(i<6?(rr(k*7+i)-.5)*46*(1-i/6):0), -10+(y+10)*i/6]);
+      for(const [w,col] of [[9,`rgba(255,200,60,${.5*(1-q)})`],[3,`rgba(255,255,255,${1-q})`]]){ ctx.strokeStyle=col; ctx.lineWidth=w; ctx.lineJoin="round"; ctx.beginPath(); pts.forEach((a,i)=>ctx[i?"lineTo":"moveTo"](a[0],a[1])); ctx.stroke(); }
+      const g=ctx.createRadialGradient(x,y,0,x,y,34*q+8); g.addColorStop(0,`rgba(255,255,220,${1-q})`); g.addColorStop(1,"rgba(255,200,60,0)"); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,34*q+8,0,6.2832); ctx.fill(); });
+  }
+  fxRing(p,t,rr,f){
+    ctx.globalCompositeOperation="lighter"; const col=f.o.col||"#fff", cx=240, cy=240;
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,260); g.addColorStop(0,col+"55"); g.addColorStop(1,col+"00"); ctx.globalAlpha=Math.sin(p*Math.PI); ctx.fillStyle=g; ctx.fillRect(0,0,480,480);
+    ctx.globalAlpha=1-p; ctx.strokeStyle=col; ctx.lineWidth=12*(1-p)+1; ctx.beginPath(); ctx.arc(cx,cy,p*270,0,6.2832); ctx.stroke(); ctx.lineWidth=4; ctx.beginPath(); ctx.arc(cx,cy,p*190,0,6.2832); ctx.stroke();
+    if(f.o.up){ ctx.fillStyle=col; for(let i=0;i<26;i++){ const x=rr(i)*460+10, y=480-((p*1.2+rr(i+30))%1)*480, s=3+rr(i+60)*5; ctx.globalAlpha=Math.min(1,(1-p)*1.5); ctx.beginPath(); ctx.moveTo(x,y-s); ctx.lineTo(x+s*.4,y); ctx.lineTo(x,y+s); ctx.lineTo(x-s*.4,y); ctx.closePath(); ctx.fill(); } }
+  }
+  fxMeteor(p,t,rr){
+    ctx.globalCompositeOperation="lighter";
+    if(p<.5){ const q=p/.5, x=30+210*q, y=-50+300*q;
+      const g=ctx.createLinearGradient(x,y,x-150*q-20,y-150*q-20); g.addColorStop(0,"rgba(255,160,40,.9)"); g.addColorStop(1,"rgba(255,60,0,0)"); ctx.strokeStyle=g; ctx.lineWidth=46; ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-150*q-20,y-150*q-20); ctx.stroke();
+      const r=ctx.createRadialGradient(x,y,0,x,y,40); r.addColorStop(0,"#fff"); r.addColorStop(.4,"#ffb040"); r.addColorStop(1,"rgba(255,70,0,0)"); ctx.fillStyle=r; ctx.beginPath(); ctx.arc(x,y,40,0,6.2832); ctx.fill();
+    } else { const e=(p-.5)/.5, x=240, y=250;
+      ctx.fillStyle=`rgba(255,240,200,${.85*(1-e)*(1-e)})`; ctx.fillRect(0,0,480,480);
+      for(let k=0;k<3;k++){ ctx.strokeStyle=`rgba(255,${120+k*50},40,${1-e})`; ctx.lineWidth=14*(1-e)+1; ctx.beginPath(); ctx.arc(x,y,e*(150+k*70),0,6.2832); ctx.stroke(); }
+      for(let i=0;i<18;i++){ const a=rr(i)*6.2832, d=e*(80+rr(i+9)*220), s=6+rr(i+4)*10*(1-e); ctx.fillStyle=`rgba(255,${120+rr(i)*100},40,${1-e})`; ctx.beginPath(); ctx.arc(x+Math.cos(a)*d,y+Math.sin(a)*d+e*e*80,s,0,6.2832); ctx.fill(); } }
+  }
+  fxBurn(p,t,rr,f){
+    ctx.globalCompositeOperation="lighter"; const a=Math.sin(p*Math.PI), {row,col}=f.o;
+    ctx.fillStyle=`rgba(255,110,20,${.5*a})`; ctx.fillRect(0,row*60,480,60); ctx.fillRect(col*60,0,60,480);
+    for(let i=0;i<40;i++){ const horiz=i%2===0, u=rr(i)*480, v=((p*1.3+rr(i+20))%1), px=horiz?u:col*60+30+(rr(i+5)-.5)*40, py=horiz?row*60+30-v*60+(rr(i+5)-.5)*20:u-v*60;
+      ctx.fillStyle=`rgba(255,${160+rr(i)*80},40,${a})`; ctx.beginPath(); ctx.arc(px,py,4+rr(i+8)*7*(1-v),0,6.2832); ctx.fill(); }
+  }
+
+  // ---------- render ----------
+  burst(x,y,col,n=10){ if(Settings.reduced||this.parts.length>150) return; for(let i=0;i<n;i++){ const a=Math.random()*6.283,v=1.5+Math.random()*4;
+    this.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.5,life:30+Math.random()*20,max:50,col,r:2+Math.random()*3}); } }
+  // canvas resolution follows the displayed size (capped; lowered automatically on slow devices)
+  resizeCanvas(){
+    const css=cv.getBoundingClientRect().width||480, dpr=Math.min(window.devicePixelRatio||1,2.5);
+    const sc=Math.max(.6,Math.min(this.qcap,css*dpr/480)), px=Math.round(480*sc);
+    if(cv.width!==px||cv.height!==px){ cv.width=cv.height=px; }
+    if(this.scale!==px/480){ this.scale=px/480; this.sprites={}; this.layers={}; }
+    this.dirty=3;
+  }
+  layer(name){
+    if(this.layers[name]) return this.layers[name];
+    const px=Math.round(520*this.scale), c=document.createElement("canvas"); c.width=c.height=px; const k=c.getContext("2d"); k.setTransform(px/520,0,0,px/520,20*px/520,20*px/520);
+    const prev=ctx; ctx=k; const S=480/N;
+    if(name==="bg"){
+      const bg=k.createLinearGradient(0,0,0,480); bg.addColorStop(0,"#241942"); bg.addColorStop(1,"#120b22"); k.fillStyle=bg; k.fillRect(-20,-20,520,520);
+      for(let r=0;r<N;r++)for(let c2=0;c2<N;c2++){ k.fillStyle=(r+c2)%2?"#ffffff08":"#00000030"; k.fillRect(c2*S,r*S,S,S); k.strokeStyle="#ffffff0d"; k.lineWidth=1; k.strokeRect(c2*S+.5,r*S+.5,S-1,S-1); }
+    } else { const v=k.createRadialGradient(240,240,200,240,240,360); v.addColorStop(0,"#0000"); v.addColorStop(1,"#000a"); k.fillStyle=v; k.fillRect(-20,-20,520,520); }
+    ctx=prev; return this.layers[name]=c;
+  }
+  sprite(type){
+    if(this.sprites[type]) return this.sprites[type];
+    const S=480/N, SP=S*1.5, px=Math.ceil(SP*this.scale), c=document.createElement("canvas"); c.width=c.height=px;
+    const k=c.getContext("2d"); k.setTransform(px/SP,0,0,px/SP,0,0); const prev=ctx; ctx=k; this.paintGem(type,SP/2,SP/2,S*.4); ctx=prev;
+    return this.sprites[type]={c,SP};
+  }
+  gemPath(t,cx,cy,r){
+    const poly=(n,rot,rr=r)=>{ for(let i=0;i<n;i++){ const a=rot+i*6.2832/n; ctx[i?"lineTo":"moveTo"](cx+Math.cos(a)*rr,cy+Math.sin(a)*rr); } ctx.closePath(); };
+    ctx.beginPath();
+    if(t===SKULL) ctx.roundRect(cx-r*.85,cy-r*.85,r*1.7,r*1.7,r*.4);
+    else if(t===RED) { ctx.moveTo(cx,cy-r*1.05); ctx.lineTo(cx+r*.9,cy); ctx.lineTo(cx,cy+r*1.05); ctx.lineTo(cx-r*.9,cy); ctx.closePath(); }
+    else if(t===GREEN) poly(6,0);
+    else if(t===BLUE) ctx.arc(cx,cy,r,0,6.2832);
+    else if(t===EARTH) poly(8,Math.PI/8);
+    else { for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r*.62:r*1.08; ctx[i?"lineTo":"moveTo"](cx+Math.cos(a)*rr,cy+Math.sin(a)*rr); } ctx.closePath(); }
+  }
+  drawIcon(t,cx,cy,r){
+    const P=(pts)=>{ ctx.beginPath(); ctx.moveTo(cx+pts[0]*r,cy+pts[1]*r);
+      for(let i=2;i<pts.length;i+=6) ctx.bezierCurveTo(cx+pts[i]*r,cy+pts[i+1]*r,cx+pts[i+2]*r,cy+pts[i+3]*r,cx+pts[i+4]*r,cy+pts[i+5]*r); };
+    const L=(pts)=>{ ctx.beginPath(); pts.forEach((v,i)=>{ if(i%2===0) ctx[i?"lineTo":"moveTo"](cx+v*r,cy+pts[i+1]*r); }); ctx.closePath(); };
+    r*=.72; ctx.save(); ctx.globalAlpha=.78; ctx.lineJoin="round"; ctx.lineCap="round"; ctx.lineWidth=Math.max(1.2,r*.07);
+    const draw=(fill,stroke)=>{ ctx.fillStyle=fill; ctx.strokeStyle=stroke; ctx.fill(); ctx.stroke(); };
+    if(t===RED){
+      P([0,.52, -.46,.52,-.52,.05,-.26,-.2, -.22,-.05,-.1,0,-.04,-.1, -.1,-.35,.06,-.45,.1,-.62, .46,-.3,.5,.52,0,.52]); draw("#ffd9a0","#6a1a10");
+      P([0,.4, -.2,.4,-.22,.15,-.08,.02, 0,.1,.06,.1,.1,.02, .24,.15,.2,.4,0,.4]); draw("#ff9a2e","#a83010");
+    } else if(t===GREEN){
+      const W=(q)=>{ ctx.beginPath(); ctx.moveTo(cx+q[0]*r,cy+q[1]*r); ctx.lineTo(cx+q[2]*r,cy+q[3]*r);
+        ctx.bezierCurveTo(cx+q[4]*r,cy+q[5]*r,cx+q[6]*r,cy+q[7]*r,cx+q[8]*r,cy+q[9]*r);
+        ctx.bezierCurveTo(cx+q[10]*r,cy+q[11]*r,cx+q[12]*r,cy+q[13]*r,cx+q[14]*r,cy+q[15]*r); };
+      for(const [w,col] of [[r*.22,"#0d4a36"],[r*.11,"#dcfff0"]]){ ctx.lineWidth=w; ctx.strokeStyle=col;
+        W([-.5,-.22,.12,-.22,.42,-.22,.46,-.55,.2,-.55,.02,-.55,-.02,-.38,.1,-.34]); ctx.stroke();
+        W([-.56,.05,.4,.05,.64,.05,.64,-.22,.42,-.22,.3,-.22,.26,-.12,.34,-.1]); ctx.stroke();
+        W([-.4,.32,.08,.32,.3,.32,.34,.56,.14,.56,-.02,.56,-.04,.45,.05,.42]); ctx.stroke(); }
+    } else if(t===BLUE){
+      P([0,-.58, .12,-.3,.42,-.05,.42,.2, .42,.5,-.42,.5,-.42,.2, -.42,-.05,-.12,-.3,0,-.58]); draw("#cfe6fa","#143a70");
+      ctx.beginPath(); ctx.moveTo(cx-.22*r,cy+.12*r); ctx.quadraticCurveTo(cx-.22*r,cy+.32*r,cx-.05*r,cy+.36*r); ctx.strokeStyle="#4a9be8"; ctx.stroke();
+    } else if(t===EARTH){
+      L([-.58,.42, -.16,-.34, .04,-.04, .2,-.22, .58,.42]); draw("#f3dfae","#4a3000");
+      ctx.beginPath(); ctx.moveTo(cx-.16*r,cy-.34*r); ctx.lineTo(cx-.02*r,cy+.42*r); ctx.moveTo(cx+.2*r,cy-.22*r); ctx.lineTo(cx+.12*r,cy+.42*r);
+      ctx.strokeStyle="#b07a1a"; ctx.lineWidth=Math.max(1,r*.05); ctx.stroke();
+    } else {
+      L([0,-.5, .12,-.12, .5,0, .12,.12, 0,.5, -.12,.12, -.5,0, -.12,-.12]); draw("#efe0ff","#4a2380");
+    }
+    ctx.restore();
+  }
+  drawSkull(cx,cy,r){
+    ctx.save(); ctx.lineJoin="round"; ctx.lineWidth=Math.max(1.5,r*.07); ctx.strokeStyle="#1a1020";
+    const bone=ctx.createLinearGradient(cx,cy-r*.7,cx,cy+r*.6); bone.addColorStop(0,"#ffffff"); bone.addColorStop(1,"#cfc6b4");
+    ctx.fillStyle=bone;
+    // jaw
+    ctx.beginPath(); ctx.roundRect(cx-r*.34,cy+r*.18,r*.68,r*.42,r*.12); ctx.fill(); ctx.stroke();
+    // cranium
+    ctx.beginPath(); ctx.ellipse(cx,cy-r*.12,r*.62,r*.54,0,0,6.2832); ctx.fill(); ctx.stroke();
+    // eye sockets
+    ctx.fillStyle="#1a1020";
+    for(const d of [-1,1]){ ctx.beginPath(); ctx.ellipse(cx+d*r*.26,cy-r*.1,r*.17,r*.2,d*.15,0,6.2832); ctx.fill();
+      ctx.fillStyle="#ff4a3a"; ctx.beginPath(); ctx.arc(cx+d*r*.26,cy-r*.07,r*.05,0,6.2832); ctx.fill(); ctx.fillStyle="#1a1020"; }
+    // nose
+    ctx.beginPath(); ctx.moveTo(cx,cy+r*.06); ctx.lineTo(cx-r*.08,cy+r*.22); ctx.lineTo(cx+r*.08,cy+r*.22); ctx.closePath(); ctx.fill();
+    // teeth
+    ctx.lineWidth=Math.max(1,r*.05);
+    ctx.beginPath(); for(const k of [-.17,0,.17]){ ctx.moveTo(cx+r*k,cy+r*.3); ctx.lineTo(cx+r*k,cy+r*.58); } ctx.stroke();
+    ctx.restore();
+  }
+  paintGem(type,cx,cy,r){
+    const col=GEMS[type].col;
+    ctx.save(); ctx.shadowColor=col; ctx.shadowBlur=6;
+    this.gemPath(type,cx,cy,r);
+    const gr=ctx.createRadialGradient(cx-r*.35,cy-r*.45,r*.1,cx,cy,r*1.15);
+    gr.addColorStop(0,shade(col,70)); gr.addColorStop(.45,col); gr.addColorStop(1,shade(col,-60));
+    ctx.fillStyle=gr; ctx.fill();
+    ctx.shadowBlur=0; ctx.lineWidth=2.5; ctx.strokeStyle=shade(col,-75); ctx.stroke();
+    ctx.lineWidth=1.2; ctx.strokeStyle="#fff6"; this.gemPath(type,cx,cy,r*.82); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle="#ffffff55"; ctx.beginPath(); ctx.ellipse(cx-r*.3,cy-r*.45,r*.32,r*.16,-0.6,0,6.2832); ctx.fill();
+    if(type===SKULL) this.drawSkull(cx,cy,r); else this.drawIcon(type,cx,cy,r);
+  }
+  drawGem(g,S,t){
+    let cx=g.x*S+S/2; let cy=g.y*S+S/2; let k=g.s; if(k<.03) return;
+    if(this.intro&&!Settings.reduced) cy+=this.hop(cx,cy,t);
+    const bad=t-g.bad<360; if(bad) cx+=Math.sin((t-g.bad)/28)*5*(1-(t-g.bad)/360);
+    const sel=this.sel&&this.sel[0]===g.ty&&this.sel[1]===g.tx;
+    const hint=this.hint&&this.hint.some(([hr,hc])=>hr===g.ty&&hc===g.tx);
+    if(sel) k*=1+0.05*Math.sin(t/90)+0.08;
+    if(hint) k*=1+0.08*Math.sin(t/140);
+    const sp=this.sprite(g.t), size=sp.SP*k; ctx.drawImage(sp.c,cx-size/2,cy-size/2,size,size);
+    const r=S*.4*k;
+    if(sel){ ctx.lineWidth=3; const rc=this.turn==="enemy"?"#ff5a5a":"#ffd36b"; ctx.strokeStyle=rc; ctx.shadowColor=rc; ctx.shadowBlur=12; this.gemPath(g.t,cx,cy,r*1.15); ctx.stroke(); ctx.shadowBlur=0; }
+    if(bad){ ctx.lineWidth=3; ctx.strokeStyle=`rgba(255,70,70,${1-(t-g.bad)/360})`; this.gemPath(g.t,cx,cy,r*1.12); ctx.stroke(); }
+  }
+  needsBoard(t){
+    if(this.dirty>0||this.fx.length||this.parts.length||this.floats.length||this.flash||this.shakeT>0||this.sel||this.hint||(this.kb&&this.cursor)||this.intro||this.turn==="enemy") return true;
+    for(const row of this.b) for(const g of row) if(g&&(g.s!==1||g.x!==g.tx||g.y!==g.ty||t-g.bad<400)) return true;
+    return false;
+  }
+  loop(t=0){
+    requestAnimationFrame(tt=>this.loop(tt));
+    // adaptive quality: if frames stay slow, lower canvas resolution, then disable full-board match effects
+    const dt=Math.min(100,t-(this.lastT||t)); this.lastT=t; this.ema+=(dt-this.ema)*.05;
+    if(t>3000&&t-this.lastQ>1500&&this.ema>30&&!document.hidden){ this.lastQ=t;
+      if(this.qcap>.8){ this.qcap=Math.max(.75,this.qcap*.8); this.resizeCanvas(); } else if(!Settings.lowFx){ Settings.lowFx=true; } }
+    // idle hint
+    if(this.turn==="player"&&!this.busy&&!this.over){
+      if(!this.hint&&t-this.lastAct>6000){ const m=this.moves(); if(m.length) this.hint=[m[0].a,m[0].b]; if(!Tut.done) Tut.event("hint"); }
+    } else this.hint=null;
+    if(this.needsBoard(t)){
+      if(this.dirty>0) this.dirty--;
+      const S=480/N, sc=this.scale;
+      ctx.setTransform(sc,0,0,sc,0,0); ctx.clearRect(-20,-20,520,520);
+      if(this.shakeT>0){ this.shakeT*=0.88; if(this.shakeT<0.3) this.shakeT=0; ctx.translate((Math.random()-.5)*this.shakeT,(Math.random()-.5)*this.shakeT); }
+      ctx.drawImage(this.layer("bg"),-20,-20,520,520);
+      for(const row of this.b) for(const g of row) if(g) this.drawGem(g,S,t);
+      this.parts=this.parts.filter(p=>--p.life>0);
+      for(const p of this.parts){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.18; ctx.globalAlpha=Math.min(1,p.life/p.max*1.5); ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r*p.life/p.max+.5,0,6.2832); ctx.fill(); }
+      ctx.globalAlpha=1;
+      if(this.sel&&this.turn==="player"){ ctx.fillStyle="#ffd36b33"; for(const [dr,dc] of [[0,1],[1,0],[0,-1],[-1,0]]){ const r2=this.sel[0]+dr,c2=this.sel[1]+dc; if(r2>=0&&r2<N&&c2>=0&&c2<N){ ctx.beginPath(); ctx.arc(c2*S+S/2,r2*S+S/2,S*.46,0,6.2832); ctx.fill(); } } }
+      if(this.kb&&this.cursor&&this.turn==="player"&&!this.over){ const [r,c]=this.cursor; ctx.lineWidth=3; ctx.strokeStyle=this.grab?"#ffd36b":"#fff"; ctx.setLineDash(this.grab?[]:[6,5]); ctx.strokeRect(c*S+4,r*S+4,S-8,S-8); ctx.setLineDash([]); }
+      this.drawFx(t);
+      if(this.flash){ const q=(t-this.flash.t0)/this.flash.dur; if(q>=1) this.flash=null; else if(q>=0){ ctx.fillStyle=`rgba(${this.flash.col},${(this.flash.a||.4)*(1-q)})`; ctx.fillRect(-20,-20,520,520); } }
+      ctx.drawImage(this.layer("vig"),-20,-20,520,520);
+      if(this.intro) this.drawIntro(t);
+      ctx.font="900 24px 'Palatino Linotype',Georgia,serif"; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
+      this.floats=this.floats.filter(f=>--f.life>0);
+      for(const f of this.floats){ ctx.globalAlpha=Math.min(1,f.life/20); ctx.fillStyle=f.color; ctx.strokeStyle="#000"; ctx.lineWidth=5; ctx.lineJoin="round";
+        const y=f.y-(60-f.life)*0.8, sc2=1+Math.max(0,(f.life-52))*0.05; ctx.save(); ctx.translate(f.x,y); ctx.scale(sc2,sc2);
+        ctx.strokeText(f.text,0,0); ctx.fillText(f.text,0,0); ctx.restore(); }
+      ctx.globalAlpha=1;
+    }
+    // portraits: ~20fps while idle, every frame while reacting
+    const kick=t<this.lunge?0:Math.max(0,1-(t-this.lunge)/450), rm=Settings.reduced, hp=this.hurtT.p-t>0, he=this.hurtT.e-t>0;
+    if(hp||he||kick>0||t-this.lastPortrait>50){ this.lastPortrait=t;
+      Fig.tier=this.tier(); Fig.draw($("pcv"),"hero",t,rm?0:hp?6:0,0,rm); Fig.draw($("ecv"),this.e.key,t,rm?0:he?6:0,rm?0:Math.sin(kick*Math.PI),rm); }
+  }
+}
+
+function shade(hex,amt){
+  const n=parseInt(hex.slice(1),16); const f=v=>Math.max(0,Math.min(255,v+amt));
+  return `rgb(${f(n>>16)},${f((n>>8)&255)},${f(n&255)})`;
+}
+
+Settings.load();
+const game = new Game();
+game.applyLang();
+// wait briefly for the SDK (cloud save), then show the home screen - or, on a first visit, drop straight into the tutorial battle
+Promise.race([CG.init(),new Promise(r=>setTimeout(r,2500))]).then(()=>{ CG.loaded();
+  try{ const raw=CG.dataGet(Store.key); if(raw&&!game.started){ const c=JSON.parse(raw), l=Store.get(Store.key);   // cloud save newer than local? use it
+    if(c&&c.savedAt&&(!l||c.savedAt>l.savedAt)){ Store.set(Store.key,c); game.applySave(c); game.hasSave=true; game.startBattle(); } } }catch(e){}
+  if(!game.started){ if(game.hasSave) game.homePanel(); else game.autoStart(); } });
+
+// ---------- toolbar ----------
+const muteBtn=document.getElementById("mute"), syncMute=()=>muteBtn.classList.toggle("off",Snd.muted);
+muteBtn.onclick=()=>{ Snd.init(); Snd.setMuted(!Snd.muted); syncMute(); }; syncMute();
+document.getElementById("menu").onclick=()=>game.openMenu();
+$("hint").onclick=()=>game.showHint();
+$("tipok").onclick=()=>Tut.dismiss(Tut.cur);
+$("panel").addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); if(b&&!b.disabled){ Snd.init(); Snd.play("click"); game.act(b.dataset.act,b.dataset); } });
+$("panel").addEventListener("input",e=>{ const k=e.target.dataset.set; if(k&&e.target.type==="range"){ Settings[k]=e.target.value/100; Settings.apply(); } });
+$("panel").addEventListener("change",e=>{ const k=e.target.dataset.set; if(!k) return;
+  if(e.target.tagName==="SELECT"){ Settings[k]=e.target.value; if(k==="lang"){ Settings.langSet=true; Settings.apply(); game.applyLang(); } Settings.save();
+    if(game.ctx==="home"&&k!=="diff") game.homePanel(); else if(game.ctx==="home") game.homePanel(); else game.settingsPanel(); return; }
+  if(k==="mute"){ Snd.setMuted(e.target.checked); syncMute(); } else if(e.target.type==="checkbox"){ Settings[k]=e.target.checked; Settings.apply(); }
+  Settings.save(); });
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(panelOpen()){
+    if(e.key==="Escape"&&game.ctx==="menu"){ e.preventDefault(); closePanel(); }
+    else if(e.key==="Tab"){ const f=[...$("panelbox").querySelectorAll("button:not([disabled]),input,select")]; if(!f.length) return;
+      const i=f.indexOf(document.activeElement), n=e.shiftKey?(i<=0?f.length-1:i-1):(i===f.length-1?0:i+1); e.preventDefault(); f[n].focus(); }
+    return; }
+  if(!game.started) return;
+  const k=e.key, dirs={ArrowLeft:[0,-1],ArrowRight:[0,1],ArrowUp:[-1,0],ArrowDown:[1,0]};
+  if(dirs[k]){ e.preventDefault(); game.kb=true; game.kbMove(...dirs[k]); }
+  else if(k===" "||k==="Enter"){ if(e.target.tagName==="BUTTON") return; e.preventDefault(); game.kb=true; game.kbSelect(); }
+  else if(k==="Escape"||k==="p"||k==="P") game.openMenu();
+  else if(/^[1-8]$/.test(k)) game.cast(+k-1);
+  else if(k==="h"||k==="H") game.usePotion("hp");
+  else if(k==="m"||k==="M") game.usePotion("mana");
+  else if(k==="t"||k==="T") game.showHint();
+});
+// pause when the player leaves (tab hidden, app switch, window loses focus): open the pause menu, stop gameplay in the SDK, mute
+let away=false;
+function goAway(){
+  if(away) return; away=true; Snd.away=true; Snd.apply(); try{ if(Snd.ctx) Snd.ctx.suspend(); }catch(e){}
+  if(CG.adActive) return;
+  if(game.started&&!game.over&&!panelOpen()) game.openMenu(); else CG.stop();
+}
+function comeBack(){ if(!away) return; away=false; Snd.away=false; Snd.apply(); try{ if(Snd.ctx&&!document.hidden) Snd.ctx.resume(); }catch(e){} }
+document.addEventListener("visibilitychange",()=>document.hidden?goAway():comeBack());
+window.addEventListener("blur",goAway); window.addEventListener("focus",comeBack); window.addEventListener("pagehide",goAway);
+{ const d=document.documentElement; if(!(d.requestFullscreen||d.webkitRequestFullscreen)) document.getElementById("fs").style.display="none"; }
+document.getElementById("fs").onclick=()=>{ const d=document.documentElement;
+  try{ document.fullscreenElement?document.exitFullscreen():(d.requestFullscreen||d.webkitRequestFullscreen).call(d); }catch(e){} };
+
+// ---------- input ----------
+let down=null;
+const cellAt=e=>{ const R=cv.getBoundingClientRect(); const c=Math.floor((e.clientX-R.left)/R.width*N), r=Math.floor((e.clientY-R.top)/R.height*N);
+  return (r>=0&&r<N&&c>=0&&c<N)?[r,c]:null; };
+const adj=(a,b)=>Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])===1;
+cv.addEventListener("pointerdown",e=>{
+  game.kb=false;
+  if(!game.started||game.busy||game.over||game.turn!=="player") return;
+  const cell=cellAt(e); if(!cell) return;
+  if(game.sel && adj(game.sel,cell)){ const a=game.sel; game.playerMove(a,cell); down=null; return; }
+  game.sel=cell; down={cell,x:e.clientX,y:e.clientY};
+});
+cv.addEventListener("pointermove",e=>{
+  if(!down||game.busy) return;
+  const dx=e.clientX-down.x, dy=e.clientY-down.y;
+  if(Math.hypot(dx,dy)<Math.max(10,cv.getBoundingClientRect().width/N*.28)) return;
+  const [r,c]=down.cell; const t=Math.abs(dx)>Math.abs(dy)?[r,c+Math.sign(dx)]:[r+Math.sign(dy),c];
+  down=null;
+  if(t[0]>=0&&t[0]<N&&t[1]>=0&&t[1]<N) game.playerMove([r,c],t);
+});
+window.addEventListener("pointerup",()=>{ down=null; });
+window.addEventListener("pointercancel",()=>{ down=null; });
+</script>
+</body>
+</html>
