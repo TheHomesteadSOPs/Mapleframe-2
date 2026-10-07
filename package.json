@@ -2,6 +2,6 @@
   "name": "gemhollow",
   "private": true,
   "description": "Gemhollow — match-3 RPG battler (single-file HTML5 game)",
-  "scripts": { "build": "node scripts/build.mjs", "art": "node scripts/generate-art.mjs", "art:sync": "node scripts/generate-art.mjs --sync" },
+  "scripts": { "build": "node scripts/build.mjs" },
   "devDependencies": { "esbuild": "^0.25.0" }
 }

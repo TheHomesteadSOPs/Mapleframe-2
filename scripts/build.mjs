@@ -1,6 +1,6 @@
 // Builds dist/index.html (minified, single file) and dist/gemhollow.zip for upload.
 // Usage: npm i --no-save esbuild && node scripts/build.mjs
-import { readFileSync, writeFileSync, mkdirSync, cpSync, existsSync, rmSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { transformSync } from "esbuild";
 
@@ -17,8 +17,7 @@ html = html.replace(/<!--[\s\S]*?-->/g, "").replace(/>\s+</g, "><").replace(/\n\
 
 mkdirSync("dist", { recursive: true });
 writeFileSync("dist/index.html", html);
-rmSync("dist/art", { recursive: true, force: true }); rmSync("dist/gemhollow.zip", { force: true });
-if (existsSync("art")) cpSync("art", "dist/art", { recursive: true });
-try { execFileSync("zip", ["-r", "-q", "gemhollow.zip", ...(existsSync("dist/art") ? ["index.html", "art"] : ["index.html"])], { cwd: "dist" }); } catch { console.log("zip not found; upload dist/index.html directly"); }
+rmSync("dist/gemhollow.zip", { force: true });
+try { execFileSync("zip", ["-j", "-q", "dist/gemhollow.zip", "dist/index.html"]); } catch { console.log("zip not found; upload dist/index.html directly"); }
 const kb = n => (n / 1024).toFixed(1) + " KB";
 console.log("source", kb(readFileSync("index.html").length), "-> dist", kb(html.length));
