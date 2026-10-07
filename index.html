@@ -757,7 +757,7 @@ const TR=[ // [en, es, pt, fr, de, ru]
  ["Burn a row and column, {n} dmg per gem","Quema una fila y una columna, {n} de daño por gema","Queima uma linha e uma coluna, {n} de dano por gema","Brûle une ligne et une colonne, {n} dégâts par gemme","Verbrennt eine Reihe und Spalte, {n} Schaden pro Stein","Сжигает ряд и столбец, {n} урона за камень"],
  ["Cure poison & stun, heal {n}","Cura veneno y aturdimiento, sana {n}","Cura veneno e atordoamento, cura {n}","Soigne poison et étourdissement, rend {n}","Heilt Gift & Betäubung, heilt {n}","Снимает яд и оглушение, лечит {n}"],
  ["Block the next {n} damage","Bloquea los próximos {n} de daño","Bloqueia os próximos {n} de dano","Bloque les {n} prochains dégâts","Blockt die nächsten {n} Schaden","Блокирует следующие {n} урона"],
- ["{n} damage, shakes the board","{n} de daño, sacude el tablero","{n} de dano, sacode o tabuleiro","{n} dégâts, secoue le plateau","{n} Schaden, erschüttert das Brett","{n} урона, трясёт поле"],
+ ["{n} damage, jumbles the board","{n} de daño, revuelve el tablero","{n} de dano, embaralha o tabuleiro","{n} dégâts, mélange le plateau","{n} Schaden, mischt das Brett","{n} урона, перемешивает поле"],
  ["(Lv {n})","(Nv {n})","(Nv {n})","(Niv {n})","(Stufe {n})","(Ур. {n})"],
  ["+Shield","+Escudo","+Escudo","+Bouclier","+Schild","+Щит"],
  ["The enemy is frozen!","¡El enemigo está congelado!","O inimigo está congelado!","L'ennemi est gelé !","Der Gegner ist eingefroren!","Враг заморожен!"],
@@ -930,8 +930,8 @@ const SPELLS = [
     async run(g,L){ g.spawnFx("ring",0,{col:"#7ff0ff",up:true}); g.glow("pcard","healglow"); await sleep(250); g.p.poison=0; g.p.stunned=false; g.healPlayer(Math.round(8*mult(L))); g.log(T("Ailments cleansed.")); }},
   {name:"Stoneskin", cost:{[EARTH]:5}, desc:L=>T("Block the next {n} damage",{n:Math.round(14*mult(L))}),
     async run(g,L){ g.spawnFx("ring",0,{col:"#e8b84a"}); g.spawnFx(EARTH); await sleep(300); g.p.shield+=Math.round(14*mult(L)); g.floatText(240,240,T("+Shield"),"#e8b84a"); }},
-  {name:"Meteor", cost:{[RED]:5,[EARTH]:6}, desc:L=>T("{n} damage, shakes the board",{n:Math.round(26*mult(L))}),
-    async run(g,L){ g.spawnFx("meteor"); await sleep(560); await g.hurtEnemy(Math.round(26*mult(L))); }},
+  {name:"Meteor", cost:{[RED]:5,[EARTH]:6}, desc:L=>T("{n} damage, jumbles the board",{n:Math.round(26*mult(L))}),
+    async run(g,L){ g.spawnFx("meteor"); await sleep(560); await g.hurtEnemy(Math.round(26*mult(L))); if(!g.checkEnd()) await g.jumble(); }},
 ];
 
 const ABIL = {
@@ -1083,6 +1083,16 @@ class Game {
       groups.forEach(g=>{ if([...keys].some(k=>g.has(k))) hit.push(g); });
       const merged=new Set(keys); hit.forEach(g=>{ g.forEach(k=>merged.add(k)); groups.splice(groups.indexOf(g),1); }); groups.push(merged); }
     return groups.map(g=>g.size);
+  }
+  // scramble every gem into a new spot (no ready-made matches, always leaves a move)
+  async jumble(){
+    const gems=this.b.flat().filter(Boolean); let ok=false;
+    for(let n=0;n<200&&!ok;n++){
+      for(let i=gems.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [gems[i],gems[j]]=[gems[j],gems[i]]; }
+      gems.forEach((g,i)=>{ this.b[Math.floor(i/N)][i%N]=g; });
+      ok=!this.findMatches().cells.length&&!!this.bestMove();
+    }
+    this.fixTargets(); this.dirty=3; Snd.play("swap"); await this.settle(); await sleep(150);
   }
   swapData(a,b){ const t=this.b[a[0]][a[1]]; this.b[a[0]][a[1]]=this.b[b[0]][b[1]]; this.b[b[0]][b[1]]=t; }
   fixTargets(){ for(let r=0;r<N;r++)for(let c=0;c<N;c++){ const g=this.b[r][c]; if(g){g.tx=c;g.ty=r;} } }
