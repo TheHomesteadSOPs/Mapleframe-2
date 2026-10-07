@@ -3,7 +3,7 @@ const {chromium}=require('playwright'); const fs=require('fs');
 const out=process.env.D+'/promo/';
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'}).catch(e=>null)||await chromium.launch();
 const p=await b.newPage({viewport:{width:960,height:540},deviceScaleFactor:1}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
-await p.addInitScript(()=>{ localStorage.setItem('gemhollow_save_v1',JSON.stringify({v:1,lv:9,xp:0,gold:300,stage:4,best:4,hpUp:3,blade:2,spellLv:[3,2,2,2,2,2,2,3],potions:{hp:2,mana:1},tut:true,ach:{},daily:{last:new Date().toISOString().slice(0,10),streak:1},savedAt:1})); });
+await p.addInitScript(()=>{ localStorage.setItem('gemhollow_save_v1',JSON.stringify({v:1,lv:20,xp:0,gold:300,stage:4,best:4,hpUp:3,blade:2,spellLv:[3,2,2,2,2,2,2,3],potions:{hp:2,mana:1},tut:true,ach:{},daily:{last:new Date().toISOString().slice(0,10),streak:1},savedAt:1})); });
 await p.goto('file://'+process.cwd()+'/index.html'); await p.waitForTimeout(900);
 await p.evaluate(()=>{ Tut.done=true; Tut.hide(); const b=document.querySelector('[data-act=play]'); if(b) b.click(); });
 const frames=[]; let n=0, t0=Date.now(), stop=false;
