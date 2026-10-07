@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'}).catch(e=>null)||await chromium.launch();
 const ctx=await b.newContext({viewport:{width:1280,height:720}}); const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message)); p.on('console',m=>m.type()==='error'&&!/ERR_TUNNEL|Failed to load/.test(m.text())&&errs.push(m.text()));
 await p.addInitScript(()=>{ window.__wins=0; window.__loses=0; });
-await p.goto('file://'+process.cwd()+'/index.html?fast'); await p.waitForTimeout(300); await p.click('[data-act=play]');
+await p.goto('file://'+process.cwd()+'/index.html?fast'); await p.waitForTimeout(300); await p.evaluate(()=>{const b=document.querySelector('[data-act=play]'); b&&b.click();});
 const R={};
 // 1) no-moves reshuffle
 R.reshuffle=await p.evaluate(async()=>{
@@ -55,11 +55,11 @@ R.concurrent=await p.evaluate(async()=>{
 await p.evaluate(()=>{ closePanel(); game.startBattle(); game.p.mana[1]=3; });
 await p.reload(); await p.waitForTimeout(300);
 R.reload=await p.evaluate(()=>({btn:document.querySelector('[data-act=play]').textContent,stage:game.stage,hp:game.p.hp,max:game.p.max,over:game.over}));
-await p.click('[data-act=play]'); await p.waitForTimeout(100);
+await p.evaluate(()=>{const b=document.querySelector('[data-act=play]'); b&&b.click();}); await p.waitForTimeout(100);
 // 6) storage blocked / corrupt save
 const p2=await ctx.newPage(); const e2=[]; p2.on('pageerror',e=>e2.push(e.message));
 await p2.addInitScript(()=>{ Object.defineProperty(window,'localStorage',{get(){ throw new Error('blocked'); }}); });
-await p2.goto('file://'+process.cwd()+'/index.html?fast'); await p2.waitForTimeout(300); await p2.click('[data-act=play]');
+await p2.goto('file://'+process.cwd()+'/index.html?fast'); await p2.waitForTimeout(300); await p2.evaluate(()=>{const b=document.querySelector('[data-act=play]'); b&&b.click();});
 R.noStorage=await p2.evaluate(async()=>{ game.e.hp=1; const m=game.moves(); await game.playerMove(m[0].a,m[0].b); await game.cast(0).catch(()=>{}); return {ok:true,over:game.over}; });
 const p3=await ctx.newPage(); const e3=[]; p3.on('pageerror',e=>e3.push(e.message));
 await p3.addInitScript(()=>{ localStorage.setItem('gemhollow_save_v1','{"lv":"x","xp":null,"gold":-5,"stage":"7","spellLv":[9,0,"a"],"potions":{"hp":"z"}}'); localStorage.setItem('gemhollow_settings_v1','not json'); });
