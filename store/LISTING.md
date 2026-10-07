@@ -29,12 +29,13 @@ Features:
 
 ## Files
 | promo_trailer_960x540.mp4 | 16 s | trailer clip (boss entrances + spell effects) |
+| promo_trailer_portrait_540x960.mp4 | 16 s | portrait preview video |
 | promo_preview_560.gif | 16 s | animated preview |
 | File | Size | Use |
 |---|---|---|
 | cover_landscape_1920x1080.png | 16:9 | main cover |
-| cover_square_1200x1200.png | 1:1 | square cover |
-| cover_portrait_1080x1920.png | 9:16 | portrait cover |
+| cover_square_800x800.png | 1:1 | square cover |
+| cover_portrait_800x1200.png | 2:3 | portrait cover |
 | screenshot_*.png | 1920x1080 / 1080x1920 | gameplay screenshots |
 
 > Cover sizes/ratios are from memory of CrazyGames' developer requirements — verify the current
