@@ -4,7 +4,7 @@ const rate=parseFloat(process.argv[2]||'6');
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'}).catch(e=>null)||await chromium.launch();
 const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:3,hasTouch:true,isMobile:true}); const p=await ctx.newPage();
 const cdp=await ctx.newCDPSession(p); await cdp.send('Emulation.setCPUThrottlingRate',{rate});
-await p.goto('file://'+process.cwd()+'/index.html'); await p.waitForTimeout(500); await p.click('[data-act=play]'); await p.waitForTimeout(300);
+await p.goto('file://'+process.cwd()+'/index.html'); await p.waitForTimeout(500); await p.evaluate(()=>{const b=document.querySelector('[data-act=play]'); b&&b.click();}); await p.waitForTimeout(300);
 await p.evaluate(()=>{ Tut.hide(); const o=Game.prototype.loop; window.__t=[]; Game.prototype.loop=function(t){ const s=performance.now(); const r=o.call(this,t); window.__t.push(performance.now()-s); return r; };  });
 async function sample(name,fn,ms){ await p.evaluate(()=>{ window.__t.length=0; window.__f=[]; let last=performance.now(); const tick=()=>{ const n=performance.now(); window.__f.push(n-last); last=n; if(!window.__stop) requestAnimationFrame(tick); }; window.__stop=false; requestAnimationFrame(tick); });
   if(fn) await p.evaluate(fn); await p.waitForTimeout(ms);

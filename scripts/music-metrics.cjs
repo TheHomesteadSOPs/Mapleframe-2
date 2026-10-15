@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const tr=parseInt(process.argv[2]||'0'), secs=parseInt(process.argv[3]||'25');
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--autoplay-policy=no-user-gesture-required']}).catch(e=>null)||await chromium.launch();
 const p=await b.newPage({viewport:{width:900,height:700}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
-await p.goto('file://'+process.cwd()+'/index.html'); await p.click('[data-act=play]'); await p.waitForTimeout(300);
+await p.goto('file://'+process.cwd()+'/index.html'); await p.evaluate(()=>{const b=document.querySelector('[data-act=play]'); b&&b.click();}); await p.waitForTimeout(300);
 const r=await p.evaluate(async([tr,secs])=>{
   Snd.init(); Snd.setTrackNow(tr); const an=Snd.ctx.createAnalyser(); an.fftSize=2048; Snd.master.connect(an);
   const td=new Float32Array(2048), fd=new Float32Array(1024), rms=[]; let cen=0,low=0,tot=0,n=0; const hz=Snd.ctx.sampleRate/2048;

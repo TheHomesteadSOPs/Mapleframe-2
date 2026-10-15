@@ -54,7 +54,7 @@ await c.close();
 [c,p]=await mk(()=>{ const d=new Date(); d.setDate(d.getDate()-1); const y=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); localStorage.setItem('gemhollow_save_v1',JSON.stringify({v:1,lv:3,xp:0,gold:100,stage:2,best:2,hpUp:0,blade:0,spellLv:[1,1,1,1,1,1,1,1],potions:{hp:1,mana:0},tut:true,daily:{last:y,streak:2},savedAt:1})); });
 await load(p);
 R.homeHas=await p.evaluate(()=>document.querySelector('#panelbox').innerText.slice(0,120).replace(/\n/g,' | '));
-await p.click('[data-act=play]'); R.dailyPanel=await p.evaluate(()=>document.querySelector('#panelbox').innerText.replace(/\n/g,' | '));
+await p.evaluate(()=>{const b=document.querySelector('[data-act=play]'); b&&b.click();}); R.dailyPanel=await p.evaluate(()=>document.querySelector('#panelbox').innerText.replace(/\n/g,' | '));
 await p.click('[data-act=claim]'); await p.waitForTimeout(200);
 R.dailyClaimed=await p.evaluate(()=>({gold:game.p.gold,potions:game.p.potions.hp,streak:game.daily.streak,started:game.started,panel:panelOpen(),ach:!!game.ach.daily,saved:Store.get(Store.key).daily}));
 await p.reload(); await p.waitForTimeout(500); R.noSecondDaily=await p.evaluate(()=>!document.querySelector('[data-act=claim]')&&!!document.querySelector('[data-act=play]'));

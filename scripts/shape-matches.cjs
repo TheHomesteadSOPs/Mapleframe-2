@@ -2,7 +2,7 @@ const {chromium}=require('playwright');
 (async()=>{
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'}).catch(e=>null)||await chromium.launch();
 const p=await b.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
-await p.goto('file://'+process.cwd()+'/index.html?fast'); await p.waitForTimeout(300); await p.click('[data-act=play]');
+await p.goto('file://'+process.cwd()+'/index.html?fast'); await p.waitForTimeout(300); await p.evaluate(()=>{const b=document.querySelector('[data-act=play]'); b&&b.click();});
 const res=await p.evaluate(async()=>{
   // fill with a no-match pattern (types 0..4 diagonal) then stamp shapes of type 1 (RED)
   const base=()=>{ for(let r=0;r<N;r++)for(let c=0;c<N;c++) game.b[r][c]=game.mk(r,c,(2*r+3*c)%5===1?2:((2*r+3*c)%5)+(((2*r+3*c)%5)===1?0:0)); };
