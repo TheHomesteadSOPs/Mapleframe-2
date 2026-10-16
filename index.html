@@ -586,6 +586,12 @@ const CG = {
   }
 };
 
+// ---------- optional painted portraits ----------
+// The build embeds art/*.webp into this file (ART_INLINE); when running the source file the images are loaded from art/.
+// Anything without an image keeps its vector drawing. ART_ALIAS lets a missing tier reuse another tier's picture until it has its own.
+const ART_INLINE=null/*ART_INLINE*/;
+const ART_KEYS=["hero0","hero2","hero3","hero4"], ART_ALIAS={hero1:"hero0"}, ART_IMG={};
+(()=>{ for(const k of (ART_INLINE?Object.keys(ART_INLINE):ART_KEYS)){ const i=new Image(); i.src=ART_INLINE?ART_INLINE[k]:"art/"+k+".webp"; ART_IMG[k]=i; } })();
 // ---------- character portraits (vector art, animated) ----------
 const Fig = (() => {
   let c, T=0, bl=1, off=null; const cache={};
@@ -810,6 +816,13 @@ const Fig = (() => {
         q=g.createRadialGradient(S*.32,S*.22,0,S*.32,S*.22,S*.5); q.addColorStop(0,"rgba(255,255,255,.22)"); q.addColorStop(1,"rgba(255,255,255,0)"); g.fillStyle=q; g.fillRect(0,0,S,S);
         q=g.createLinearGradient(0,S*.72,0,S*.97); q.addColorStop(0,"rgba(0,0,20,0)"); q.addColorStop(1,"rgba(0,0,20,.4)"); g.fillStyle=q; g.fillRect(0,0,S,S); }));
       const vg=cache["V"+S]||(cache["V"+S]=mk(g=>{ const q=g.createRadialGradient(S*.5,S*.5,S*.42,S*.5,S*.5,S*.78); q.addColorStop(0,"#0000"); q.addColorStop(1,"#000a"); g.fillStyle=q; g.fillRect(0,0,S,S); }));
+      const key2=name==="hero"?"hero"+Fig.tier:name, im=ART_IMG[ART_IMG[key2]?key2:ART_ALIAS[key2]];
+      if(im&&im.complete&&im.naturalWidth){   // painted portrait: same breathing / hit-shake / lunge as the vector figures
+        main.setTransform(1,0,0,1,0,0); main.globalAlpha=1; main.fillStyle="#000"; main.fillRect(0,0,S,S);
+        const bobp=still?0:Math.sin(t/420)*S*.006, brp=still?0:Math.sin(t/420)*.01, sxp=(Math.random()-.5)*shake*S/200;
+        main.save(); main.translate(S/2+sxp,S); main.scale(1+brp+kick*.1,1-brp+kick*.1); main.translate(-S/2,-S+bobp+kick*S*.03);
+        main.drawImage(im,-S*.04,-S*.04,S*1.08,S*1.08); main.restore(); main.drawImage(vg,0,0); return;
+      }
       main.setTransform(1,0,0,1,0,0); main.globalAlpha=1; main.drawImage(bg,0,0);
       if(!still){ main.fillStyle="#fff"; for(let i=0;i<6;i++){ const ph=(t/(5200+i*430)+i*.37)%1, x=S*(.1+((i*.311)%1)*.8)+Math.sin(t/900+i)*S*.02, y=S*(1.02-ph*1.1);
         main.globalAlpha=Math.sin(ph*Math.PI)*.45; main.fillRect(x,y,S*.013,S*.013); } main.globalAlpha=1; }
