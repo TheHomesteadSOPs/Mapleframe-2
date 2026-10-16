@@ -54,6 +54,27 @@
   .spell[disabled] { opacity:.45; cursor:not-allowed; }
   @keyframes glow { 0%,100%{box-shadow:0 0 6px #7f78} 50%{box-shadow:0 0 16px #9f9c} }
   .spell.ready { border-color:#8fe89a; background:linear-gradient(180deg,#3f4f7a,#26345a 55%,#1b2446); animation:glow 1.6s infinite; }
+  /* spells: gem-coloured progress fill, icon, ready glow */
+  .spell:not(.potion) { display:flex; align-items:center; gap:8px; --c1:#ffd36b; --c2:#ffd36b; --p:0%; }
+  .spell:not(.potion)::after { display:none; }
+  .spell .fill { position:absolute; left:0; top:0; bottom:0; width:var(--p); background:linear-gradient(90deg,var(--c1),var(--c2)); opacity:.55; transition:width .45s; pointer-events:none; border-radius:0 8px 8px 0; }
+  .spell .fill::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg,#fff5 0,#fff0 45%,#0003 100%); }
+  .spell .sico { position:relative; flex:none; width:30px; height:30px; display:flex; align-items:center; justify-content:center; filter:drop-shadow(0 1px 2px #000a); } .spell .sico svg { width:100%; height:100%; }
+  .spell .stxt { position:relative; flex:1; min-width:0; text-shadow:0 1px 2px #000b; }
+  .spell[aria-disabled=true]:not(.potion) { cursor:pointer; } .spell[aria-disabled=true]:not(.potion) .sico { opacity:.8; }
+  .spell.ready:not(.potion) { border-color:var(--c1); animation:sglow 1.5s ease-in-out infinite; }
+  .spell.ready:not(.potion) .fill { opacity:.9; }
+  .spell.ready:not(.potion) .fill::before { content:""; position:absolute; top:0; bottom:0; width:40%; left:-40%; background:linear-gradient(100deg,transparent,#fffa,transparent); animation:sshine 2.4s ease-in-out infinite; }
+  @keyframes sglow { 0%,100% { box-shadow:inset 0 1px 0 #fff4,0 0 6px var(--c1),0 3px 8px #0008; } 50% { box-shadow:inset 0 1px 0 #fff6,0 0 20px var(--c1),0 0 34px var(--c1),0 3px 8px #0008; } }
+  @keyframes sshine { 0%,35% { left:-40%; } 80%,100% { left:110%; } }
+  #spellpop { position:fixed; inset:0; z-index:30; display:none; align-items:flex-end; justify-content:center; padding:10px 10px max(10px,env(safe-area-inset-bottom)); background:#0006; }
+  #spellpop.show { display:flex; }
+  #spellpop .sheet { width:min(440px,100%); background:linear-gradient(#3b2c6a,#1c1430); border:3px solid var(--c1,#d9a441); border-radius:16px; padding:12px 14px 12px; box-shadow:0 10px 40px #000c,0 0 22px var(--c1,#d9a441); font-family:system-ui,sans-serif; }
+  #spellpop .hd { display:flex; align-items:center; gap:10px; } #spellpop .hd .sico { display:block; width:46px; height:46px; flex:none; } #spellpop .hd .sico svg { display:block; width:100%; height:100%; filter:drop-shadow(0 1px 3px #000a); } #spellpop .cost .ico { width:1.1em; height:1.1em; }
+  #spellpop h3 { margin:0; font:900 19px 'Palatino Linotype','Book Antiqua',Georgia,serif; letter-spacing:1px; } #spellpop .cost { margin-top:2px; font-size:13px; color:var(--dim); }
+  #spellpop p { margin:8px 0 4px; font-size:15px; line-height:1.4; } #spellpop .need { color:#ffb0a0; font-size:13px; margin:0 0 4px; }
+  #spellpop .btns { margin-top:10px; } #spellpop button { font:700 15px 'Palatino Linotype','Book Antiqua',Georgia,serif; border-radius:10px; padding:10px 18px; cursor:pointer; color:var(--txt); background:#3a2c63; border:2px solid var(--edge); flex:1; }
+  #spellpop button.big { background:linear-gradient(#fff0b0,#ffc04a 45%,#d98a1f); color:#2a1604; border:1px solid #fff4; } #spellpop button:disabled { opacity:.45; }
   .frame { padding:12px; border-radius:18px; position:relative;
     background:radial-gradient(circle at 12px 12px,#fff6c8 0,#d89a2a 3.5px,#4a2a08 6px,transparent 6.5px) no-repeat,
       radial-gradient(circle at calc(100% - 12px) 12px,#fff6c8 0,#d89a2a 3.5px,#4a2a08 6px,transparent 6.5px) no-repeat,
@@ -145,6 +166,35 @@
   .homeopts { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
   select { background:#2a1f45; color:var(--txt); border:2px solid var(--edge); border-radius:8px; padding:6px 8px; font:14px system-ui,sans-serif; }
   .set select { display:block; width:100%; margin-top:4px; }
+  /* ---- phone portrait: everything on one screen, no scrolling ---- */
+  @media (max-width:600px) and (max-aspect-ratio:1/1) {
+    body { padding:4px 6px 6px; } #topbar { height:34px; } #topbar h1 { font-size:20px; letter-spacing:3px; margin:0; line-height:34px; }
+    #tools { top:1px; gap:4px; } #tools button { width:32px; height:30px; }
+    #game { gap:5px; max-width:none; }
+    #cards { gap:5px; }
+    .card { padding:5px 7px; display:grid; grid-template-columns:54px 1fr; column-gap:7px; align-content:center; }
+    .card > * { grid-column:2; min-width:0; } .card canvas.fig { grid-column:1; grid-row:1 / span 5; width:54px; max-width:54px; margin:0; align-self:center; border-width:2px; border-radius:11px; }
+    .card .name { font-size:12px !important; gap:4px; } .card .name span:first-child { overflow:hidden; text-overflow:ellipsis; }
+    .card .bar { height:10px; margin-top:3px; } .card .bar.xp { height:6px; } .card .small { font-size:10px; margin-top:2px; line-height:1.25; }
+    #estat { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    #mana { gap:4px; } .m { padding:1px 0 0; font-size:11px; border-radius:8px; } .m .mb { height:4px; margin-top:2px; } .m .ico { width:13px; height:13px; }
+    .frame { padding:8px; width:min(100%,calc(100dvh - 300px)); min-width:250px; margin:0 auto; }
+    #spells { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+    #spells .spell { flex:none; padding:4px 2px; min-height:38px; text-align:center; font-size:10px; border-radius:9px; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+    #spells .spell:not(.potion) { flex-direction:column; gap:1px; justify-content:center; padding:3px 2px; } #spells .spell .sico { width:20px; height:20px; } #spells .spell .stxt { flex:none; width:100%; }
+    #spells .spell b { font-size:10.5px; letter-spacing:0; line-height:1.15; display:block; width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #spells .spell b i { float:none; display:block; font-size:10px; line-height:1.3; white-space:nowrap; } #spells .spell span { display:none; }
+    #spells .spell.potion { grid-column:span 2; min-height:30px; padding:3px 4px; }
+    #spells .spell.potion b { font-size:11px; white-space:normal; }
+    #log { display:none; }
+    .card .name { display:block; line-height:1.15; } .card .name span { display:block; } .card .name span:last-child { font-size:10px; margin-bottom:1px; } #ename .badge { display:none; } #pgold { white-space:nowrap; font-size:10px !important; letter-spacing:-.2px; }
+  }
+  @media (max-width:600px) and (max-aspect-ratio:1/1) and (min-height:780px) {
+    .card { grid-template-columns:70px 1fr; } .card canvas.fig { width:70px; max-width:70px; } .card .name { font-size:13px !important; } .card .small { font-size:11px; } .card .bar { height:12px; }
+    #spells .spell { min-height:46px; font-size:11px; } #spells .spell b { font-size:11.5px; } #spells .spell.potion { min-height:36px; }
+    #game { gap:7px; }
+  }
+  @media (max-width:600px) and (max-aspect-ratio:1/1) and (max-height:700px) { .frame { width:min(100%,calc(100dvh - 285px)); } #topbar { height:30px; } #topbar h1 { line-height:30px; font-size:18px; } }
 </style>
 </head>
 <body>
@@ -174,6 +224,7 @@
 </div>
 <div id="panel" role="dialog" aria-modal="true"><div id="panelbox"></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="spellpop" role="dialog" aria-modal="true"><div class="sheet" id="spellsheet"></div></div>
 <div id="tip" hidden role="status"><span id="tiptext"></span> <button id="tipok" data-i18n="Got it">Got it</button></div>
 
 <script>
@@ -556,6 +607,12 @@ const CG = {
   }
 };
 
+// ---------- optional painted portraits ----------
+// The build embeds art/*.webp into this file (ART_INLINE); when running the source file the images are loaded from art/.
+// Anything without an image keeps its vector drawing. ART_ALIAS lets a missing tier reuse another tier's picture until it has its own.
+const ART_INLINE=null/*ART_INLINE*/;
+const ART_KEYS=["hero0","hero2","hero3","hero4"], ART_ALIAS={hero1:"hero0"}, ART_IMG={};
+(()=>{ for(const k of (ART_INLINE?Object.keys(ART_INLINE):ART_KEYS)){ const i=new Image(); i.src=ART_INLINE?ART_INLINE[k]:"art/"+k+".webp"; ART_IMG[k]=i; } })();
 // ---------- character portraits (vector art, animated) ----------
 const Fig = (() => {
   let c, T=0, bl=1, off=null; const cache={};
@@ -780,6 +837,13 @@ const Fig = (() => {
         q=g.createRadialGradient(S*.32,S*.22,0,S*.32,S*.22,S*.5); q.addColorStop(0,"rgba(255,255,255,.22)"); q.addColorStop(1,"rgba(255,255,255,0)"); g.fillStyle=q; g.fillRect(0,0,S,S);
         q=g.createLinearGradient(0,S*.72,0,S*.97); q.addColorStop(0,"rgba(0,0,20,0)"); q.addColorStop(1,"rgba(0,0,20,.4)"); g.fillStyle=q; g.fillRect(0,0,S,S); }));
       const vg=cache["V"+S]||(cache["V"+S]=mk(g=>{ const q=g.createRadialGradient(S*.5,S*.5,S*.42,S*.5,S*.5,S*.78); q.addColorStop(0,"#0000"); q.addColorStop(1,"#000a"); g.fillStyle=q; g.fillRect(0,0,S,S); }));
+      const key2=name==="hero"?"hero"+Fig.tier:name, im=ART_IMG[ART_IMG[key2]?key2:ART_ALIAS[key2]];
+      if(im&&im.complete&&im.naturalWidth){   // painted portrait: same breathing / hit-shake / lunge as the vector figures
+        main.setTransform(1,0,0,1,0,0); main.globalAlpha=1; main.fillStyle="#000"; main.fillRect(0,0,S,S);
+        const bobp=still?0:Math.sin(t/420)*S*.006, brp=still?0:Math.sin(t/420)*.01, sxp=(Math.random()-.5)*shake*S/200;
+        main.save(); main.translate(S/2+sxp,S); main.scale(1+brp+kick*.1,1-brp+kick*.1); main.translate(-S/2,-S+bobp+kick*S*.03);
+        main.drawImage(im,-S*.04,-S*.04,S*1.08,S*1.08); main.restore(); main.drawImage(vg,0,0); return;
+      }
       main.setTransform(1,0,0,1,0,0); main.globalAlpha=1; main.drawImage(bg,0,0);
       if(!still){ main.fillStyle="#fff"; for(let i=0;i<6;i++){ const ph=(t/(5200+i*430)+i*.37)%1, x=S*(.1+((i*.311)%1)*.8)+Math.sin(t/900+i)*S*.02, y=S*(1.02-ph*1.1);
         main.globalAlpha=Math.sin(ph*Math.PI)*.45; main.fillRect(x,y,S*.013,S*.013); } main.globalAlpha=1; }
@@ -816,6 +880,9 @@ const TR=[ // [en, es, pt, fr, de, ru]
  ["Fullscreen","Pantalla completa","Tela cheia","Plein écran","Vollbild","Полный экран"],
  ["Hint (T)","Pista (T)","Dica (T)","Indice (T)","Tipp (T)","Подсказка (T)"],
  ["Got it","Entendido","Entendi","Compris","Verstanden","Понятно"],
+ ["Cast","Lanzar","Lançar","Lancer","Wirken","Применить"],
+ ["Close","Cerrar","Fechar","Fermer","Schließen","Закрыть"],
+ ["Not enough mana yet","Aún falta maná","Ainda falta mana","Pas assez de mana","Noch nicht genug Mana","Маны пока не хватает"],
  ["Fighter","Luchador","Lutador","Combattant","Kämpfer","Боец"],
  ["Warrior","Guerrero","Guerreiro","Guerrier","Krieger","Воин"],
  ["Knight","Caballero","Cavaleiro","Chevalier","Ritter","Рыцарь"],
@@ -1109,6 +1176,24 @@ const ACH=[
   {id:"daily",n:"Regular",d:"Claim a daily reward 3 days in a row"},
 ];
 const costIcons = c => Object.entries(c).map(([t,n])=>`${n} ${GEMS[t].emoji}`).join(" ");
+// one icon per spell, each showing what the spell does
+const SPELL_ICO=(()=>{
+  const O="#14091f", st=(d,col,w)=>`<path d="${d}" fill="none" stroke="${O}" stroke-width="${w+2.6}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const fl=(d,f,sk=O,w=1.4)=>`<path d="${d}" fill="${f}" stroke="${sk}" stroke-width="${w}" stroke-linejoin="round"/>`;
+  const svg=x=>`<svg viewBox="0 0 24 24" aria-hidden="true">${x}</svg>`;
+  return [
+    svg(fl("M12 2.2c.9 3.2 4.6 4.8 4.6 9.4a4.9 4.9 0 0 1-9.8 0c0-1.9.8-3.2 2-4.2.2 1.7 1 2.4 1.9 2.6C10.2 7.3 10.6 4.5 12 2.2z","#ffcf5a","#7a2208")+fl("M12 11c.7 1.5 1.9 2.1 1.9 3.6a1.9 1.9 0 0 1-3.8 0c0-1 .6-1.6 1.9-3.6z","#ff5a2a","#7a2208",1)+`<circle cx="6" cy="19.5" r="1.4" fill="#ffb15a"/><circle cx="18.5" cy="20" r="1" fill="#ffb15a"/>`),
+    svg(fl("M12 20.6s-8.2-4.8-8.2-10.4A4.4 4.4 0 0 1 12 7.9a4.4 4.4 0 0 1 8.2 2.3c0 5.6-8.2 10.4-8.2 10.4z","#ffc4d8","#8a1f4a")+st("M12 9.6v6M9 12.6h6","#27a864",2.2)),
+    svg(st("M12 2.6v18.8M3.9 7.3l16.2 9.4M3.9 16.7l16.2-9.4","#eafcff",1.9)+st("M9.6 4.7 12 7l2.4-2.3M9.6 19.3 12 17l2.4 2.3","#eafcff",1.4)+`<circle cx="12" cy="12" r="2" fill="#7fd8ff" stroke="${O}" stroke-width="1"/>`),
+    svg(fl("M13.8 1.8 5.2 13.4h5.9l-1.7 8.8L19 10h-6z","#ffe45a","#7a5200")+`<path d="M5 3.5l1.6 1.6M3.5 8H6M18 19l1.6 1.6" stroke="#fff3a0" stroke-width="1.5" stroke-linecap="round"/>`),
+    svg(st("M2.8 12h18.4M12 2.8v18.4","#ff9a3a",2.6)+fl("M12 6.2c.7 2.4 3.2 3.4 3.2 6.4a3.2 3.2 0 0 1-6.4 0c0-1.3.5-2.2 1.3-2.9.2 1 .6 1.5 1.2 1.7-.2-1.7.1-3.2.7-5.2z","#ffe08a","#7a2208",1.1)),
+    svg(fl("M12 2.2c.8 5.1 2.4 6.7 7.8 9.8-5.4 3.1-7 4.7-7.8 9.8-.8-5.1-2.4-6.7-7.8-9.8 5.4-3.1 7-4.7 7.8-9.8z","#c4f8ff","#0e5a6a")+`<circle cx="19" cy="5" r="1.4" fill="#fff"/><circle cx="5.2" cy="18.6" r="1.1" fill="#fff"/>`),
+    svg(fl("M12 2.4 20.2 5.6v6c0 5-3.4 8.5-8.2 10.2C7.2 20.1 3.8 16.6 3.8 11.6v-6z","#f3d98a","#5a3a00")+st("M12 2.8v18.4M4.2 8.8 12 12.6l7.8-3.8","#b07a1a",1.1)),
+    svg(st("M2.6 3.4c4.2 1 8.4 3 10 7.6M2.4 8.6c3.2.6 5.6 2.2 7 5","#ffb15a",2.4)+st("M2.6 3.4c4.2 1 8.4 3 10 7.6","#fff1b0",.9)+`<circle cx="16" cy="15.4" r="5.6" fill="#b88a58" stroke="${O}" stroke-width="1.6"/><circle cx="14.2" cy="13.8" r="1.2" fill="#8a6038"/><circle cx="17.6" cy="17" r="1.5" fill="#8a6038"/><circle cx="17.3" cy="13" r=".9" fill="#8a6038"/>`)
+  ];
+})();
+const spellCols=i=>{ const k=Object.entries(SPELLS[i].cost).sort((a,b)=>b[1]-a[1]).map(([t])=>GEMS[t].col); return [k[0],k[1]||shade(k[0],55)]; };
+const isPhone=()=>matchMedia("(max-width:600px) and (max-aspect-ratio:1/1)").matches;
 
 class Game {
   constructor() {
@@ -1405,6 +1490,17 @@ class Game {
     }
     await this.beginPlayerTurn();
   }
+  // phone: tapping a spell opens its description with a Cast button (the buttons themselves are too small to hold the text)
+  spellInfo(i){ this.popI=i; this.fillPop(); $("spellpop").classList.add("show"); }
+  closePop(){ this.popI=null; $("spellpop").classList.remove("show"); }
+  fillPop(){
+    const i=this.popI; if(i==null) return; const sp=SPELLS[i], p=this.p, ok=this.canCast(i), [c1]=spellCols(i), full=Object.keys(sp.cost).every(t=>p.mana[t]>=sp.cost[t]);
+    const need=Object.entries(sp.cost).filter(([t,n])=>p.mana[t]<n).map(([t,n])=>`${n-p.mana[t]} ${GEMS[t].emoji}`).join(" ");
+    const sh=$("spellsheet"); sh.style.setProperty("--c1",c1);
+    sh.innerHTML=`<div class="hd"><span class="sico">${SPELL_ICO[i]}</span><div><h3>${T(sp.name)}</h3><div class="cost">${costIcons(sp.cost)}</div></div></div>
+      <p>${sp.desc(p.spellLv[i],this)}${p.spellLv[i]>1?" "+T("(Lv {n})",{n:p.spellLv[i]}):""}</p>${full?"":`<div class="need">${T("Not enough mana yet")}: ${need}</div>`}
+      <div class="btns"><button data-close="1">${T("Close")}</button><button class="big" data-cast="${i}" ${ok?"":"disabled"}>${T("Cast")}</button></div>`;
+  }
   canCast(i){ const s=SPELLS[i]; return !this.busy&&!this.over&&this.turn==="player"&&Object.keys(s.cost).every(t=>this.p.mana[t]>=s.cost[t]); }
   async cast(i){
     if(!this.canCast(i)) return;
@@ -1602,9 +1698,11 @@ class Game {
   // ---------- UI ----------
   buildUI(){
     $("mana").innerHTML=MANA_TYPES.map(t=>`<div class="m" id="m${t}" style="color:${GEMS[t].col}" title="${T("{el} mana",{el:T(GEMS[t].name)})}">${GEMS[t].emoji} <span></span><div class="mb" id="mb${t}"></div></div>`).join("");
-    $("spells").innerHTML=SPELLS.map((s,i)=>`<button class="spell" id="sp${i}" aria-label="${T(s.name)}"><b>${i+1}. ${T(s.name)} <i>${costIcons(s.cost)}</i></b><span id="sd${i}"></span></button>`).join("")
+    $("spells").innerHTML=SPELLS.map((s,i)=>{ const [c1,c2]=spellCols(i); return `<button class="spell" id="sp${i}" aria-label="${T(s.name)}" aria-disabled="true" style="--c1:${c1};--c2:${c2}"><i class="fill" id="sf${i}"></i><em class="sico">${SPELL_ICO[i]}</em><div class="stxt"><b>${i+1}. ${T(s.name)} <i>${costIcons(s.cost)}</i></b><span id="sd${i}"></span></div></button>`; }).join("")
       +`<button class="spell potion" id="pothp"></button><button class="spell potion" id="potmana"></button>`;
-    SPELLS.forEach((_,i)=>$("sp"+i).onclick=()=>this.cast(i));
+    SPELLS.forEach((_,i)=>{ $("sp"+i).onclick=()=>{ if(isPhone()) this.spellInfo(i); else this.cast(i); }; });
+    if(!this.popBound){ this.popBound=true; $("spellpop").addEventListener("click",ev=>{ const b=ev.target.closest("button"); if(b&&b.dataset.cast){ const i=+b.dataset.cast; this.closePop(); this.cast(i); } else if(ev.target===$("spellpop")||(b&&b.dataset.close)) this.closePop(); });
+      addEventListener("keydown",ev=>{ if(ev.key==="Escape"&&$("spellpop").classList.contains("show")){ ev.stopImmediatePropagation(); this.closePop(); } },true); }
     $("pothp").onclick=()=>this.usePotion("hp"); $("potmana").onclick=()=>this.usePotion("mana");
   }
   updateUI(){
@@ -1623,9 +1721,12 @@ class Game {
     for(const t of MANA_TYPES) { $("m"+t).querySelector("span").textContent=p.mana[t]+"/"+MANA_MAX; $("mb"+t).style.width=100*p.mana[t]/MANA_MAX+"%"; }
     const can=this.turn==="player"&&!this.busy&&!this.over;
     SPELLS.forEach((s,i)=>{
-      const ok=Object.keys(s.cost).every(t=>p.mana[t]>=s.cost[t]), b=$("sp"+i); b.disabled=!ok||!can; b.classList.toggle("ready",ok);
+      const ok=Object.keys(s.cost).every(t=>p.mana[t]>=s.cost[t]), b=$("sp"+i);
+      const tot=Object.values(s.cost).reduce((a,v)=>a+v,0), got=Object.entries(s.cost).reduce((a,[t,n])=>a+Math.min(p.mana[t],n),0);
+      b.style.setProperty("--p",Math.round(100*got/tot)+"%"); b.setAttribute("aria-disabled",String(!ok||!can)); b.classList.toggle("ready",ok&&can);
       const d=s.desc(p.spellLv[i],this)+(p.spellLv[i]>1?" "+T("(Lv {n})",{n:p.spellLv[i]}):""); $("sd"+i).textContent=d; b.title=d;
     });
+    if(this.popI!=null) this.fillPop();
     $("pothp").innerHTML=`${T("Health Potion ×{n}",{n:p.potions.hp})} <span>${T("Restore 50% HP")}</span>`; $("pothp").disabled=!can||p.potions.hp<=0||p.hp>=p.max; $("pothp").setAttribute("aria-label",T("Health Potion"));
     $("potmana").innerHTML=`${T("Mana Potion ×{n}",{n:p.potions.mana})} <span>${T("+4 of each mana")}</span>`; $("potmana").disabled=!can||p.potions.mana<=0;
   }

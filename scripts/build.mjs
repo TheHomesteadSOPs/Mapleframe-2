@@ -1,11 +1,17 @@
 // Builds dist/index.html (minified, single file) and dist/gemhollow.zip for upload.
 // Usage: npm i --no-save esbuild && node scripts/build.mjs
-import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { transformSync } from "esbuild";
 
 const target = ["chrome80", "edge88", "firefox78", "safari15"];   // also validates syntax for older iOS Safari
 let html = readFileSync("index.html", "utf8");
+
+// embed art/*.webp as data URIs so the release stays a single index.html with no extra requests
+const art = {};
+if (existsSync("art")) for (const f of readdirSync("art").filter(f => f.endsWith(".webp")))
+  art[f.replace(/\.webp$/, "")] = "data:image/webp;base64," + readFileSync("art/" + f).toString("base64");
+if (Object.keys(art).length) html = html.replace("null/*ART_INLINE*/", () => JSON.stringify(art));
 
 html = html.replace(/<style>([\s\S]*?)<\/style>/, (_, css) =>
   `<style>${transformSync(css, { loader: "css", minify: true, target }).code.trim()}</style>`);
