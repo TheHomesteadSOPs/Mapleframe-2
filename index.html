@@ -611,7 +611,7 @@ const CG = {
 // The build embeds art/*.webp into this file (ART_INLINE); when running the source file the images are loaded from art/.
 // Anything without an image keeps its vector drawing. ART_ALIAS lets a missing tier reuse another tier's picture until it has its own.
 const ART_INLINE=null/*ART_INLINE*/;
-const ART_KEYS=["hero0","hero1","hero2","hero3","hero4"], ART_ALIAS={}, ART_IMG={};
+const ART_KEYS=["hero0","hero1","hero2","hero3","hero4","slime","golem","goblin","wolf","bandit","orc","skeleton","troll","wraith","dragon"], ART_ALIAS={}, ART_IMG={};
 (()=>{ for(const k of (ART_INLINE?Object.keys(ART_INLINE):ART_KEYS)){ const i=new Image(); i.src=ART_INLINE?ART_INLINE[k]:"art/"+k+".webp"; ART_IMG[k]=i; } })();
 // ---------- character portraits (vector art, animated) ----------
 const Fig = (() => {
